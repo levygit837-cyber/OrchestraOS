@@ -551,6 +551,6 @@ No M0, os contratos executaveis devem cobrir apenas o nucleo necessario para cri
 - `Agent`
 - `AgentSession`
 
-`Orchestrator` permanece como componente arquitetural, nao como entidade de dominio neste momento. `CommunicationProtocol` permanece documentado em `docs/architecture/communication-protocol.md` e no envelope de eventos/comandos. Uma `Session` generica para CLI, humano, GitHub ou conectores fica adiada ate existir necessidade operacional alem de `AgentSession`.
+`Event` e representado pelo `EventEnvelope` versionado. `Orchestrator` permanece como componente arquitetural, nao como entidade de dominio neste momento. `CommunicationProtocol` permanece documentado em `docs/architecture/communication-protocol.md` e no envelope de eventos/comandos. Uma `Session` generica para CLI, humano, GitHub ou conectores fica adiada ate existir necessidade operacional alem de `AgentSession`.
 
 Essa fronteira de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contract-scope.md).

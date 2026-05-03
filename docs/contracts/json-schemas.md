@@ -1,6 +1,6 @@
 # JSON Schemas
 
-Este documento define os contratos iniciais de eventos e comandos. Quando os schemas executaveis forem criados, eles devem ficar em `contracts/schemas/`; este arquivo continua como indice narrativo e regra de evolucao dos contratos.
+Este documento define os contratos iniciais de eventos e comandos. Os schemas executaveis ficam em `contracts/schemas/`; este arquivo continua como indice narrativo e regra de evolucao dos contratos.
 
 ## Convenções
 
@@ -10,16 +10,16 @@ Este documento define os contratos iniciais de eventos e comandos. Quando os sch
 - `event_id` deve ser idempotente.
 - `sequence` deve ser monotonicamente crescente por `run_id` quando aplicavel.
 
-## Escopo M0 De Schemas
+## Escopo M0 De Schemas Executaveis
 
-| Schema planejado | Finalidade |
-| --- | --- |
-| `contracts/schemas/domain/task.schema.json` | Contrato da entidade `Task`. |
-| `contracts/schemas/domain/run.schema.json` | Contrato da entidade `Run`. |
-| `contracts/schemas/domain/work-unit.schema.json` | Contrato da entidade `WorkUnit`. |
-| `contracts/schemas/domain/agent.schema.json` | Contrato minimo da entidade `Agent`. |
-| `contracts/schemas/domain/agent-session.schema.json` | Contrato da entidade `AgentSession`. |
-| `contracts/schemas/protocol/event-envelope.schema.json` | Envelope comum de eventos e comandos. |
+| Schema | Tipo Go | Finalidade |
+| --- | --- | --- |
+| `contracts/schemas/domain/task.schema.json` | `internal/domain.Task` | Contrato da entidade `Task`. |
+| `contracts/schemas/domain/run.schema.json` | `internal/domain.Run` | Contrato da entidade `Run`. |
+| `contracts/schemas/domain/work-unit.schema.json` | `internal/domain.WorkUnit` | Contrato da entidade `WorkUnit`. |
+| `contracts/schemas/domain/agent.schema.json` | `internal/domain.Agent` | Contrato minimo da entidade `Agent`. |
+| `contracts/schemas/domain/agent-session.schema.json` | `internal/domain.AgentSession` | Contrato da entidade `AgentSession`. |
+| `contracts/schemas/protocol/event-envelope.schema.json` | `internal/domain.EventEnvelope` | Envelope comum de eventos e comandos; representa `Event` no M0. |
 
 Nao criar no M0:
 
@@ -27,13 +27,13 @@ Nao criar no M0:
 - `communication-protocol.schema.json`: o contrato relevante ja e o envelope versionado e os payloads de eventos/comandos.
 - `session.schema.json`: `AgentSession` cobre o caso operacional inicial; sessao generica fica para CLI, GitHub ou conectores quando precisarem de estado vivo proprio.
 
-Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contract-scope.md).
+Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contract-scope.md). O pacote Go `contracts` embute `contracts/schemas/` para que testes e futuras bordas do sistema usem os mesmos artefatos versionados.
 
 ## Envelope Base
 
 ```json
 {
-  "$id": "https://orchestraos.local/schemas/event-envelope.schema.json",
+  "$id": "https://orchestraos.local/schemas/protocol/event-envelope.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
@@ -43,6 +43,7 @@ Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contr
     "version",
     "task_id",
     "run_id",
+    "sequence",
     "priority",
     "requires_ack",
     "created_at",

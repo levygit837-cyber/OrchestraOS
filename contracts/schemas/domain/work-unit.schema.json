@@ -1,0 +1,63 @@
+{
+  "$id": "https://orchestraos.local/schemas/domain/work-unit.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkUnit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "task_graph_id",
+    "title",
+    "objective",
+    "assigned_agent_profile",
+    "status",
+    "owned_paths",
+    "read_paths",
+    "acceptance_criteria",
+    "validation_plan",
+    "depends_on"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "task_graph_id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "objective": { "type": "string", "minLength": 1 },
+    "assigned_agent_profile": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "planned",
+        "scheduled",
+        "blocked",
+        "running",
+        "waiting_approval",
+        "paused",
+        "validating",
+        "completed",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "owned_paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "read_paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "validation_plan": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "depends_on": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

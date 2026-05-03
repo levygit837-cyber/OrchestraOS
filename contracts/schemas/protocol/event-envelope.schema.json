@@ -1,0 +1,42 @@
+{
+  "$id": "https://orchestraos.local/schemas/protocol/event-envelope.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EventEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "version",
+    "task_id",
+    "run_id",
+    "sequence",
+    "priority",
+    "requires_ack",
+    "created_at",
+    "payload"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "type": { "type": "string", "minLength": 1 },
+    "version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "task_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "work_unit_id": { "type": "string", "minLength": 1 },
+    "agent_id": { "type": "string", "minLength": 1 },
+    "trace_id": { "type": "string", "minLength": 1 },
+    "span_id": { "type": "string", "minLength": 1 },
+    "parent_span_id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "priority": {
+      "type": "string",
+      "enum": ["interrupt", "checkpoint", "notification", "background"]
+    },
+    "requires_ack": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "payload": { "type": "object" }
+  }
+}
