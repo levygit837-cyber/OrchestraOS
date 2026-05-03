@@ -93,6 +93,7 @@ flowchart TD
 - [ADR 0010: Operacao GitHub-first e chat opcional](../adr/0010-github-first-operations.md)
 - [ADR 0011: Agent Checkpoints](../adr/0011-agent-checkpoints.md)
 - [ADR 0012: Sistema de memoria recursiva](../adr/0012-recursive-memory-system.md)
+- [ADR 0013: Escopo M0 de schemas e tipos de dominio](../adr/0013-m0-domain-contract-scope.md)
 
 ## Referencias Tecnicas
 

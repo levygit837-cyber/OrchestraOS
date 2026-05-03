@@ -511,6 +511,7 @@ flowchart TD
     Task --> TaskGraph
     TaskGraph --> WorkUnit
     WorkUnit --> Run
+    Agent --> AgentSession
     Run --> AgentSession
     AgentSession --> AgentCheckpoint
     AgentSession --> Sandbox
@@ -538,3 +539,16 @@ flowchart TD
 - Chat guarda notificacoes e conversas quando existir conector, mas nao substitui o repositorio.
 - Todo evento relevante deve ser correlacionavel por `task_id`, `run_id` e `trace_id` quando aplicavel.
 - Entidades que afetam reproducibilidade devem ter versao ou snapshot.
+
+## Escopo Inicial De Schemas
+
+No M0, os contratos executaveis cobrem apenas o nucleo necessario para criar uma task local, registrar eventos e conectar uma run a uma work unit executada por agente:
+
+- `Task`
+- `Run`
+- `Event`
+- `WorkUnit`
+- `Agent`
+- `AgentSession`
+
+`Event` e representado pelo `EventEnvelope` versionado. `Orchestrator`, `CommunicationProtocol` e `Session` generica ficam fora do escopo inicial conforme a [ADR 0013](../adr/0013-m0-domain-contract-scope.md).

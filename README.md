@@ -25,7 +25,7 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 - [docs/architecture/prompt-system.md](docs/architecture/prompt-system.md): composição de SystemPrompts e TaskPrompts.
 - [docs/architecture/memory-system.md](docs/architecture/memory-system.md): desenho da memória recursiva derivada de eventos, checkpoints e documentação.
 - [docs/architecture/communication-protocol.md](docs/architecture/communication-protocol.md): contrato inicial de eventos e comandos.
-- [docs/contracts/json-schemas.md](docs/contracts/json-schemas.md): schemas iniciais de eventos e comandos.
+- [docs/contracts/json-schemas.md](docs/contracts/json-schemas.md): indice dos schemas executaveis de dominio, eventos e comandos.
 - [docs/architecture/permissions.md](docs/architecture/permissions.md): matriz de ferramentas, riscos e aprovações.
 - [docs/architecture/sandbox-and-autonomy.md](docs/architecture/sandbox-and-autonomy.md): política inicial de sandbox e autonomia.
 - [docs/architecture/testing-strategy.md](docs/architecture/testing-strategy.md): estratégia de testes por domínio.

@@ -1,0 +1,37 @@
+{
+  "$id": "https://orchestraos.local/schemas/domain/agent.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "profile",
+    "capabilities",
+    "allowed_tools",
+    "default_prompt_fragments",
+    "runtime_type"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "profile": { "type": "string", "minLength": 1 },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "allowed_tools": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "default_prompt_fragments": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "runtime_type": {
+      "type": "string",
+      "enum": ["codex_cli", "fake", "external"]
+    }
+  }
+}
