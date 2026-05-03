@@ -31,16 +31,34 @@ Um sistema operacional de projeto onde agentes entendem contexto, propõem próx
 
 - Repositório: fonte de verdade para código, documentação, canvas e decisões.
 - Codex: execução técnica, análise de código e manutenção dos arquivos do projeto.
-- Slack: central de comunicação, comandos, notificações e rotinas.
-- GitHub: issues, branches, pull requests, revisão e histórico.
+- GitHub: issues, branches, pull requests, revisão, checks e histórico.
+- CLI local: primeira interface oficial para operar o MVP.
 - Canvas textual: contexto estruturado para humanos e IA.
+
+## Arquitetura Inicial Decidida
+
+- O sistema terá um Orchestrator central como control plane.
+- Agentes serão workers isolados por task, inicialmente usando Codex/CLI.
+- Cada task terá branch, worktree e sandbox próprios.
+- A comunicação agente-orquestrador será feita por WebSocket, com eventos persistidos.
+- A comunicação entre agentes será mediada pelo Orchestrator para preservar auditoria, política e isolamento de contexto.
+- O MVP começa local-first, mas com desenho compatível com servidor.
+- A operação inicial será GitHub-first, usando issues, branches, worktrees, pull requests, reviews e checks.
+- A interface inicial do MVP será scripts de bootstrap + CLI fina.
+- O paralelismo inicial esperado será de 2 a 5 agentes.
+- A autonomia aprovada para o MVP será Nível 2.
+- O Orchestrator quebrará tasks em Task Graph acíclico e montará prompts por fragmentos versionados.
+- Agentes manterão ledger persistente de progresso por work unit.
+- Agentes registrarão checkpoints estruturados em pontos seguros para auditoria e controle de contexto.
+- Memória recursiva será uma camada derivada do Event Store, checkpoints, ledger, artefatos e documentos versionados, usada para recuperar contexto sem virar fonte de verdade paralela.
 
 ## Componentes Futuros
 
-- Slack bot ou app próprio.
-- Orquestrador de agentes.
-- Memória persistente com trilha de auditoria.
+- Implementação completa do Orchestrator de agentes.
+- Sistema de Memória Recursiva com deduplicação, evidências, busca estruturada e embeddings em segundo plano.
 - Painel web para projetos, tarefas, agentes e automações.
+- Aplicativo desktop para live view local, traces e intervenção em agentes.
+- Conectores opcionais de chat, incluindo Slack, quando houver necessidade real.
 - Políticas de autonomia por área e nível de risco.
 - Conectores com calendário, e-mail, documentos, banco de dados e ferramentas externas.
 
@@ -56,7 +74,7 @@ Um sistema operacional de projeto onde agentes entendem contexto, propõem próx
 
 - Automatizar caos em vez de organizar o sistema.
 - Dar autonomia antes de existir teste, log e rollback.
-- Usar Slack como memória definitiva.
+- Usar chat ou conversa solta como memória definitiva.
 - Misturar ideias, decisões e execução no mesmo canal.
 - Criar complexidade técnica antes de validar o fluxo operacional.
 
@@ -71,5 +89,4 @@ Um sistema operacional de projeto onde agentes entendem contexto, propõem próx
 
 ## Próxima Fronteira
 
-Definir o primeiro MVP: um fluxo simples em que uma ideia entra pelo Slack, vira issue ou documento estruturado, é implementada pelo Codex e retorna ao Slack com status e evidências.
-
+Construir o primeiro MVP: um fluxo local em que uma mensagem entra pela CLI ou GitHub, vira task, e decomposta em work units, recebe prompts montados pelo Orchestrator, cria worktree/sandbox, executa agente Codex/CLI, registra traces e ledger, e retorna com status, diff, validações, evidências e decisão de merge via GitHub/CLI.

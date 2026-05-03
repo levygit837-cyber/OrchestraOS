@@ -1,0 +1,9 @@
+# MCP Server local do projeto OrchestraOS
+# Herda a configuração global do Codex (~/.codex/config.toml)
+# Adicione aqui servidores MCP específicos do projeto se necessário
+
+[mcp_servers.slack]
+command = "npx"
+args = ["tsx", "/home/levybonito/tools/slack-mcp/src/server.ts"]
+env = { SLACK_TOKEN_KANBANESPACO_BOT = "xoxb-11073167439136-11073326940256-1tc5ofvl6N8F75Z7TW1XYczV", SLACK_TOKEN_KANBANESPACO_USER = "xoxp-11073167439136-11038504406243-11041640633717-590e39b6ce5f3d2e0761eca1fc8de10b" }
+startup_timeout_sec = 30

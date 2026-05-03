@@ -1,6 +1,8 @@
-# Configuração Recomendada do Slack
+# Configuração Opcional do Slack
 
-Slack deve ser usado como cockpit operacional, não como fonte de verdade definitiva.
+Slack não é dependência do MVP. Este documento fica como referência para uma integração futura de chat, caso o projeto precise de captura rápida, notificações ou rotinas por conversa.
+
+O caminho operacional principal do MVP é GitHub-first: CLI local, branches, worktrees, issues, pull requests, reviews e checks.
 
 ## Workspace
 
@@ -10,29 +12,39 @@ Sugestão inicial:
 - Plano inicial: gratuito enquanto o projeto estiver em descoberta; revisar plano pago quando precisar de histórico maior, workflows avançados, canvas autônomos ou integrações mais fortes.
 - Idioma: português, se o projeto for pessoal; inglês, se houver intenção de equipe internacional.
 
-## Canais Iniciais
+## Canais Opcionais
 
-- `#00-hq`: centro do projeto, anúncios e status geral.
-- `#01-ideias`: captura rápida de ideias ainda brutas.
-- `#02-planejamento`: priorização, escopo e decisões de produto.
-- `#03-engenharia`: implementação, arquitetura e dúvidas técnicas.
-- `#04-codex`: pedidos para o Codex, logs resumidos e evidências de execução.
-- `#05-automacoes`: workflows, bots e eventos automáticos.
-- `#06-decisoes`: links para ADRs, decisões finalizadas e mudanças de direção.
-- `#07-incidentes`: problemas, falhas, rollback e análise posterior.
+Estrutura opcional alinhada ao workspace atual:
 
-Para começo solo, mantenha poucos canais ativos. Se ficar demais, use apenas `#00-hq`, `#01-ideias`, `#04-codex` e `#06-decisoes`.
+- `#00-inbox`: entrada geral, capturas rápidas e mensagens ainda sem triagem.
+- `#01-diario-dev`: registro diário, decisões pequenas, ideias e contexto de execução.
+- `#02-backlog`: features, bugs, melhorias e priorização.
+- `#03-decisoes`: decisões importantes, links para ADRs e mudanças de direção.
+- `#04-arquitetura`: arquitetura, stack, protocolos, fluxos e tradeoffs técnicos.
+- `#05-bugs-debug`: falhas, logs, hipóteses, incidentes e rollback.
+- `#05-agentes`: comportamento de agentes, runtimes, tool use e políticas específicas.
+- `#06-prompts-contexto`: prompt fragments, SystemPrompts, TaskPrompts e contexto de agentes.
+- `#07-research`: pesquisa técnica, referências e benchmarks.
+- `#09-release-changelog`: releases, changelog e histórico de entregas.
+- `#10-ideias-livre`: ideias brutas antes de virar backlog.
+
+Enquanto Slack não for parte do fluxo diário, não é necessário manter canais ativos.
+
+Observação: se o conector usado pelo agente não tiver ferramenta para criar canais, a criação deve ser feita manualmente no Slack. Depois disso, convide o bot ou garanta que o usuário conectado participe do canal.
 
 ## Convenções de Mensagem
 
 Use prefixos para facilitar busca e automação:
 
 - `[IDEIA]`: pensamento bruto.
-- `[PEDIDO-CODEX]`: solicitação que deve virar ação no repositório.
+- `[TASK]`: solicitação que deve virar task no Orchestrator.
+- `[PEDIDO-CODEX]`: solicitação técnica que deve virar ação no repositório enquanto o Orchestrator ainda não existir.
 - `[DECISAO]`: decisão tomada.
 - `[BLOQUEIO]`: algo impedindo avanço.
 - `[RISCO]`: risco técnico, operacional ou estratégico.
 - `[STATUS]`: atualização curta.
+- `[PROMPT]`: proposta ou alteração de prompt fragment.
+- `[INCIDENTE]`: falha relevante que exige análise.
 
 ## Threads
 
@@ -42,7 +54,7 @@ Use prefixos para facilitar busca e automação:
 
 ## Canvas no Slack
 
-Use Slack Canvas para notas humanas de projeto, reuniões e checklists. Porém, mantenha uma cópia estruturada no repositório em Markdown, porque agentes e Codex conseguem versionar e revisar texto com mais segurança.
+Use Slack Canvas apenas se o conector de chat virar parte do processo. Mantenha uma cópia estruturada no repositório em Markdown, porque agentes e Codex conseguem versionar e revisar texto com mais segurança.
 
 Canvas sugeridos no Slack:
 
@@ -53,27 +65,27 @@ Canvas sugeridos no Slack:
 
 ## Workflows Iniciais
 
-Alguns workflows, conectores e recursos avançados podem depender do plano do Slack. Comece simples e só pague quando o fluxo estiver validado.
+Alguns workflows, conectores e recursos avançados podem depender do plano do Slack. Só ative quando GitHub/CLI deixarem de ser suficientes.
 
 1. Captura de ideia:
    - Gatilho: atalho ou formulário no Slack.
-   - Saída: mensagem em `#01-ideias` com campos de problema, ideia e urgência.
+   - Saída: mensagem em `#10-ideias-livre` ou `#00-inbox` com campos de problema, ideia e urgência.
 
-2. Pedido para Codex:
-   - Gatilho: formulário em `#04-codex`.
+2. Pedido para Task:
+   - Gatilho: formulário em `#02-backlog`.
    - Saída: mensagem padronizada com objetivo, arquivos afetados, critério de aceite e validação esperada.
 
 3. Decisão tomada:
-   - Gatilho: formulário em `#06-decisoes`.
+   - Gatilho: formulário em `#03-decisoes`.
    - Saída: lembrete para criar ou atualizar ADR no repositório.
 
 4. Revisão semanal:
    - Gatilho: agenda semanal.
-   - Saída: checklist em `#00-hq` com backlog, riscos, decisões e próximos passos.
+   - Saída: checklist em `#00-inbox` com backlog, riscos, decisões e próximos passos.
 
 ## Integrações
 
-Instalar quando houver necessidade real:
+Instalar somente quando houver necessidade real:
 
 - GitHub: PRs, issues, commits e checks.
 - Google Drive ou equivalente: arquivos externos que não devem ficar no repo.
@@ -83,7 +95,7 @@ Instalar quando houver necessidade real:
 ## Notificações
 
 - Silenciar canais que não exigem ação imediata.
-- Ativar notificação forte apenas para `#00-hq`, `#04-codex` e menções diretas.
+- Ativar notificação forte apenas para `#00-inbox`, `#02-backlog`, `#03-decisoes` e menções diretas.
 - Usar lembretes para revisão semanal e decisões pendentes.
 
 ## Segurança

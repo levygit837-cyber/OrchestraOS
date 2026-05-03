@@ -2,23 +2,26 @@
 
 ## Fonte de Verdade
 
-Use o repositório como fonte de verdade. Slack é ótimo para conversa, captura e notificações, mas decisões finais, arquitetura, código, políticas e documentação devem estar versionados.
+Use o repositório como fonte de verdade. GitHub deve concentrar backlog, branches, pull requests, revisão e histórico operacional externo. Chats podem ajudar no futuro, mas não são fonte definitiva.
 
 ## Trio Recomendado
 
-- Slack: entrada de ideias, comandos, discussões rápidas, avisos e rotinas.
+- CLI: controle inicial do MVP, comandos auditáveis e operação local.
 - GitHub: issues, branches, pull requests, histórico e revisão.
+- Agentes: execução técnica em sandboxes, worktrees e branches isoladas.
+- Chat opcional futuro: captura rápida, avisos e notificações quando houver necessidade real.
 - Codex: análise, implementação, manutenção de documentação e validação técnica.
 
 ## Fluxo de Trabalho
 
-1. Capturar ideia em Slack ou em `docs/canvas/project-canvas.md`.
+1. Capturar ideia na CLI, GitHub Issue ou em `docs/canvas/project-canvas.md`.
 2. Transformar a ideia em item pequeno: problema, objetivo, escopo e critério de aceite.
-3. Registrar como issue ou tarefa.
-4. Codex implementa em branch curta.
-5. Validar com testes, lint ou revisão manual.
-6. Atualizar docs quando necessário.
-7. Registrar decisões importantes como ADR.
+3. Registrar como issue ou task.
+4. Orchestrator quebra em work units quando houver paralelismo real.
+5. Codex implementa em branch curta e sandbox.
+6. Validar com testes, lint ou revisão manual.
+7. Atualizar docs quando necessário.
+8. Registrar decisões importantes como ADR.
 
 ## Ritual Leve
 
@@ -66,9 +69,9 @@ Um item só deve ser considerado concluído quando:
 
 ## Roadmap Inicial
 
-1. Fundação: documentação, regras de agentes, canvas e Slack.
-2. MVP operacional: capturar ideia, transformar em tarefa, executar com Codex e reportar status.
-3. Memória e auditoria: registrar decisões, logs e histórico de ações.
-4. Orquestrador: agentes com papéis, permissões e políticas.
-5. Autonomia progressiva: automações por nível de risco.
-
+1. Fundação: documentação, regras de agentes, canvas e GitHub-first.
+2. MVP operacional: CLI, task/run/event store, task graph, prompt composer e agente fake.
+3. Execução real: sandbox/worktree, Codex/CLI, policy engine e tool approvals.
+4. Memória e auditoria: tracing normalizado, ledger, checkpoints, logs, histórico de ações e memória recursiva derivada de evidências.
+5. Orquestrador avançado: agentes com papéis, permissões, live view e intervenções.
+6. Autonomia progressiva: automações por nível de risco.

@@ -8,7 +8,7 @@ Este arquivo deve ser lido por qualquer agente antes de editar o projeto.
 2. Manter o repositório como fonte de verdade.
 3. Fazer mudanças pequenas, verificáveis e reversíveis.
 4. Atualizar documentação quando a mudança alterar comportamento, arquitetura ou processo.
-5. Nunca tratar Slack, conversa solta ou memória do agente como fonte definitiva.
+5. Nunca tratar conversa solta, chat, comentários avulsos ou memória do agente como fonte definitiva.
 
 ## Fluxo Obrigatório
 
@@ -52,4 +52,3 @@ Decisões relevantes devem virar ADR em `docs/adr/`. Use o formato:
 - Decisão
 - Consequências
 - Alternativas consideradas
-
