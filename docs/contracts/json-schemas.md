@@ -1,6 +1,6 @@
 # JSON Schemas
 
-Este documento define os contratos iniciais de eventos e comandos. A implementacao deve mover estes contratos para arquivos `.schema.json` quando o codigo do Orchestrator existir.
+Este documento define os contratos iniciais de eventos e comandos. Quando os schemas executaveis forem criados, eles devem ficar em `contracts/schemas/`; este arquivo continua como indice narrativo e regra de evolucao dos contratos.
 
 ## Convenções
 
@@ -9,6 +9,25 @@ Este documento define os contratos iniciais de eventos e comandos. A implementac
 - Campos desconhecidos devem ser rejeitados nos limites externos e aceitos com cuidado nos limites internos apenas quando houver versionamento.
 - `event_id` deve ser idempotente.
 - `sequence` deve ser monotonicamente crescente por `run_id` quando aplicavel.
+
+## Escopo M0 De Schemas
+
+| Schema planejado | Finalidade |
+| --- | --- |
+| `contracts/schemas/domain/task.schema.json` | Contrato da entidade `Task`. |
+| `contracts/schemas/domain/run.schema.json` | Contrato da entidade `Run`. |
+| `contracts/schemas/domain/work-unit.schema.json` | Contrato da entidade `WorkUnit`. |
+| `contracts/schemas/domain/agent.schema.json` | Contrato minimo da entidade `Agent`. |
+| `contracts/schemas/domain/agent-session.schema.json` | Contrato da entidade `AgentSession`. |
+| `contracts/schemas/protocol/event-envelope.schema.json` | Envelope comum de eventos e comandos. |
+
+Nao criar no M0:
+
+- `orchestrator.schema.json`: o Orchestrator e componente/control plane, nao entidade de dominio necessaria para persistencia inicial.
+- `communication-protocol.schema.json`: o contrato relevante ja e o envelope versionado e os payloads de eventos/comandos.
+- `session.schema.json`: `AgentSession` cobre o caso operacional inicial; sessao generica fica para CLI, GitHub ou conectores quando precisarem de estado vivo proprio.
+
+Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contract-scope.md).
 
 ## Envelope Base
 
@@ -172,6 +191,38 @@ Este documento define os contratos iniciais de eventos e comandos. A implementac
         }
       }
     }
+  }
+}
+```
+
+### `run.started`
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["attempt", "triggered_by"],
+  "properties": {
+    "attempt": { "type": "integer", "minimum": 1 },
+    "triggered_by": { "type": "string" },
+    "work_unit_id": { "type": "string" },
+    "agent_id": { "type": "string" }
+  }
+}
+```
+
+### `agent.started`
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["agent_session_id", "runtime_type", "capabilities"],
+  "properties": {
+    "agent_session_id": { "type": "string" },
+    "runtime_type": { "type": "string", "enum": ["codex_cli", "fake", "external"] },
+    "capabilities": { "type": "array", "items": { "type": "string" } },
+    "toolset_snapshot_id": { "type": "string" }
   }
 }
 ```

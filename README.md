@@ -25,6 +25,7 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 - [docs/architecture/prompt-system.md](docs/architecture/prompt-system.md): composição de SystemPrompts e TaskPrompts.
 - [docs/architecture/memory-system.md](docs/architecture/memory-system.md): desenho da memória recursiva derivada de eventos, checkpoints e documentação.
 - [docs/architecture/communication-protocol.md](docs/architecture/communication-protocol.md): contrato inicial de eventos e comandos.
+- [docs/architecture/repo-structure.md](docs/architecture/repo-structure.md): estrutura inicial de codigo, contratos e testes.
 - [docs/contracts/json-schemas.md](docs/contracts/json-schemas.md): schemas iniciais de eventos e comandos.
 - [docs/architecture/permissions.md](docs/architecture/permissions.md): matriz de ferramentas, riscos e aprovações.
 - [docs/architecture/sandbox-and-autonomy.md](docs/architecture/sandbox-and-autonomy.md): política inicial de sandbox e autonomia.
@@ -52,6 +53,17 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 - Chat, incluindo Slack, fica como conector opcional futuro.
 - Stack inicial: Go, Postgres, Codex/CLI, Git worktree, Docker e GitHub.
 - Autonomia inicial aprovada: Nível 2.
+
+## Estrutura Inicial Planejada
+
+- `cmd/orchestraos/`: entrada futura da CLI local.
+- `internal/domain/`: tipos centrais do domínio.
+- `contracts/schemas/`: JSON Schemas versionados.
+- `tests/`: validações de contrato sem serviços externos.
+
+O primeiro esqueleto deve focar em `Task`, `Run`, `Event`, `WorkUnit`, `Agent` e `AgentSession`. `Orchestrator`, `CommunicationProtocol` e `Session` genérica permanecem como documentação arquitetural até haver necessidade operacional concreta.
+
+Essa decisão está registrada em [docs/adr/0013-m0-domain-contract-scope.md](docs/adr/0013-m0-domain-contract-scope.md).
 
 ## Regra de Trabalho
 
