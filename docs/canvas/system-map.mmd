@@ -1,0 +1,19 @@
+flowchart TD
+    Human["Você / Fundador"] --> Slack["Slack: comunicação e comandos"]
+    Human --> Repo["Repositório: fonte de verdade"]
+    Slack --> Inbox["Inbox de ideias e pedidos"]
+    Inbox --> Triage["Triagem: escopo, prioridade, risco"]
+    Triage --> GitHub["GitHub: issues, PRs e histórico"]
+    Repo --> Codex["Codex: análise e implementação"]
+    GitHub --> Codex
+    Codex --> Tests["Validações: testes, lint, revisão"]
+    Tests --> Repo
+    Tests --> Slack
+    Repo --> Docs["Docs: canvas, ADRs, manuais"]
+    Docs --> Codex
+    Policies["Políticas de autonomia"] --> Codex
+    Policies --> Automations["Automações futuras"]
+    Automations --> Slack
+    Automations --> GitHub
+    Automations --> Observability["Logs, auditoria e rollback"]
+

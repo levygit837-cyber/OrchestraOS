@@ -1,0 +1,27 @@
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+
+# Build outputs
+dist/
+build/
+coverage/
+.next/
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
