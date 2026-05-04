@@ -35,7 +35,7 @@ func NewStore(db *sql.DB) (*Store, error) {
 
 // Append validates and stores a new event
 func (s *Store) Append(envelope *domain.EventEnvelope) error {
-	if err := s.prepare(envelope); err != nil {
+	if err := s.completeEnvelopeBeforeValidation(envelope); err != nil {
 		return err
 	}
 
@@ -55,9 +55,12 @@ func (s *Store) Append(envelope *domain.EventEnvelope) error {
 	return nil
 }
 
-func (s *Store) prepare(envelope *domain.EventEnvelope) error {
+// completeEnvelopeBeforeValidation owns all generated envelope fields.
+// The repository only persists already complete envelopes, so this must run
+// before the JSON Schema validator.
+func (s *Store) completeEnvelopeBeforeValidation(envelope *domain.EventEnvelope) error {
 	if envelope == nil {
-		return apperrors.New(apperrors.CodeInvalidInput, "eventstore.prepare", "event envelope is required")
+		return apperrors.New(apperrors.CodeInvalidInput, "eventstore.complete_envelope", "event envelope is required")
 	}
 	if envelope.ID == "" {
 		envelope.ID = uuid.New().String()

@@ -71,6 +71,9 @@ func TestEventEnvelopeValidation(t *testing.T) {
 		if stored.ID == "" || stored.Sequence == 0 || stored.CreatedAt.IsZero() {
 			t.Errorf("Expected store to fill id, sequence, and created_at, got %+v", stored)
 		}
+		if envelope.ID == "" || envelope.Sequence == 0 || envelope.CreatedAt.IsZero() {
+			t.Errorf("Expected Append to complete envelope before validation, got %+v", envelope)
+		}
 	})
 
 	t.Run("invalid envelope should be rejected", func(t *testing.T) {

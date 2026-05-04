@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
@@ -21,6 +22,13 @@ func NewEventRepository(db *sql.DB) *EventRepository {
 
 // Create inserts a new event
 func (r *EventRepository) Create(event *domain.EventEnvelope) error {
+	if event == nil {
+		return apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope is required")
+	}
+	if event.ID == "" || event.Sequence == 0 || event.CreatedAt.IsZero() {
+		return apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope must be completed before persistence")
+	}
+
 	payloadJSON, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
