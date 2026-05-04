@@ -11,7 +11,9 @@ const (
 	CodePersistence       Code = "persistence"
 	CodeNotFound          Code = "not_found"
 	CodeConflict          Code = "conflict"
+	CodePolicy            Code = "policy"
 	CodeRuntime           Code = "runtime"
+	CodeTimeout           Code = "timeout"
 	CodeInternal          Code = "internal"
 )
 

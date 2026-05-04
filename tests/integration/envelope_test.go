@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
+	"github.com/levygit837-cyber/OrchestraOS/internal/migrations"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
 	_ "github.com/lib/pq"
 )
@@ -29,6 +30,9 @@ func getTestDB(t *testing.T) *sql.DB {
 
 	if err := database.Ping(); err != nil {
 		t.Skipf("Database not available: %v (skipping integration test)", err)
+	}
+	if err := migrations.Run(database); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
 	}
 
 	return database

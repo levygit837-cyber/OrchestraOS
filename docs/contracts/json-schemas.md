@@ -8,7 +8,7 @@ Este documento define os contratos iniciais de eventos e comandos. Os schemas ex
 - Todo evento ou comando deve ter `id`, `type`, `task_id`, `created_at` e `payload`.
 - `run_id` e obrigatorio para eventos ligados a execucao (`run.*`, `agent.*`, `tool.*`) e opcional para eventos que existem antes de uma run, como `task.created` e `work_unit.created`.
 - Campos desconhecidos devem ser rejeitados nos limites externos e aceitos com cuidado nos limites internos apenas quando houver versionamento.
-- `event_id` deve ser idempotente.
+- `event_id` deve ser idempotente: reprocessar o mesmo envelope retorna a entrada persistida, enquanto reutilizar o ID com conteudo divergente deve retornar conflito.
 - `sequence` deve ser monotonicamente crescente por `run_id` quando aplicavel.
 
 ## Escopo M0 De Schemas Executaveis
@@ -27,6 +27,10 @@ Nao criar no M0:
 - `orchestrator.schema.json`: o Orchestrator e componente/control plane, nao entidade de dominio necessaria para persistencia inicial.
 - `communication-protocol.schema.json`: o contrato relevante ja e o envelope versionado e os payloads de eventos/comandos.
 - `session.schema.json`: `AgentSession` cobre o caso operacional inicial; sessao generica fica para CLI, GitHub ou conectores quando precisarem de estado vivo proprio.
+
+`AgentSession` pode registrar `last_seen_event_id` e `recoverable_state` como campos opcionais para retomada, timeout e recuperacao operacional. Esses campos nao substituem checkpoints; eles apontam para o historico canonico no Event Store e guardam apenas contexto minimo recuperavel.
+
+Eventos `agent.checkpoint_reached` devem ser persistidos via `AgentSessionService` nos fluxos operacionais. O payload minimo contem `agent_session_id`, `checkpoint_id`, `current_goal`, `minimal_summary`, `ledger` e `occurred_at`; campos como `evidence_refs`, `files_read`, `files_modified`, `source_event_id` e `checkpoint_trigger` podem complementar a recuperacao.
 
 Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contract-scope.md). O pacote Go `contracts` embute `contracts/schemas/` para que testes e futuras bordas do sistema usem os mesmos artefatos versionados.
 

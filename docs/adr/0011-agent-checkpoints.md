@@ -33,6 +33,22 @@ O agente deve emitir checkpoints em momentos naturais:
 - antes de encerrar uma work unit;
 - quando o Orchestrator solicitar explicitamente.
 
+`AgentSessionService` e a fronteira canonica para persistir checkpoints. Runtimes e interfaces devem encaminhar sinais ou eventos de checkpoint para o service, em vez de atualizar `last_checkpoint_at` diretamente via repositorio.
+
+A politica inicial de checkpoint automatico considera pontos seguros:
+
+- checkpoint emitido pelo runtime;
+- goal concluido;
+- mudanca de foco;
+- inicio de validacao;
+- diff relevante produzido;
+- pedido de ferramenta;
+- uso ou conclusao bem-sucedida de ferramenta sem pedido previo de aprovacao;
+- preparacao para conclusao;
+- timeout com estado recuperavel.
+
+O comando manual de checkpoint da CLI permanece apenas como mecanismo de debug/teste e nao deve ser o caminho operacional principal.
+
 O Orchestrator usa checkpoints para:
 
 - reconstruir progresso da run;
@@ -58,6 +74,8 @@ Esses temas podem ser reavaliados depois que checkpoints, ledger e Event Store e
 - O sistema ganha pontos de recuperacao e auditoria sem introduzir scheduler complexo.
 - Agentes podem trabalhar em ciclos curtos com menos risco de perder objetivo.
 - O Event Store precisa persistir checkpoints como eventos consultaveis.
+- Cada checkpoint atualiza `last_checkpoint_at`, `last_seen_event_id` e `recoverable_state` da `AgentSession` na mesma transacao do evento.
+- Checkpoints de uma sessao podem ser listados em ordem de `sequence` para reconstruir o progresso e recuperar o ultimo estado continuavel.
 - O Agent Task Ledger continua sendo a memoria operacional viva; checkpoint e snapshot de progresso em um momento especifico.
 - Futuras continuacoes de sessao poderao usar checkpoints, mas isso nao entra no primeiro escopo.
 

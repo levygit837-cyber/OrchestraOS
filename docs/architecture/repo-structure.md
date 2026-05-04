@@ -9,6 +9,7 @@ O repositorio deve iniciar como um modulo Go para o nucleo do Orchestrator, mant
 ```text
 cmd/orchestraos/
 internal/domain/
+internal/services/
 contracts/
 contracts/schemas/
 tests/
@@ -21,6 +22,7 @@ docs/
 | --- | --- |
 | `cmd/orchestraos/` | Entrada futura da CLI fina e comandos locais do MVP. |
 | `internal/domain/` | Tipos centrais do dominio: Task, Run, Event, WorkUnit, Agent e AgentSession. |
+| `internal/services/` | Fronteira de comandos de dominio, validacao, transicoes, eventos canonicos e transacoes. |
 | `contracts/` | Pacote Go leve para localizar e embutir contratos versionados. |
 | `contracts/schemas/` | JSON Schemas executaveis, separados por dominio e protocolo. |
 | `tests/` | Validacoes de contrato sem depender de servicos externos. |

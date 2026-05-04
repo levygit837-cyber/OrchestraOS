@@ -44,6 +44,19 @@ Executa o Codex/CLI dentro do sandbox da task. Recebe contexto inicial controlad
 
 Persiste eventos de task, run, agente, ferramentas, mensagens, checkpoints, artefatos e decisoes de aprovacao. O Event Store e a base de auditoria e recuperacao.
 
+### Domain Services
+
+`internal/services` e a fronteira de comando para operacoes que alteram estado operacional.
+
+- `TaskService`, `WorkUnitService`, `RunService` e `AgentSessionService` validam entrada, aplicam state machines, gravam eventos canonicos e atualizam projecoes relacionais na mesma transacao.
+- `EventService` envolve o Event Store para append validado, idempotencia por `event_id`, compatibilidade de referencias, consultas e replay estrito. Reuso do mesmo `event_id` com o mesmo conteudo retorna duplicata idempotente; conteudo divergente retorna conflito.
+- `WorkUnitService` serializa a checagem de `owned_paths` por task durante agendamento/inicio, evitando que runs concorrentes ativem work units com paths conflitantes.
+- `RunService.Retry` exige `event_id` como chave de idempotencia, aplica timeout/backoff da politica de retry e registra a politica no evento da nova tentativa.
+- `AgentSessionService` e a unidade canonica de checkpoints: recebe eventos ou sinais de ponto seguro, aplica politica de checkpoint, grava `agent.checkpoint_reached`, atualiza `last_checkpoint_at`, `last_seen_event_id` e `recoverable_state`, e permite listar/recuperar checkpoints por sessao.
+- O `run start` da CLI compensa falhas do runtime fake apos estado ativo, marcando run/sessao como falha ou timeout recuperavel via servicos.
+- CLI, TUI, runtimes de agente e conectores futuros devem chamar servicos quando houver regra de dominio, transicao de estado, retry, timeout, cancelamento ou auditoria obrigatoria.
+- Repositorios continuam como primitivas de leitura e escrita, mas nao decidem transicoes, retry, timeout, conclusao ou compensacao.
+
 ### Agent Task Ledger
 
 Mantem objetivo, criterios de aceite, todos, bloqueios, riscos, resumo atual e proximo checkpoint da work unit. O agente deve atualizar o ledger em checkpoints.

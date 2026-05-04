@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	"github.com/spf13/cobra"
 )
 
@@ -24,48 +22,29 @@ var workUnitCreateCmd = &cobra.Command{
 		title, _ := cmd.Flags().GetString("title")
 		objective, _ := cmd.Flags().GetString("objective")
 		agentProfile, _ := cmd.Flags().GetString("agent-profile")
+		ownedPaths, _ := cmd.Flags().GetStringArray("owned-path")
+		readPaths, _ := cmd.Flags().GetStringArray("read-path")
+		acceptanceCriteria, _ := cmd.Flags().GetStringArray("acceptance")
+		validationPlan, _ := cmd.Flags().GetStringArray("validation")
+		dependsOn, _ := cmd.Flags().GetStringArray("depends-on")
 
-		wu := &domain.WorkUnit{
-			TaskGraphID:          taskID,
+		service := services.NewWorkUnitService(getDB())
+		result, err := service.Create(cmd.Context(), services.CreateWorkUnitInput{
+			TaskID:               taskID,
 			Title:                title,
 			Objective:            objective,
 			AssignedAgentProfile: agentProfile,
-			Status:               domain.WorkUnitStatusCreated,
-		}
-
-		repo := repository.NewWorkUnitRepository(getDB())
-		if err := repo.Create(wu); err != nil {
+			OwnedPaths:           ownedPaths,
+			ReadPaths:            readPaths,
+			AcceptanceCriteria:   acceptanceCriteria,
+			ValidationPlan:       validationPlan,
+			DependsOn:            dependsOn,
+		})
+		if err != nil {
 			return fmt.Errorf("failed to create work unit: %w", err)
 		}
 
-		// Create event
-		eventStore, err := eventstore.NewStore(getDB())
-		if err != nil {
-			return fmt.Errorf("failed to create event store: %w", err)
-		}
-
-		payload, _ := json.Marshal(map[string]interface{}{
-			"work_unit_id": wu.ID,
-			"task_id":      taskID,
-			"title":        title,
-			"status":       wu.Status,
-		})
-
-		event := &domain.EventEnvelope{
-			Type:        "work_unit.created",
-			Version:     "v1",
-			TaskID:      taskID,
-			WorkUnitID:  wu.ID,
-			Priority:    domain.EventPriorityNotification,
-			RequiresAck: false,
-			Payload:     payload,
-		}
-
-		if err := eventStore.Append(event); err != nil {
-			return fmt.Errorf("failed to append event: %w", err)
-		}
-
-		fmt.Printf("Work unit created: %s (task: %s)\n", wu.ID, taskID)
+		fmt.Printf("Work unit created: %s (task: %s)\n", result.Value.ID, taskID)
 		return nil
 	},
 }
@@ -103,10 +82,16 @@ var workUnitListCmd = &cobra.Command{
 func init() {
 	workUnitCreateCmd.Flags().String("task-id", "", "Parent task ID (required)")
 	workUnitCreateCmd.Flags().String("title", "", "Work unit title (required)")
-	workUnitCreateCmd.Flags().String("objective", "", "Work unit objective")
+	workUnitCreateCmd.Flags().String("objective", "", "Work unit objective (required)")
 	workUnitCreateCmd.Flags().String("agent-profile", "default", "Agent profile to use")
+	workUnitCreateCmd.Flags().StringArray("owned-path", nil, "Path owned by this work unit (repeatable)")
+	workUnitCreateCmd.Flags().StringArray("read-path", nil, "Path read by this work unit (repeatable)")
+	workUnitCreateCmd.Flags().StringArray("acceptance", nil, "Acceptance criterion (repeatable)")
+	workUnitCreateCmd.Flags().StringArray("validation", nil, "Validation step (repeatable)")
+	workUnitCreateCmd.Flags().StringArray("depends-on", nil, "Dependency work unit UUID (repeatable)")
 	workUnitCreateCmd.MarkFlagRequired("task-id")
 	workUnitCreateCmd.MarkFlagRequired("title")
+	workUnitCreateCmd.MarkFlagRequired("objective")
 
 	workUnitListCmd.Flags().String("task-id", "", "Task ID to list work units for (required)")
 	workUnitListCmd.MarkFlagRequired("task-id")

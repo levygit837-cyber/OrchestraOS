@@ -98,6 +98,23 @@ Cobrir:
 - replay estrito que falha em historicos com transicoes invalidas;
 - persistencia de comandos pendentes.
 
+### Domain Services
+
+Cobrir:
+
+- validacao de entrada antes de qualquer escrita;
+- evento canonico e projecao relacional na mesma transacao;
+- transicoes validas e proibidas usando state machines;
+- compatibilidade entre task, work unit, run e agent session;
+- idempotencia por `event_id`;
+- cancelamento em cascata de task para work units/runs pendentes;
+- heartbeat, checkpoint, timeout e estado recuperavel de AgentSession;
+- concorrencia entre runs independentes e bloqueio de `owned_paths` conflitantes.
+
+Exemplo de risco:
+
+- `run.completed` persistido sem atualizar `work_units.status` deve falhar por rollback transacional.
+
 ### WebSocket
 
 Cobrir:
@@ -143,6 +160,8 @@ Cobrir:
 - loop detection;
 - tool request;
 - task ledger update.
+- compensacao quando o runtime falha depois de run/sessao entrarem em estado ativo.
+- checkpoint automatico em pontos seguros, listagem ordenada por sessao e recuperacao do ultimo estado continuavel.
 
 ### Recursive Memory
 
@@ -175,6 +194,7 @@ Nao depender de GitHub real ou conectores de chat reais em testes unitarios.
 - Teste que so verifica que uma funcao foi chamada.
 - E2E que ignora exit code real.
 - Teste que passa mesmo quando nenhuma validacao foi executada.
+- Teste de concorrencia que valida apenas sequencialmente uma regra que deve ser atomica em paralelo.
 
 ## Evidência de Teste
 

@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	_ "github.com/lib/pq"
 )
 
@@ -292,14 +294,23 @@ func TestAgentSessionWithRun(t *testing.T) {
 			t.Fatalf("Failed to update session to running: %v", err)
 		}
 
-		// Update heartbeat
-		if err := sessionRepo.UpdateHeartbeat(session.ID); err != nil {
-			t.Fatalf("Failed to update heartbeat: %v", err)
+		sessionService := services.NewAgentSessionService(db)
+		if _, err := sessionService.Heartbeat(context.Background(), session.ID, services.HeartbeatInput{
+			Payload: map[string]interface{}{"source": "integration-test"},
+		}); err != nil {
+			t.Fatalf("Failed to persist heartbeat via service: %v", err)
 		}
 
-		// Update checkpoint
-		if err := sessionRepo.UpdateCheckpoint(session.ID); err != nil {
-			t.Fatalf("Failed to update checkpoint: %v", err)
+		if _, err := sessionService.Checkpoint(context.Background(), session.ID, services.CheckpointInput{
+			CheckpointID:   "integration-checkpoint-" + uuid.New().String(),
+			CurrentGoal:    "agent session integration",
+			MinimalSummary: "session state persisted through service checkpoint",
+			Source:         "integration_test",
+			Ledger: map[string]interface{}{
+				"pending_todos": []interface{}{},
+			},
+		}); err != nil {
+			t.Fatalf("Failed to persist checkpoint via service: %v", err)
 		}
 
 		// Transition to stopped

@@ -11,6 +11,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	_ "github.com/lib/pq"
 )
 
@@ -217,6 +218,7 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 		// 6. Collect and store events
 		var eventTypes []string
 		timeout := time.After(8 * time.Second)
+		sessionService := services.NewAgentSessionService(db)
 
 	collectLoop:
 		for {
@@ -230,21 +232,25 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 				}
 
 				eventTypes = append(eventTypes, event.Type)
-				if err := eventStore.Append(event); err != nil {
-					t.Fatalf("Failed to append runtime event %q: %v", event.Type, err)
-				}
-
-				// Update session heartbeat on heartbeat events
-				if event.Type == "agent.heartbeat" {
-					if err := sessionRepo.UpdateHeartbeat(session.ID); err != nil {
-						t.Fatalf("Failed to update heartbeat: %v", err)
+				switch event.Type {
+				case "agent.heartbeat":
+					payload := map[string]interface{}{}
+					if err := json.Unmarshal(event.Payload, &payload); err != nil {
+						t.Fatalf("Failed to decode heartbeat payload: %v", err)
 					}
-				}
-
-				// Update checkpoint on checkpoint events
-				if event.Type == "agent.checkpoint_reached" {
-					if err := sessionRepo.UpdateCheckpoint(session.ID); err != nil {
-						t.Fatalf("Failed to update checkpoint: %v", err)
+					if _, err := sessionService.Heartbeat(ctx, session.ID, services.HeartbeatInput{
+						EventID: event.ID,
+						Payload: payload,
+					}); err != nil {
+						t.Fatalf("Failed to persist heartbeat via service: %v", err)
+					}
+				case "agent.checkpoint_reached":
+					if _, err := sessionService.CheckpointFromEvent(ctx, session.ID, event); err != nil {
+						t.Fatalf("Failed to persist checkpoint via service: %v", err)
+					}
+				default:
+					if err := eventStore.Append(event); err != nil {
+						t.Fatalf("Failed to append runtime event %q: %v", event.Type, err)
 					}
 				}
 

@@ -1,9 +1,11 @@
 package eventstore
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,27 +43,49 @@ func NewStoreWithExecutor(executor repository.DBTX) (*Store, error) {
 
 // Append validates and stores a new event
 func (s *Store) Append(envelope *domain.EventEnvelope) error {
+	_, _, err := s.AppendResult(envelope)
+	return err
+}
+
+// AppendResult validates and stores a new event, returning the persisted event
+// and whether the operation was an idempotent duplicate.
+func (s *Store) AppendResult(envelope *domain.EventEnvelope) (*domain.EventEnvelope, bool, error) {
 	if err := s.completeEnvelopeBeforeValidation(envelope); err != nil {
-		return err
+		return nil, false, err
 	}
 
 	envelopeBytes, err := json.Marshal(envelope)
 	if err != nil {
-		return apperrors.Wrap(apperrors.CodeValidation, "eventstore.marshal_envelope", err)
+		return nil, false, apperrors.Wrap(apperrors.CodeValidation, "eventstore.marshal_envelope", err)
 	}
 
 	if err := s.validator.Validate(envelopeBytes); err != nil {
-		return apperrors.Wrap(apperrors.CodeValidation, "eventstore.validate_envelope", err)
+		return nil, false, apperrors.Wrap(apperrors.CodeValidation, "eventstore.validate_envelope", err)
 	}
 	if err := validateOperationalPayload(envelope); err != nil {
-		return err
+		return nil, false, err
 	}
 
-	if err := s.repo.Create(envelope); err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "eventstore.store_event", err)
+	inserted, err := s.repo.Create(envelope)
+	if err != nil {
+		return nil, false, apperrors.Wrap(apperrors.CodePersistence, "eventstore.store_event", err)
+	}
+	if inserted {
+		return envelope, false, nil
 	}
 
-	return nil
+	existing, err := s.repo.GetByID(envelope.ID)
+	if err != nil {
+		return nil, false, apperrors.Wrap(apperrors.CodePersistence, "eventstore.get_duplicate", err)
+	}
+	if existing == nil {
+		return nil, false, apperrors.New(apperrors.CodeConflict, "eventstore.idempotency", "event_id conflict did not return an existing event")
+	}
+	if !sameEventIntent(existing, envelope) {
+		return nil, false, apperrors.New(apperrors.CodeConflict, "eventstore.idempotency", "event_id already exists with different event content")
+	}
+	*envelope = *existing
+	return existing, true, nil
 }
 
 // completeEnvelopeBeforeValidation owns all generated envelope fields.
@@ -241,4 +265,35 @@ func decodePayload(payload json.RawMessage, target interface{}) error {
 
 func payloadError(eventType, message string) error {
 	return apperrors.New(apperrors.CodeValidation, "eventstore.validate_payload", fmt.Sprintf("%s: %s", eventType, message))
+}
+
+func sameEventIntent(existing *domain.EventEnvelope, candidate *domain.EventEnvelope) bool {
+	if existing == nil || candidate == nil {
+		return false
+	}
+	if existing.Type != candidate.Type ||
+		existing.Version != candidate.Version ||
+		existing.TaskID != candidate.TaskID ||
+		existing.RunID != candidate.RunID ||
+		existing.WorkUnitID != candidate.WorkUnitID ||
+		existing.AgentID != candidate.AgentID ||
+		existing.TraceID != candidate.TraceID ||
+		existing.SpanID != candidate.SpanID ||
+		existing.ParentSpanID != candidate.ParentSpanID ||
+		existing.Priority != candidate.Priority ||
+		existing.RequiresAck != candidate.RequiresAck {
+		return false
+	}
+	if len(candidate.Payload) == 0 {
+		return len(existing.Payload) == 0 || bytes.Equal(existing.Payload, []byte(`{}`))
+	}
+	var existingPayload any
+	var candidatePayload any
+	if err := json.Unmarshal(existing.Payload, &existingPayload); err != nil {
+		return false
+	}
+	if err := json.Unmarshal(candidate.Payload, &candidatePayload); err != nil {
+		return false
+	}
+	return reflect.DeepEqual(existingPayload, candidatePayload)
 }

@@ -156,6 +156,8 @@ type AgentSession struct {
 	Status           AgentSessionStatus `json:"status"`
 	LastHeartbeatAt  *time.Time         `json:"last_heartbeat_at"`
 	LastCheckpointAt *time.Time         `json:"last_checkpoint_at"`
+	LastSeenEventID  string             `json:"last_seen_event_id,omitempty"`
+	RecoverableState json.RawMessage    `json:"recoverable_state,omitempty"`
 }
 
 type EventPriority string
