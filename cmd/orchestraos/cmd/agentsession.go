@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
 	"github.com/spf13/cobra"
 )
@@ -95,7 +97,8 @@ var agentSessionStatusCmd = &cobra.Command{
 			return fmt.Errorf("agent session not found: %s", args[0])
 		}
 
-		if err := repo.UpdateStatus(session.ID, domain.AgentSessionStatus(status)); err != nil {
+		commander := orchestration.NewCommander(getDB())
+		if err := commander.TransitionAgentSession(context.Background(), session.ID, domain.AgentSessionStatus(status), orchestration.TransitionOptions{}); err != nil {
 			return fmt.Errorf("failed to update status: %w", err)
 		}
 

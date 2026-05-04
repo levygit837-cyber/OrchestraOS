@@ -162,13 +162,19 @@ func (f *FakeRuntime) simulationLoop() {
 	// Emit checkpoint
 	f.status.CurrentStep = 1
 	f.emitEvent("agent.checkpoint_reached", "v1", map[string]interface{}{
-		"agent_id":       f.config.AgentID,
-		"run_id":         f.config.RunID,
-		"step":           1,
-		"goal":           "initial analysis",
-		"files_touched":  []string{},
-		"evidence":       map[string]string{"analysis": "Task analyzed successfully"},
-		"ledger_updated": true,
+		"checkpoint_id":   uuid.New().String(),
+		"current_goal":    "initial analysis",
+		"minimal_summary": "Task analyzed successfully",
+		"ledger": map[string]interface{}{
+			"current_goal":    "initial analysis",
+			"completed_goals": []string{},
+			"pending_todos":   []string{"implementation"},
+			"blockers":        []string{},
+			"risks":           []string{},
+		},
+		"files_read":     []string{},
+		"files_modified": []string{},
+		"evidence_refs":  []string{"fake-runtime:analysis"},
 	})
 
 	// Simulate tool request
@@ -193,13 +199,19 @@ func (f *FakeRuntime) simulationLoop() {
 
 	f.status.CurrentStep = 2
 	f.emitEvent("agent.checkpoint_reached", "v1", map[string]interface{}{
-		"agent_id":       f.config.AgentID,
-		"run_id":         f.config.RunID,
-		"step":           2,
-		"goal":           "implementation",
-		"files_touched":  []string{"main.go", "utils.go"},
-		"evidence":       map[string]string{"implementation": "Changes made successfully"},
-		"ledger_updated": true,
+		"checkpoint_id":   uuid.New().String(),
+		"current_goal":    "implementation",
+		"minimal_summary": "Changes made successfully",
+		"ledger": map[string]interface{}{
+			"current_goal":    "implementation",
+			"completed_goals": []string{"initial analysis", "implementation"},
+			"pending_todos":   []string{},
+			"blockers":        []string{},
+			"risks":           []string{},
+		},
+		"files_read":     []string{"README.md"},
+		"files_modified": []string{"main.go", "utils.go"},
+		"evidence_refs":  []string{"fake-runtime:implementation"},
 	})
 
 	// Simulate successful completion

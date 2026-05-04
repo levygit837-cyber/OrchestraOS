@@ -12,11 +12,11 @@ import (
 
 // EventRepository handles event persistence
 type EventRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewEventRepository creates a new event repository
-func NewEventRepository(db *sql.DB) *EventRepository {
+func NewEventRepository(db DBTX) *EventRepository {
 	return &EventRepository{db: db}
 }
 
@@ -153,6 +153,12 @@ func (r *EventRepository) ListByWorkUnit(workUnitID string) ([]domain.EventEnvel
 	}
 
 	return events, rows.Err()
+}
+
+// LastCheckpointByRun retrieves the latest checkpoint event for a run.
+func (r *EventRepository) LastCheckpointByRun(runID string) (*domain.EventEnvelope, error) {
+	row := r.db.QueryRow(db.QueryEventLastCheckpointByRun, runID)
+	return r.scanEvent(row)
 }
 
 func (r *EventRepository) scanEvent(scanner interface {

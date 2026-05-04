@@ -294,17 +294,20 @@ func TestEventPayloads(t *testing.T) {
 	}
 
 	t.Run("checkpoint event with complex payload", func(t *testing.T) {
-		taskID := uuid.New().String()
-		runID := uuid.New().String()
+		taskID := createTestTask(t, db)
+		workUnitID := createTestWorkUnit(t, db, taskID)
+		runID := createTestRun(t, db, taskID, workUnitID)
 
 		payload := map[string]interface{}{
-			"step":          1,
-			"goal":          "Implement feature X",
-			"files_touched": []string{"main.go", "utils.go"},
-			"evidence": map[string]string{
-				"analysis": "Complete",
-				"tests":    "Passing",
+			"checkpoint_id":   uuid.New().String(),
+			"current_goal":    "Implement feature X",
+			"minimal_summary": "Implementation checkpoint captured",
+			"ledger": map[string]interface{}{
+				"pending_todos": []string{},
+				"blockers":      []string{},
 			},
+			"files_modified": []string{"main.go", "utils.go"},
+			"evidence_refs":  []string{"artifact:test-report"},
 			"metrics": map[string]int{
 				"lines_added":   50,
 				"lines_removed": 10,
@@ -319,6 +322,7 @@ func TestEventPayloads(t *testing.T) {
 			Version:     "v1",
 			TaskID:      taskID,
 			RunID:       runID,
+			WorkUnitID:  workUnitID,
 			Sequence:    1,
 			Priority:    domain.EventPriorityCheckpoint,
 			RequiresAck: false,
@@ -341,11 +345,11 @@ func TestEventPayloads(t *testing.T) {
 			t.Fatalf("Failed to unmarshal payload: %v", err)
 		}
 
-		if storedPayload["step"].(float64) != 1 {
-			t.Errorf("Expected step 1, got %v", storedPayload["step"])
+		if storedPayload["current_goal"].(string) != "Implement feature X" {
+			t.Errorf("Expected current goal, got %v", storedPayload["current_goal"])
 		}
 
-		files := storedPayload["files_touched"].([]interface{})
+		files := storedPayload["files_modified"].([]interface{})
 		if len(files) != 2 {
 			t.Errorf("Expected 2 files, got %d", len(files))
 		}

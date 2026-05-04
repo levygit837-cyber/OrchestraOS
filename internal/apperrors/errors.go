@@ -5,12 +5,14 @@ import "fmt"
 type Code string
 
 const (
-	CodeInvalidInput Code = "invalid_input"
-	CodeValidation   Code = "validation"
-	CodePersistence  Code = "persistence"
-	CodeNotFound     Code = "not_found"
-	CodeRuntime      Code = "runtime"
-	CodeInternal     Code = "internal"
+	CodeInvalidInput      Code = "invalid_input"
+	CodeInvalidTransition Code = "invalid_transition"
+	CodeValidation        Code = "validation"
+	CodePersistence       Code = "persistence"
+	CodeNotFound          Code = "not_found"
+	CodeConflict          Code = "conflict"
+	CodeRuntime           Code = "runtime"
+	CodeInternal          Code = "internal"
 )
 
 type Error struct {

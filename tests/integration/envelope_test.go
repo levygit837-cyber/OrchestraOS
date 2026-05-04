@@ -127,7 +127,6 @@ func TestEventReplay(t *testing.T) {
 			Type:        "test.event",
 			Version:     "v1",
 			TaskID:      taskID,
-			Sequence:    int64(i),
 			Priority:    domain.EventPriorityNotification,
 			RequiresAck: false,
 			CreatedAt:   time.Now(),
@@ -150,10 +149,65 @@ func TestEventReplay(t *testing.T) {
 	}
 
 	// Verify sequence order
-	for i, event := range events {
-		if event.Sequence != int64(i+1) {
-			t.Errorf("Expected sequence %d, got %d", i+1, event.Sequence)
+	for i := 1; i < len(events); i++ {
+		if events[i].Sequence <= events[i-1].Sequence {
+			t.Errorf("Expected increasing sequence order, got %d then %d", events[i-1].Sequence, events[i].Sequence)
 		}
+	}
+}
+
+func TestEventIdempotencyAndCheckpointLookup(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+
+	store, err := eventstore.NewStore(db)
+	if err != nil {
+		t.Fatalf("Failed to create event store: %v", err)
+	}
+
+	taskID := createTestTask(t, db)
+	workUnitID := createTestWorkUnit(t, db, taskID)
+	runID := createTestRun(t, db, taskID, workUnitID)
+
+	event := &domain.EventEnvelope{
+		ID:          uuid.New().String(),
+		Type:        "agent.checkpoint_reached",
+		Version:     "v1",
+		TaskID:      taskID,
+		RunID:       runID,
+		WorkUnitID:  workUnitID,
+		AgentID:     "agent-test",
+		Priority:    domain.EventPriorityCheckpoint,
+		RequiresAck: false,
+		Payload: json.RawMessage(`{
+			"checkpoint_id": "checkpoint-1",
+			"current_goal": "validate idempotency",
+			"ledger": {"pending_todos": []},
+			"minimal_summary": "checkpoint ready"
+		}`),
+	}
+
+	if err := store.Append(event); err != nil {
+		t.Fatalf("Failed to append checkpoint event: %v", err)
+	}
+	if err := store.Append(event); err != nil {
+		t.Fatalf("Expected duplicate event append to be idempotent, got %v", err)
+	}
+
+	events, err := store.ListByRun(runID)
+	if err != nil {
+		t.Fatalf("Failed to list events: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("Expected one persisted event after duplicate append, got %d", len(events))
+	}
+
+	checkpoint, err := store.LastCheckpointByRun(runID)
+	if err != nil {
+		t.Fatalf("Failed to get latest checkpoint: %v", err)
+	}
+	if checkpoint == nil || checkpoint.ID != event.ID {
+		t.Fatalf("Expected latest checkpoint %s, got %+v", event.ID, checkpoint)
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+	"github.com/levygit837-cyber/OrchestraOS/internal/statemachine"
 )
 
 // Store handles event storage and retrieval with validation
@@ -20,12 +21,17 @@ type Store struct {
 
 // NewStore creates a new event store
 func NewStore(db *sql.DB) (*Store, error) {
+	return NewStoreWithExecutor(db)
+}
+
+// NewStoreWithExecutor creates a store bound to a DB or transaction executor.
+func NewStoreWithExecutor(executor repository.DBTX) (*Store, error) {
 	validator, err := NewValidator()
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodeInternal, "eventstore.new_validator", err)
 	}
 
-	repo := repository.NewEventRepository(db)
+	repo := repository.NewEventRepository(executor)
 
 	return &Store{
 		repo:      repo,
@@ -46,6 +52,9 @@ func (s *Store) Append(envelope *domain.EventEnvelope) error {
 
 	if err := s.validator.Validate(envelopeBytes); err != nil {
 		return apperrors.Wrap(apperrors.CodeValidation, "eventstore.validate_envelope", err)
+	}
+	if err := validateOperationalPayload(envelope); err != nil {
+		return err
 	}
 
 	if err := s.repo.Create(envelope); err != nil {
@@ -68,13 +77,11 @@ func (s *Store) completeEnvelopeBeforeValidation(envelope *domain.EventEnvelope)
 	if envelope.CreatedAt.IsZero() {
 		envelope.CreatedAt = time.Now().UTC()
 	}
-	if envelope.Sequence == 0 {
-		seq, err := s.repo.GetNextSequence()
-		if err != nil {
-			return apperrors.Wrap(apperrors.CodePersistence, "eventstore.next_sequence", err)
-		}
-		envelope.Sequence = seq
+	seq, err := s.repo.GetNextSequence()
+	if err != nil {
+		return apperrors.Wrap(apperrors.CodePersistence, "eventstore.next_sequence", err)
 	}
+	envelope.Sequence = seq
 	if envelope.Priority == "" {
 		envelope.Priority = domain.EventPriorityBackground
 	}
@@ -131,6 +138,11 @@ func (s *Store) ListByWorkUnit(workUnitID string) ([]domain.EventEnvelope, error
 	return s.repo.ListByWorkUnit(workUnitID)
 }
 
+// LastCheckpointByRun retrieves the latest checkpoint event for a run.
+func (s *Store) LastCheckpointByRun(runID string) (*domain.EventEnvelope, error) {
+	return s.repo.LastCheckpointByRun(runID)
+}
+
 // Replay reconstructs state by replaying events for a task
 func (s *Store) Replay(taskID string) ([]domain.EventEnvelope, error) {
 	events, err := s.repo.ListByTask(taskID)
@@ -138,4 +150,95 @@ func (s *Store) Replay(taskID string) ([]domain.EventEnvelope, error) {
 		return nil, fmt.Errorf("failed to replay events: %w", err)
 	}
 	return events, nil
+}
+
+// ReplayState reconstructs aggregate read-model state from task events.
+func (s *Store) ReplayState(taskID string) (*statemachine.ReplayState, error) {
+	events, err := s.Replay(taskID)
+	if err != nil {
+		return nil, err
+	}
+	state, err := statemachine.ProjectStrict(events)
+	if err != nil {
+		return nil, err
+	}
+	return &state, nil
+}
+
+// ReplayRunState reconstructs run-scoped state from run events.
+func (s *Store) ReplayRunState(runID string) (*statemachine.ReplayState, error) {
+	events, err := s.repo.ListByRun(runID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to replay run events: %w", err)
+	}
+	state, err := statemachine.ProjectStrict(events)
+	if err != nil {
+		return nil, err
+	}
+	return &state, nil
+}
+
+func validateOperationalPayload(envelope *domain.EventEnvelope) error {
+	switch envelope.Type {
+	case "agent.ledger_updated":
+		var payload domain.AgentLedgerUpdatedPayload
+		if err := decodePayload(envelope.Payload, &payload); err != nil {
+			return err
+		}
+		if len(payload.Ledger) == 0 {
+			return payloadError(envelope.Type, "ledger is required")
+		}
+	case "agent.checkpoint_reached":
+		var payload domain.AgentCheckpointReachedPayload
+		if err := decodePayload(envelope.Payload, &payload); err != nil {
+			return err
+		}
+		if payload.CheckpointID == "" || payload.CurrentGoal == "" || payload.MinimalSummary == "" || len(payload.Ledger) == 0 {
+			return payloadError(envelope.Type, "checkpoint_id, current_goal, ledger, and minimal_summary are required")
+		}
+	case "artifact.created":
+		var payload domain.ArtifactCreatedPayload
+		if err := decodePayload(envelope.Payload, &payload); err != nil {
+			return err
+		}
+		if payload.ArtifactID == "" || payload.Kind == "" || payload.URI == "" {
+			return payloadError(envelope.Type, "artifact_id, kind, and uri are required")
+		}
+	case "validation.completed":
+		var payload domain.ValidationCompletedPayload
+		if err := decodePayload(envelope.Payload, &payload); err != nil {
+			return err
+		}
+		if payload.ValidationID == "" || payload.Status == "" {
+			return payloadError(envelope.Type, "validation_id and status are required")
+		}
+	case "prompt.snapshot_created":
+		var payload domain.PromptSnapshotCreatedPayload
+		if err := decodePayload(envelope.Payload, &payload); err != nil {
+			return err
+		}
+		if payload.PromptSnapshotID == "" || payload.Hash == "" {
+			return payloadError(envelope.Type, "prompt_snapshot_id and hash are required")
+		}
+	case "toolset.snapshot_created":
+		var payload domain.ToolsetSnapshotCreatedPayload
+		if err := decodePayload(envelope.Payload, &payload); err != nil {
+			return err
+		}
+		if payload.ToolsetSnapshotID == "" || payload.AgentSessionID == "" {
+			return payloadError(envelope.Type, "toolset_snapshot_id and agent_session_id are required")
+		}
+	}
+	return nil
+}
+
+func decodePayload(payload json.RawMessage, target interface{}) error {
+	if err := json.Unmarshal(payload, target); err != nil {
+		return apperrors.Wrap(apperrors.CodeValidation, "eventstore.validate_payload", err)
+	}
+	return nil
+}
+
+func payloadError(eventType, message string) error {
+	return apperrors.New(apperrors.CodeValidation, "eventstore.validate_payload", fmt.Sprintf("%s: %s", eventType, message))
 }

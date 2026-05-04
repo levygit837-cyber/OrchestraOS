@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/agent"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
+	"github.com/levygit837-cyber/OrchestraOS/internal/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
 	"github.com/spf13/cobra"
 )
@@ -51,38 +51,23 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to create run: %w", err)
 		}
 
-		// Update run status to running
-		if err := runRepo.UpdateStatus(run.ID, domain.RunStatusRunning, nil, nil); err != nil {
-			return fmt.Errorf("failed to update run status: %w", err)
-		}
-
 		// Create event store
 		eventStore, err := eventstore.NewStore(getDB())
 		if err != nil {
 			return fmt.Errorf("failed to create event store: %w", err)
 		}
 
-		// Create run.started event
-		payload, _ := json.Marshal(map[string]interface{}{
-			"run_id":       run.ID,
-			"task_id":      wu.TaskGraphID,
-			"work_unit_id": workUnitID,
-			"runtime":      runtimeType,
-		})
-
-		event := &domain.EventEnvelope{
-			Type:        "run.started",
-			Version:     "v1",
-			TaskID:      wu.TaskGraphID,
-			RunID:       run.ID,
-			WorkUnitID:  workUnitID,
-			Priority:    domain.EventPriorityCheckpoint,
-			RequiresAck: false,
-			Payload:     payload,
+		// Create commander
+		commander := orchestration.NewCommander(getDB())
+		if err := commander.TransitionWorkUnit(context.Background(), workUnitID, domain.WorkUnitStatusRunning, orchestration.TransitionOptions{
+			Runtime: runtimeType,
+		}); err != nil {
+			return fmt.Errorf("failed to mark work unit running: %w", err)
 		}
-
-		if err := eventStore.Append(event); err != nil {
-			return fmt.Errorf("failed to append event: %w", err)
+		if err := commander.TransitionRun(context.Background(), run.ID, domain.RunStatusRunning, orchestration.TransitionOptions{
+			Runtime: runtimeType,
+		}); err != nil {
+			return fmt.Errorf("failed to start run: %w", err)
 		}
 
 		// Create agent session
@@ -99,9 +84,10 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to create agent session: %w", err)
 		}
 
-		// Update session status
-		if err := sessionRepo.UpdateStatus(session.ID, domain.AgentSessionStatusRunning); err != nil {
-			return fmt.Errorf("failed to update session status: %w", err)
+		if err := commander.TransitionAgentSession(context.Background(), session.ID, domain.AgentSessionStatusRunning, orchestration.TransitionOptions{
+			Runtime: runtimeType,
+		}); err != nil {
+			return fmt.Errorf("failed to start agent session: %w", err)
 		}
 
 		// Start runtime if fake
@@ -149,34 +135,38 @@ var runStartCmd = &cobra.Command{
 				}
 			}
 
-			// Update session and run status
-			if err := sessionRepo.UpdateStatus(session.ID, domain.AgentSessionStatusStopped); err != nil {
+			if err := commander.TransitionAgentSession(context.Background(), session.ID, domain.AgentSessionStatusStopped, orchestration.TransitionOptions{
+				Runtime: runtimeType,
+			}); err != nil {
 				return fmt.Errorf("failed to stop fake runtime session: %w", err)
 			}
-			result := domain.RunResultSucceeded
-			if err := runRepo.UpdateStatus(run.ID, domain.RunStatusCompleted, &result, nil); err != nil {
-				return fmt.Errorf("failed to complete fake runtime run: %w", err)
-			}
 
-			// Create run.completed event
-			payload, _ := json.Marshal(map[string]interface{}{
-				"run_id":  run.ID,
-				"result":  "succeeded",
-				"runtime": runtimeType,
-			})
-
-			if err := eventStore.Append(&domain.EventEnvelope{
-				Type:        "run.completed",
-				Version:     "v1",
-				TaskID:      wu.TaskGraphID,
-				RunID:       run.ID,
-				WorkUnitID:  workUnitID,
-				AgentID:     agentID,
-				Priority:    domain.EventPriorityCheckpoint,
-				RequiresAck: false,
-				Payload:     payload,
+			if err := commander.TransitionWorkUnit(context.Background(), workUnitID, domain.WorkUnitStatusValidating, orchestration.TransitionOptions{
+				Runtime: runtimeType,
 			}); err != nil {
-				return fmt.Errorf("failed to append run.completed event: %w", err)
+				return fmt.Errorf("failed to validate fake runtime work unit: %w", err)
+			}
+			if err := commander.TransitionRun(context.Background(), run.ID, domain.RunStatusValidating, orchestration.TransitionOptions{
+				Runtime: runtimeType,
+			}); err != nil {
+				return fmt.Errorf("failed to validate fake runtime run: %w", err)
+			}
+			result := domain.RunResultSucceeded
+			if err := commander.TransitionWorkUnit(context.Background(), workUnitID, domain.WorkUnitStatusCompleted, orchestration.TransitionOptions{
+				Runtime:       runtimeType,
+				EvidenceRefs:  []string{"fake-runtime:agent.completed"},
+				Justification: "fake runtime completed with agent.completed event",
+			}); err != nil {
+				return fmt.Errorf("failed to complete fake runtime work unit: %w", err)
+			}
+			if err := commander.TransitionRun(context.Background(), run.ID, domain.RunStatusCompleted, orchestration.TransitionOptions{
+				Runtime:       runtimeType,
+				AgentID:       agentID,
+				Result:        &result,
+				EvidenceRefs:  []string{"fake-runtime:agent.completed"},
+				Justification: "fake runtime completed with agent.completed event",
+			}); err != nil {
+				return fmt.Errorf("failed to complete fake runtime run: %w", err)
 			}
 		}
 

@@ -93,7 +93,7 @@ const (
 	QueryEventInsert = `
 		INSERT INTO events (id, type, version, task_id, run_id, work_unit_id, agent_id, trace_id, span_id, parent_span_id, sequence, priority, requires_ack, created_at, payload)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-		RETURNING id`
+		ON CONFLICT (id) DO NOTHING`
 
 	QueryEventGetByID = `
 		SELECT id, type, version, task_id, run_id, work_unit_id, agent_id, trace_id, span_id, parent_span_id, sequence, priority, requires_ack, created_at, payload
@@ -114,6 +114,13 @@ const (
 	QueryEventListByWorkUnit = `
 		SELECT id, type, version, task_id, run_id, work_unit_id, agent_id, trace_id, span_id, parent_span_id, sequence, priority, requires_ack, created_at, payload
 		FROM events WHERE work_unit_id = $1 ORDER BY sequence ASC`
+
+	QueryEventLastCheckpointByRun = `
+		SELECT id, type, version, task_id, run_id, work_unit_id, agent_id, trace_id, span_id, parent_span_id, sequence, priority, requires_ack, created_at, payload
+		FROM events
+		WHERE run_id = $1 AND type = 'agent.checkpoint_reached'
+		ORDER BY sequence DESC
+		LIMIT 1`
 
 	QueryEventNextSequence = `SELECT nextval('events_sequence')`
 )

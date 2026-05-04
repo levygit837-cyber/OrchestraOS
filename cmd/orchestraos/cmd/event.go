@@ -6,6 +6,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
+	"github.com/levygit837-cyber/OrchestraOS/internal/statemachine"
 	"github.com/spf13/cobra"
 )
 
@@ -93,15 +94,31 @@ var eventReplayCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Replaying %d events for task %s:\n\n", len(events), taskID)
+		state, err := statemachine.ProjectStrict(events)
+		if err != nil {
+			return fmt.Errorf("failed to reconstruct replay state: %w", err)
+		}
+		if state.TaskStatus != "" {
+			fmt.Printf("Reconstructed task status: %s\n", state.TaskStatus)
+		}
+		if state.LastCheckpoint != nil {
+			fmt.Printf("Last checkpoint: %s (sequence %d)\n", state.LastCheckpoint.ID, state.LastCheckpoint.Sequence)
+		}
+		fmt.Println()
 
 		for _, ev := range events {
 			var payload map[string]interface{}
-			json.Unmarshal(ev.Payload, &payload)
+			if err := json.Unmarshal(ev.Payload, &payload); err != nil {
+				return fmt.Errorf("failed to decode payload for event %s: %w", ev.ID, err)
+			}
 
 			fmt.Printf("[%d] %s (%s)\n", ev.Sequence, ev.Type, ev.CreatedAt.Format("15:04:05"))
 			fmt.Printf("    Priority: %s | Ack: %v\n", ev.Priority, ev.RequiresAck)
 			if len(payload) > 0 {
-				payloadJSON, _ := json.MarshalIndent(payload, "    ", "  ")
+				payloadJSON, err := json.MarshalIndent(payload, "    ", "  ")
+				if err != nil {
+					return fmt.Errorf("failed to format payload for event %s: %w", ev.ID, err)
+				}
 				fmt.Printf("    Payload: %s\n", payloadJSON)
 			}
 			fmt.Println()

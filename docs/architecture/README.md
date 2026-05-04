@@ -95,6 +95,9 @@ flowchart TD
 - [ADR 0011: Agent Checkpoints](../adr/0011-agent-checkpoints.md)
 - [ADR 0012: Sistema de memoria recursiva](../adr/0012-recursive-memory-system.md)
 - [ADR 0013: Escopo M0 de schemas e tipos de dominio](../adr/0013-m0-domain-contract-scope.md)
+- [ADR 0014: Persistencia M0, CLI minima e testes](../adr/0014-m0-cli-persistence-and-integration-tests.md)
+- [ADR 0015: TUI como interface local primaria](../adr/0015-tui-as-primary-local-interface.md)
+- [ADR 0016: State Machine event-sourced](../adr/0016-event-sourced-state-machine.md)
 
 ## Referencias Tecnicas
 
