@@ -6,7 +6,7 @@ A ADR 0005 definiu uma progressao inicial baseada em scripts de bootstrap, CLI f
 
 Uma CLI tradicional e adequada para automacao, testes e comandos pontuais, mas fica limitada para observabilidade operacional continua. O projeto e local-first no MVP, com Go, Postgres, Event Store e GitHub-first como restricoes ja aprovadas.
 
-Ainda nao ha decisao final sobre o framework TUI.
+O framework escolhido para a implementacao da TUI e o Bubble Tea.
 
 ## Decisao
 
@@ -22,11 +22,11 @@ A TUI passa a ser a superficie primaria para uso humano local em:
 
 A CLI atual nao deve ser removida imediatamente. Ela deve permanecer como camada headless para automacao, testes, scripts e operacao por CI/local shell. A TUI deve reutilizar servicos internos e contratos compartilhados, nao chamar comandos shell da CLI como integracao principal.
 
-Framework ainda sera decidido por spike tecnico curto. A recomendacao inicial e:
+O framework definido para implementacao e:
 
-- **Bubble Tea + Bubbles + Lip Gloss**, da Charmbracelet, como primeira opcao.
+- **Bubble Tea + Bubbles + Lip Gloss**, da Charmbracelet.
 
-Motivos:
+Motivos da escolha:
 
 - e Go-native e combina com a stack aprovada;
 - usa arquitetura baseada em estado e mensagens, adequada para eventos, runs e sessoes;
@@ -42,19 +42,18 @@ Motivos:
 - O projeto precisara separar melhor servicos de aplicacao da camada `cmd`, para que CLI e TUI compartilhem a mesma logica.
 - A TUI deve respeitar a autonomia M0 aprovada: sugestao e execucao com revisao humana, sem operar acima de Nivel 2.
 
-Antes da implementacao da TUI, o projeto deve criar um plano pequeno de spike com criterios:
+O desenvolvimento comecara com um prototipo para validar:
 
 - renderizar lista de tasks/runs/eventos com dados reais do Postgres;
 - navegar sem bloquear leitura de eventos;
 - aceitar entradas de comando guiadas;
 - testar transicoes de tela e estado sem terminal real;
-- avaliar ergonomia de tabelas, filtros e live log;
-- medir o custo de manter CLI e TUI sobre os mesmos servicos internos.
+- avaliar ergonomia de tabelas, filtros e live log.
 
 ## Alternativas consideradas
 
-- **Bubble Tea / Bubbles / Lip Gloss**: melhor alinhamento com Go, testes e fluxos por eventos. E a opcao recomendada para spike.
-- **tview / tcell**: entrega CRUD e layouts rapidamente, com componentes prontos. Pode ser melhor se o foco for velocidade de painel administrativo, mas tende a ser menos elegante para fluxos complexos por mensagens.
+- **Bubble Tea / Bubbles / Lip Gloss**: escolhido por oferecer melhor alinhamento com Go, facilidade de testes de update/model e arquitetura orientada a eventos.
+- **tview / tcell**: entrega CRUD e layouts rapidamente, com componentes prontos. Descartada por ser menos elegante para fluxos complexos por mensagens.
 - **termui**: simples para dashboards, mas menos adequada para uma aplicacao operacional com forms, navegacao e estados ricos.
 - **TUI em Rust com ratatui**: excelente qualidade tecnica, mas cria uma segunda stack e aumenta custo do MVP.
 - **Web ou Desktop agora**: continuam adiados; oferecem mais riqueza visual, mas aumentam escopo antes de estabilizar o control plane.

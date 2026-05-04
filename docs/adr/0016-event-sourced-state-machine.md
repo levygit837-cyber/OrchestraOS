@@ -15,6 +15,7 @@ O OrchestraOS adotara uma State Machine event-sourced para `Task`, `WorkUnit`, `
 - Transicoes de status devem passar por servicos internos de comando.
 - Cada comando valida a transicao, grava o evento e atualiza a projecao dentro da mesma transacao.
 - Reducers puros em Go reconstroem estado por replay de eventos.
+- O replay usado por CLI e por `ReplayState`/`ReplayRunState` e estrito: inconsistencias historicas ou transicoes invalidas retornam erro, em vez de serem normalizadas silenciosamente.
 - Transicoes para `completed` exigem evidencia de validacao ou justificativa.
 - O Event Store controla `sequence`; callers nao devem definir ordenacao operacional.
 - `event_id` e idempotente: reprocessar o mesmo evento nao cria duplicata.
@@ -34,7 +35,7 @@ Nao serao criadas tabelas de snapshots agregados neste corte. Checkpoints perman
 ## Consequencias
 
 - O sistema bloqueia transicoes invalidas antes de alterar read models.
-- Replay passa a reconstruir estado esperado, nao apenas listar eventos.
+- Replay passa a reconstruir estado esperado, nao apenas listar eventos, e falha quando o historico invalido nao pode ser projetado com seguranca.
 - Falha ao persistir evento impede a atualizacao da projecao na mesma transacao.
 - O CLI e runtimes devem usar servicos de comando para transicoes, evitando updates diretos de status.
 - Sequencias podem ter lacunas quando eventos invalidos ou duplicados consomem `nextval`, o que e aceitavel porque a garantia necessaria e ordenacao monotonicamente crescente.

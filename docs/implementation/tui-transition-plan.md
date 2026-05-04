@@ -10,25 +10,14 @@ Evoluir a interface humana local do OrchestraOS de uma CLI fina para uma TUI ope
 - O Event Store continua sendo a fonte canonica de historico operacional.
 - A autonomia aprovada para o MVP continua limitada ao Nivel 2.
 - A TUI deve reutilizar servicos internos compartilhados com a CLI.
-- O framework TUI ainda nao esta decidido, mas Bubble Tea e a primeira opcao para spike.
+- O framework TUI escolhido e o Bubble Tea.
 
-## Recomendacao de Stack
-
-Opcao recomendada para spike:
+## Stack Definida
 
 - `github.com/charmbracelet/bubbletea` para runtime/modelo de aplicacao TUI.
 - `github.com/charmbracelet/bubbles` para componentes.
 - `github.com/charmbracelet/lipgloss` para estilos.
 - `github.com/charmbracelet/glamour` apenas se houver necessidade de renderizar Markdown no terminal.
-
-Opcao alternativa:
-
-- `github.com/rivo/tview` + `github.com/gdamore/tcell` caso o foco seja montar rapidamente telas CRUD e tabelas administrativas.
-
-Decisao sugerida:
-
-- escolher Bubble Tea se a prioridade for fluxo por eventos, testes de estado, live view e UX mais refinada;
-- escolher tview se a prioridade for velocidade de entrega de formularios/tabelas tradicionais.
 
 ## Fase 0: Corrigir Base Antes do Spike
 
@@ -69,34 +58,26 @@ Resultado esperado:
 - TUI consegue chamar os mesmos servicos sem shelling out;
 - testes de regra de negocio ficam fora da camada de terminal.
 
-## Fase 2: Spike de Framework TUI
+## Fase 2: Prototipo com Bubble Tea
 
-Implementar dois prototipos pequenos, se necessario:
+Implementar um prototipo inicial focando nos principais fluxos:
 
-1. Bubble Tea:
-   - lista de tasks;
-   - painel de eventos;
-   - detalhe de run;
-   - refresh manual;
-   - teste de update/model.
+- lista de tasks;
+- painel de eventos;
+- detalhe de run;
+- refresh manual;
+- teste de update/model.
 
-2. tview:
-   - mesma navegacao basica;
-   - tabela de eventos;
-   - formulario simples de criar task.
-
-Criterios de avaliacao:
+Foco da avaliacao do prototipo:
 
 - facilidade de testar estado;
 - ergonomia para live view de eventos;
 - suporte a formularios e tabelas;
-- custo de composicao de telas;
-- simplicidade para manter keybindings e filtros;
-- compatibilidade com operacao local-first.
+- simplicidade para manter keybindings e filtros.
 
 Resultado esperado:
 
-- decisao final de framework registrada em nova ADR ou atualizacao da ADR 0015.
+- estrutura basica da aplicacao Bubble Tea estabelecida e validada para seguir para o MVP.
 
 ## Fase 3: MVP da TUI
 

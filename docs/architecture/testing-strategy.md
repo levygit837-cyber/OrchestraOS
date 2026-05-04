@@ -95,6 +95,7 @@ Cobrir:
 - ordenacao por `sequence`;
 - consulta por `task_id` e `run_id`;
 - replay de estado;
+- replay estrito que falha em historicos com transicoes invalidas;
 - persistencia de comandos pendentes.
 
 ### WebSocket
