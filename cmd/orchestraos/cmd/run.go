@@ -2,15 +2,17 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/agent"
+	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
-	"github.com/levygit837-cyber/OrchestraOS/internal/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	"github.com/spf13/cobra"
 )
 
@@ -37,57 +39,39 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("work unit not found: %s", workUnitID)
 		}
 
-		// Create run
-		run := &domain.Run{
-			ID:         uuid.New().String(),
+		runService := services.NewRunService(getDB())
+		runResult, err := runService.Create(cmd.Context(), services.CreateRunInput{
 			TaskID:     wu.TaskGraphID,
 			WorkUnitID: workUnitID,
-			Status:     domain.RunStatusCreated,
 			Attempt:    1,
-		}
-
-		runRepo := repository.NewRunRepository(getDB())
-		if err := runRepo.Create(run); err != nil {
+		})
+		if err != nil {
 			return fmt.Errorf("failed to create run: %w", err)
 		}
-
-		// Create event store
-		eventStore, err := eventstore.NewStore(getDB())
-		if err != nil {
-			return fmt.Errorf("failed to create event store: %w", err)
-		}
-
-		// Create commander
-		commander := orchestration.NewCommander(getDB())
-		if err := commander.TransitionWorkUnit(context.Background(), workUnitID, domain.WorkUnitStatusRunning, orchestration.TransitionOptions{
-			Runtime: runtimeType,
-		}); err != nil {
-			return fmt.Errorf("failed to mark work unit running: %w", err)
-		}
-		if err := commander.TransitionRun(context.Background(), run.ID, domain.RunStatusRunning, orchestration.TransitionOptions{
+		run := runResult.Value
+		if _, err := runService.Start(cmd.Context(), run.ID, services.TransitionInput{
 			Runtime: runtimeType,
 		}); err != nil {
 			return fmt.Errorf("failed to start run: %w", err)
 		}
 
-		// Create agent session
 		agentID := fmt.Sprintf("agent-%s", uuid.New().String()[:8])
-		session := &domain.AgentSession{
-			ID:      uuid.New().String(),
+		sessionService := services.NewAgentSessionService(getDB())
+		sessionResult, err := sessionService.Create(cmd.Context(), services.CreateAgentSessionInput{
 			AgentID: agentID,
 			RunID:   run.ID,
-			Status:  domain.AgentSessionStatusStarting,
-		}
-
-		sessionRepo := repository.NewAgentSessionRepository(getDB())
-		if err := sessionRepo.Create(session); err != nil {
+		})
+		if err != nil {
+			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, "", runtimeType, agentID, err)
 			return fmt.Errorf("failed to create agent session: %w", err)
 		}
-
-		if err := commander.TransitionAgentSession(context.Background(), session.ID, domain.AgentSessionStatusRunning, orchestration.TransitionOptions{
+		session := sessionResult.Value
+		connectionID := fmt.Sprintf("conn-%s", uuid.New().String())
+		if _, err := sessionService.Connect(cmd.Context(), session.ID, connectionID, "", services.TransitionInput{
 			Runtime: runtimeType,
 		}); err != nil {
-			return fmt.Errorf("failed to start agent session: %w", err)
+			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
+			return fmt.Errorf("failed to connect agent session: %w", err)
 		}
 
 		// Start runtime if fake
@@ -109,70 +93,122 @@ var runStartCmd = &cobra.Command{
 			defer cancel()
 
 			if err := fakeRuntime.Start(ctx, config); err != nil {
-				return fmt.Errorf("failed to start fake runtime: %w", err)
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to start fake runtime: %w", err))
 			}
 
 			for {
 				event, err := fakeRuntime.ReceiveEvent(ctx)
 				if err != nil {
-					return fmt.Errorf("failed to receive fake runtime event: %w", err)
+					return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to receive fake runtime event: %w", err))
 				}
-				if err := eventStore.Append(event); err != nil {
-					return fmt.Errorf("failed to append fake runtime event %q: %w", event.Type, err)
-				}
-				if event.Type == "agent.heartbeat" {
-					if err := sessionRepo.UpdateHeartbeat(session.ID); err != nil {
-						return fmt.Errorf("failed to update fake runtime heartbeat: %w", err)
+				switch event.Type {
+				case "agent.heartbeat":
+					payload, err := decodePayloadMap(event)
+					if err != nil {
+						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
+					}
+					if _, err := sessionService.Heartbeat(ctx, session.ID, services.HeartbeatInput{
+						EventID: event.ID,
+						Payload: payload,
+					}); err != nil {
+						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist fake runtime heartbeat: %w", err))
+					}
+				case "agent.checkpoint_reached":
+					if _, err := sessionService.CheckpointFromEvent(ctx, session.ID, event); err != nil {
+						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist fake runtime checkpoint: %w", err))
+					}
+				default:
+					eventService := services.NewEventService(getDB())
+					if _, err := eventService.Append(ctx, event); err != nil {
+						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to append fake runtime event %q: %w", event.Type, err))
 					}
 				}
-				if event.Type == "agent.checkpoint_reached" {
-					if err := sessionRepo.UpdateCheckpoint(session.ID); err != nil {
-						return fmt.Errorf("failed to update fake runtime checkpoint: %w", err)
-					}
+				if err := maybeAutoCheckpointRuntimeEvent(ctx, sessionService, session.ID, runtimeType, event); err != nil {
+					return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist automatic checkpoint for %q: %w", event.Type, err))
 				}
 				if event.Type == "agent.completed" {
 					break
 				}
 			}
 
-			if err := commander.TransitionAgentSession(context.Background(), session.ID, domain.AgentSessionStatusStopped, orchestration.TransitionOptions{
+			if _, err := sessionService.Stop(context.Background(), session.ID, services.TransitionInput{
 				Runtime: runtimeType,
 			}); err != nil {
-				return fmt.Errorf("failed to stop fake runtime session: %w", err)
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to stop fake runtime session: %w", err))
 			}
 
-			if err := commander.TransitionWorkUnit(context.Background(), workUnitID, domain.WorkUnitStatusValidating, orchestration.TransitionOptions{
+			if _, err := runService.Validate(context.Background(), run.ID, services.TransitionInput{
 				Runtime: runtimeType,
 			}); err != nil {
-				return fmt.Errorf("failed to validate fake runtime work unit: %w", err)
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to validate fake runtime run: %w", err))
 			}
-			if err := commander.TransitionRun(context.Background(), run.ID, domain.RunStatusValidating, orchestration.TransitionOptions{
-				Runtime: runtimeType,
-			}); err != nil {
-				return fmt.Errorf("failed to validate fake runtime run: %w", err)
-			}
-			result := domain.RunResultSucceeded
-			if err := commander.TransitionWorkUnit(context.Background(), workUnitID, domain.WorkUnitStatusCompleted, orchestration.TransitionOptions{
-				Runtime:       runtimeType,
-				EvidenceRefs:  []string{"fake-runtime:agent.completed"},
-				Justification: "fake runtime completed with agent.completed event",
-			}); err != nil {
-				return fmt.Errorf("failed to complete fake runtime work unit: %w", err)
-			}
-			if err := commander.TransitionRun(context.Background(), run.ID, domain.RunStatusCompleted, orchestration.TransitionOptions{
+			if _, err := runService.Complete(context.Background(), run.ID, services.TransitionInput{
 				Runtime:       runtimeType,
 				AgentID:       agentID,
-				Result:        &result,
 				EvidenceRefs:  []string{"fake-runtime:agent.completed"},
 				Justification: "fake runtime completed with agent.completed event",
 			}); err != nil {
-				return fmt.Errorf("failed to complete fake runtime run: %w", err)
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to complete fake runtime run: %w", err))
 			}
 		}
 
 		fmt.Printf("Run started: %s (runtime: %s, agent: %s)\n", run.ID, runtimeType, agentID)
 		return nil
 	},
+}
+
+func failStartedRun(ctx context.Context, runService *services.RunService, sessionService *services.AgentSessionService, runID, sessionID, runtimeType, agentID string, cause error) error {
+	if cause == nil {
+		return nil
+	}
+
+	input := services.TransitionInput{
+		Runtime:       runtimeType,
+		AgentID:       agentID,
+		FailureReason: cause.Error(),
+		Justification: "runtime failed after operational state was started",
+	}
+
+	var compensationErrs []error
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		input.FailureReason = "runtime timed out"
+		recoverableState, _ := json.Marshal(map[string]interface{}{
+			"runtime":      runtimeType,
+			"reason":       cause.Error(),
+			"timed_out_at": time.Now().UTC().Format(time.RFC3339Nano),
+		})
+		if sessionID != "" {
+			if _, err := sessionService.Timeout(context.Background(), sessionID, recoverableState, input); err != nil && !ignorableCompensationTransition(err) {
+				compensationErrs = append(compensationErrs, fmt.Errorf("session timeout: %w", err))
+			}
+		}
+		if runID != "" {
+			if _, err := runService.Timeout(context.Background(), runID, input); err != nil && !ignorableCompensationTransition(err) {
+				compensationErrs = append(compensationErrs, fmt.Errorf("run timeout: %w", err))
+			}
+		}
+	} else {
+		if sessionID != "" {
+			if _, err := sessionService.Fail(context.Background(), sessionID, input); err != nil && !ignorableCompensationTransition(err) {
+				compensationErrs = append(compensationErrs, fmt.Errorf("session fail: %w", err))
+			}
+		}
+		if runID != "" {
+			if _, err := runService.Fail(context.Background(), runID, input); err != nil && !ignorableCompensationTransition(err) {
+				compensationErrs = append(compensationErrs, fmt.Errorf("run fail: %w", err))
+			}
+		}
+	}
+
+	if len(compensationErrs) > 0 {
+		return fmt.Errorf("%w; compensation failed: %w", cause, errors.Join(compensationErrs...))
+	}
+	return cause
+}
+
+func ignorableCompensationTransition(err error) bool {
+	var appErr *apperrors.Error
+	return errors.As(err, &appErr) && appErr.Code == apperrors.CodeInvalidTransition
 }
 
 var runListCmd = &cobra.Command{
@@ -265,4 +301,73 @@ func init() {
 	runCmd.AddCommand(runStartCmd)
 	runCmd.AddCommand(runListCmd)
 	runCmd.AddCommand(runGetCmd)
+}
+
+func decodePayloadMap(event *domain.EventEnvelope) (map[string]interface{}, error) {
+	var payload map[string]interface{}
+	if len(event.Payload) == 0 {
+		return map[string]interface{}{}, nil
+	}
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		return nil, fmt.Errorf("failed to decode event payload %s: %w", event.ID, err)
+	}
+	return payload, nil
+}
+
+func maybeAutoCheckpointRuntimeEvent(ctx context.Context, sessionService *services.AgentSessionService, sessionID, runtimeType string, event *domain.EventEnvelope) error {
+	trigger, ok := checkpointTriggerForRuntimeEvent(event.Type)
+	if !ok {
+		return nil
+	}
+	payload, err := decodePayloadMap(event)
+	if err != nil {
+		return err
+	}
+	currentGoal := event.Type
+	if value, ok := payload["current_goal"].(string); ok && value != "" {
+		currentGoal = value
+	}
+	summary := fmt.Sprintf("automatic checkpoint for runtime event %s", event.Type)
+	if value, ok := payload["summary"].(string); ok && value != "" {
+		summary = value
+	} else if value, ok := payload["reason"].(string); ok && value != "" {
+		summary = value
+	}
+	ledger := map[string]interface{}{
+		"runtime_event_type": event.Type,
+		"runtime_event_id":   event.ID,
+		"runtime_payload":    payload,
+		"pending_todos":      []interface{}{},
+	}
+	if value, ok := payload["ledger"].(map[string]interface{}); ok {
+		ledger = value
+	}
+	_, _, err = sessionService.AutomaticCheckpoint(ctx, sessionID, services.AutoCheckpointInput{
+		EventID:        uuid.NewSHA1(uuid.NameSpaceURL, []byte("orchestraos:auto_checkpoint:"+sessionID+":"+event.ID+":"+string(trigger))).String(),
+		Trigger:        trigger,
+		CurrentGoal:    currentGoal,
+		MinimalSummary: summary,
+		Ledger:         ledger,
+		EvidenceRefs:   []string{"event:" + event.ID},
+		OccurredAt:     event.CreatedAt,
+		SourceEventID:  event.ID,
+		Runtime:        runtimeType,
+		Extra: map[string]interface{}{
+			"runtime_event_type": event.Type,
+		},
+	})
+	return err
+}
+
+func checkpointTriggerForRuntimeEvent(eventType string) (services.CheckpointTrigger, bool) {
+	switch eventType {
+	case "agent.tool_requested":
+		return services.CheckpointTriggerToolRequest, true
+	case "agent.tool_executed", "tool.completed":
+		return services.CheckpointTriggerToolExecuted, true
+	case "agent.completed":
+		return services.CheckpointTriggerBeforeCompletion, true
+	default:
+		return "", false
+	}
 }

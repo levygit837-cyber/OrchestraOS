@@ -1,13 +1,11 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	"github.com/spf13/cobra"
 )
 
@@ -25,48 +23,21 @@ var taskCreateCmd = &cobra.Command{
 		description, _ := cmd.Flags().GetString("description")
 		priority, _ := cmd.Flags().GetString("priority")
 		riskLevel, _ := cmd.Flags().GetString("risk-level")
+		acceptanceCriteria, _ := cmd.Flags().GetStringArray("acceptance")
 
-		task := &domain.Task{
-			Title:       title,
-			Description: description,
-			Status:      domain.TaskStatusCreated,
-			Priority:    domain.Priority(priority),
-			RiskLevel:   domain.RiskLevel(riskLevel),
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		}
-
-		repo := repository.NewTaskRepository(getDB())
-		if err := repo.Create(task); err != nil {
+		service := services.NewTaskService(getDB())
+		result, err := service.Create(cmd.Context(), services.CreateTaskInput{
+			Title:              title,
+			Description:        description,
+			Priority:           domain.Priority(priority),
+			RiskLevel:          domain.RiskLevel(riskLevel),
+			AcceptanceCriteria: acceptanceCriteria,
+		})
+		if err != nil {
 			return fmt.Errorf("failed to create task: %w", err)
 		}
 
-		// Create event
-		eventStore, err := eventstore.NewStore(getDB())
-		if err != nil {
-			return fmt.Errorf("failed to create event store: %w", err)
-		}
-
-		payload, _ := json.Marshal(map[string]interface{}{
-			"task_id": task.ID,
-			"title":   task.Title,
-			"status":  task.Status,
-		})
-
-		event := &domain.EventEnvelope{
-			Type:        "task.created",
-			Version:     "v1",
-			TaskID:      task.ID,
-			Priority:    domain.EventPriorityNotification,
-			RequiresAck: false,
-			Payload:     payload,
-		}
-
-		if err := eventStore.Append(event); err != nil {
-			return fmt.Errorf("failed to append event: %w", err)
-		}
-
-		fmt.Printf("Task created: %s\n", task.ID)
+		fmt.Printf("Task created: %s\n", result.Value.ID)
 		return nil
 	},
 }
@@ -131,6 +102,7 @@ func init() {
 	taskCreateCmd.Flags().String("description", "", "Task description")
 	taskCreateCmd.Flags().String("priority", "P2", "Task priority (P0-P3)")
 	taskCreateCmd.Flags().String("risk-level", "low", "Risk level (low, medium, high, critical)")
+	taskCreateCmd.Flags().StringArray("acceptance", nil, "Acceptance criterion (repeatable)")
 	taskCreateCmd.MarkFlagRequired("title")
 
 	taskCmd.AddCommand(taskCreateCmd)

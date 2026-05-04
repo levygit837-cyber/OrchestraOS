@@ -212,6 +212,8 @@ func reduceRun(event domain.EventEnvelope) (domain.RunStatus, bool) {
 
 func reduceAgentSession(event domain.EventEnvelope) (domain.AgentSessionStatus, bool) {
 	switch {
+	case event.Type == "agent.session_starting":
+		return domain.AgentSessionStatusStarting, true
 	case event.Type == "agent.session_running":
 		return domain.AgentSessionStatusRunning, true
 	case event.Type == "agent.session_waiting_approval":

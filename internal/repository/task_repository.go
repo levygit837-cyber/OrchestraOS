@@ -13,11 +13,11 @@ import (
 
 // TaskRepository handles task persistence
 type TaskRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewTaskRepository creates a new task repository
-func NewTaskRepository(db *sql.DB) *TaskRepository {
+func NewTaskRepository(db DBTX) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 

@@ -20,21 +20,21 @@ func NewEventRepository(db DBTX) *EventRepository {
 	return &EventRepository{db: db}
 }
 
-// Create inserts a new event
-func (r *EventRepository) Create(event *domain.EventEnvelope) error {
+// Create inserts a new event and returns whether a row was persisted.
+func (r *EventRepository) Create(event *domain.EventEnvelope) (bool, error) {
 	if event == nil {
-		return apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope is required")
+		return false, apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope is required")
 	}
 	if event.ID == "" || event.Sequence == 0 || event.CreatedAt.IsZero() {
-		return apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope must be completed before persistence")
+		return false, apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope must be completed before persistence")
 	}
 
 	payloadJSON, err := json.Marshal(event.Payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
+		return false, fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
-	_, err = r.db.Exec(
+	result, err := r.db.Exec(
 		db.QueryEventInsert,
 		event.ID,
 		event.Type,
@@ -53,10 +53,14 @@ func (r *EventRepository) Create(event *domain.EventEnvelope) error {
 		payloadJSON,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create event: %w", err)
+		return false, fmt.Errorf("failed to create event: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("failed to inspect event insert result: %w", err)
 	}
 
-	return nil
+	return rows > 0, nil
 }
 
 // GetNextSequence returns the next event sequence number

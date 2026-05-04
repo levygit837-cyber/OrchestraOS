@@ -12,11 +12,11 @@ import (
 
 // RunRepository handles run persistence
 type RunRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewRunRepository creates a new run repository
-func NewRunRepository(db *sql.DB) *RunRepository {
+func NewRunRepository(db DBTX) *RunRepository {
 	return &RunRepository{db: db}
 }
 

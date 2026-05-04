@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	"github.com/levygit837-cyber/OrchestraOS/internal/statemachine"
 	"github.com/spf13/cobra"
 )
@@ -24,33 +24,30 @@ var eventListCmd = &cobra.Command{
 		runID, _ := cmd.Flags().GetString("run-id")
 		workUnitID, _ := cmd.Flags().GetString("workunit-id")
 
-		eventStore, err := eventstore.NewStore(getDB())
-		if err != nil {
-			return fmt.Errorf("failed to create event store: %w", err)
-		}
+		eventService := services.NewEventService(getDB())
 
 		var events []domain.EventEnvelope
 
 		if taskID != "" {
-			e, err := eventStore.ListByTask(taskID)
+			e, err := eventService.ListByTask(cmd.Context(), taskID)
 			if err != nil {
 				return fmt.Errorf("failed to list events: %w", err)
 			}
 			events = e
 		} else if runID != "" {
-			e, err := eventStore.ListByRun(runID)
+			e, err := eventService.ListByRun(cmd.Context(), runID)
 			if err != nil {
 				return fmt.Errorf("failed to list events: %w", err)
 			}
 			events = e
 		} else if workUnitID != "" {
-			e, err := eventStore.ListByWorkUnit(workUnitID)
+			e, err := eventService.ListByWorkUnit(cmd.Context(), workUnitID)
 			if err != nil {
 				return fmt.Errorf("failed to list events: %w", err)
 			}
 			events = e
 		} else {
-			e, err := eventStore.List()
+			e, err := eventService.List(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("failed to list events: %w", err)
 			}
@@ -83,12 +80,8 @@ var eventReplayCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID := args[0]
 
-		eventStore, err := eventstore.NewStore(getDB())
-		if err != nil {
-			return fmt.Errorf("failed to create event store: %w", err)
-		}
-
-		events, err := eventStore.Replay(taskID)
+		eventService := services.NewEventService(getDB())
+		events, err := eventService.ListByTask(cmd.Context(), taskID)
 		if err != nil {
 			return fmt.Errorf("failed to replay events: %w", err)
 		}

@@ -13,11 +13,11 @@ import (
 
 // WorkUnitRepository handles work unit persistence
 type WorkUnitRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewWorkUnitRepository creates a new work unit repository
-func NewWorkUnitRepository(db *sql.DB) *WorkUnitRepository {
+func NewWorkUnitRepository(db DBTX) *WorkUnitRepository {
 	return &WorkUnitRepository{db: db}
 }
 

@@ -40,6 +40,13 @@
     "last_checkpoint_at": {
       "type": ["string", "null"],
       "format": "date-time"
+    },
+    "last_seen_event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recoverable_state": {
+      "type": "object"
     }
   }
 }
