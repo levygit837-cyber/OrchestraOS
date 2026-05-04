@@ -88,6 +88,9 @@ Evitar:
 
 Cobrir:
 
+- validacao de envelope antes da persistencia;
+- preenchimento automatico de `id`, `sequence` e `created_at` antes da validacao;
+- `run_id` opcional para eventos de task/work unit e obrigatorio para eventos de runtime;
 - idempotencia por `event_id`;
 - ordenacao por `sequence`;
 - consulta por `task_id` e `run_id`;
@@ -132,6 +135,7 @@ Cobrir com repositorio temporario real:
 Cobrir:
 
 - agente fake deterministico para E2E rapido;
+- agente fake propagando erro de persistencia, heartbeat, checkpoint e conclusao;
 - agente real controlado para smoke test;
 - max steps;
 - timeout;

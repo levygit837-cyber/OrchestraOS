@@ -9,12 +9,26 @@
     "type",
     "version",
     "task_id",
-    "run_id",
     "sequence",
     "priority",
     "requires_ack",
     "created_at",
     "payload"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "pattern": "^(run|agent|tool)\\."
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["run_id"]
+      }
+    }
   ],
   "properties": {
     "id": { "type": "string", "minLength": 1 },

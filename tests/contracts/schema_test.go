@@ -93,6 +93,67 @@ func TestSchemasRejectUnknownProperties(t *testing.T) {
 	}
 }
 
+func TestEventEnvelopeAllowsTaskEventsWithoutRun(t *testing.T) {
+	schema := compileSchema(t, "schemas/protocol/event-envelope.schema.json")
+
+	instance := decodeObject(t, `{
+		"id": "evt_001",
+		"type": "task.created",
+		"version": "v1",
+		"task_id": "task_001",
+		"sequence": 1,
+		"priority": "notification",
+		"requires_ack": false,
+		"created_at": "2026-05-03T12:00:00Z",
+		"payload": {}
+	}`)
+
+	if err := schema.Validate(instance); err != nil {
+		t.Fatalf("expected task event without run_id to be valid: %v", err)
+	}
+}
+
+func TestEventEnvelopeRejectsEmptyOptionalRun(t *testing.T) {
+	schema := compileSchema(t, "schemas/protocol/event-envelope.schema.json")
+
+	instance := decodeObject(t, `{
+		"id": "evt_001",
+		"type": "task.created",
+		"version": "v1",
+		"task_id": "task_001",
+		"run_id": "",
+		"sequence": 1,
+		"priority": "notification",
+		"requires_ack": false,
+		"created_at": "2026-05-03T12:00:00Z",
+		"payload": {}
+	}`)
+
+	if err := schema.Validate(instance); err == nil {
+		t.Fatalf("expected empty run_id to be rejected when present")
+	}
+}
+
+func TestEventEnvelopeRequiresRunForRuntimeEvents(t *testing.T) {
+	schema := compileSchema(t, "schemas/protocol/event-envelope.schema.json")
+
+	instance := decodeObject(t, `{
+		"id": "evt_001",
+		"type": "agent.started",
+		"version": "v1",
+		"task_id": "task_001",
+		"sequence": 1,
+		"priority": "notification",
+		"requires_ack": false,
+		"created_at": "2026-05-03T12:00:00Z",
+		"payload": {}
+	}`)
+
+	if err := schema.Validate(instance); err == nil {
+		t.Fatalf("expected agent event without run_id to be rejected")
+	}
+}
+
 func compileSchema(t *testing.T, path string) *jsonschema.Schema {
 	t.Helper()
 

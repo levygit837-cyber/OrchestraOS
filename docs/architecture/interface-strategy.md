@@ -2,7 +2,7 @@
 
 ## Decisão Prática
 
-O MVP começa com scripts de bootstrap e evolui rapidamente para uma CLI fina. GitHub e a superficie externa principal. Chat entra apenas como conector opcional futuro. Desktop e Web ficam para depois da validação do nucleo.
+O MVP começou com scripts de bootstrap e CLI fina. A decisao mais recente, registrada na ADR 0015, muda a interface humana principal para uma TUI local. A CLI permanece como camada headless para automacao, testes e scripts. GitHub continua sendo a superficie externa principal. Chat entra apenas como conector opcional futuro.
 
 ## Camadas
 
@@ -23,6 +23,7 @@ Scripts sao internos ao desenvolvimento. Eles podem mudar sem compatibilidade.
 
 Uso:
 
+- servir como contrato headless compartilhado com a TUI;
 - criar task a partir de texto;
 - iniciar run;
 - listar tasks e runs;
@@ -46,6 +47,18 @@ orchestra tool approve <tool_request_id>
 orchestra tool deny <tool_request_id> --reason "..."
 orchestra review diff <run_id>
 ```
+
+### TUI Local
+
+Uso:
+
+- operar dashboard local de tasks, work units, runs e sessoes;
+- acompanhar eventos em live view;
+- iniciar runs fake e futuras runs reais;
+- aprovar ou negar ferramentas quando a politica exigir humano;
+- inspecionar checkpoints, evidencias e falhas.
+
+O framework ainda sera decidido por spike. A recomendacao inicial e Bubble Tea + Bubbles + Lip Gloss por alinhamento com Go, testes de estado e fluxos por eventos.
 
 ### GitHub
 

@@ -172,7 +172,7 @@ type EventEnvelope struct {
 	Type         string          `json:"type"`
 	Version      string          `json:"version"`
 	TaskID       string          `json:"task_id"`
-	RunID        string          `json:"run_id"`
+	RunID        string          `json:"run_id,omitempty"`
 	WorkUnitID   string          `json:"work_unit_id,omitempty"`
 	AgentID      string          `json:"agent_id,omitempty"`
 	TraceID      string          `json:"trace_id,omitempty"`
