@@ -27,3 +27,6 @@ coverage/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
+
+# Codedb snapshots
+codedb.snapshot
