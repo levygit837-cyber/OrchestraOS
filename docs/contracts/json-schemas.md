@@ -5,7 +5,8 @@ Este documento define os contratos iniciais de eventos e comandos. Os schemas ex
 ## Convenções
 
 - Schemas usam JSON Schema draft 2020-12.
-- Todo evento ou comando deve ter `id`, `type`, `task_id`, `run_id`, `created_at` e `payload`.
+- Todo evento ou comando deve ter `id`, `type`, `task_id`, `created_at` e `payload`.
+- `run_id` e obrigatorio para eventos ligados a execucao (`run.*`, `agent.*`, `tool.*`) e opcional para eventos que existem antes de uma run, como `task.created` e `work_unit.created`.
 - Campos desconhecidos devem ser rejeitados nos limites externos e aceitos com cuidado nos limites internos apenas quando houver versionamento.
 - `event_id` deve ser idempotente.
 - `sequence` deve ser monotonicamente crescente por `run_id` quando aplicavel.
@@ -42,12 +43,24 @@ Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contr
     "type",
     "version",
     "task_id",
-    "run_id",
     "sequence",
     "priority",
     "requires_ack",
     "created_at",
     "payload"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": { "pattern": "^(run|agent|tool)\\." }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["run_id"]
+      }
+    }
   ],
   "properties": {
     "id": { "type": "string", "minLength": 1 },

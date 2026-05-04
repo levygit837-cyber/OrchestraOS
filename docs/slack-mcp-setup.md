@@ -24,6 +24,9 @@ Status: ✅ **CONFIGURADO E FUNCIONANDO**
 ## Arquivos configurados
 
 - `~/.kimi/mcp.json` — Configuração do servidor MCP no Kimi Code CLI
+- `~/.codex/config.toml` — Configuração do servidor MCP no Codex (OpenAI)
+- `OrchestraOS/.codex/config.toml` — Configuração do servidor MCP por projeto no Codex
+- `~/.codeium/windsurf/mcp_config.json` — Configuração do servidor MCP no Windsurf
 - `~/tools/slack-mcp/workspaces.json` — Configuração do workspace
 
 ---
@@ -121,6 +124,36 @@ Verifique com:
 codex mcp list
 codex mcp get slack
 ```
+
+---
+
+## Configurar no Windsurf
+
+✅ **Já configurado!**
+
+Arquivo: `~/.codeium/windsurf/mcp_config.json`
+
+```json
+{
+  "mcpServers": {
+    "slack": {
+      "name": "slack",
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "tsx",
+        "/home/levybonito/tools/slack-mcp/src/server.ts"
+      ],
+      "env": {
+        "SLACK_TOKEN_KANBANESPACO_BOT": "xoxb-...",
+        "SLACK_TOKEN_KANBANESPACO_USER": "xoxp-..."
+      }
+    }
+  }
+}
+```
+
+Reinicie o Windsurf ou recarregue a janela (`Ctrl+Shift+P` → `Developer: Reload Window`) para aplicar as mudanças.
 
 ---
 

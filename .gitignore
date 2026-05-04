@@ -11,6 +11,8 @@ node_modules/
 .venv/
 venv/
 __pycache__/
+.go/
+.tools/
 
 # Build outputs
 dist/
@@ -24,4 +26,3 @@ coverage/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
-
