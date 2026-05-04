@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: orchestraos-postgres
+    environment:
+      POSTGRES_USER: orchestraos
+      POSTGRES_PASSWORD: orchestraos
+      POSTGRES_DB: orchestraos
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestraos -d orchestraos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
