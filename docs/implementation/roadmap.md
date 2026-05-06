@@ -235,6 +235,14 @@ Aceite:
 
 Observacao: esta milestone e futura. Ela depende de Event Store, Agent Task Ledger, Agent Checkpoints, PromptSnapshot e Artifact Manager.
 
+## Propostas Futuras Nao Decididas
+
+Estas propostas registram possibilidades para depois do MVP. Elas nao alteram a ordem recomendada, os limites de autonomia ou o paralelismo inicial.
+
+| Proposta | Resumo |
+| --- | --- |
+| [Massive Agents System](../architecture/massive-agents-system.md) | Execucao controlada de muitos agentes em paralelo sobre work units semanticamente isoladas, com mapeamento estatico de codigo, escopo minimo, validacao local, limites de custo e revisao humana enquanto a autonomia aprovada for Nivel 2. |
+
 ## Ordem Recomendada
 
 1. M0

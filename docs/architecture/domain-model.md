@@ -75,9 +75,18 @@ Campos minimos:
 - `task_id`
 - `version`
 - `status`
+- `planner_strategy`
 - `created_by`
 - `rationale`
+- `node_count`
+- `edge_count`
 - `created_at`
+- `updated_at`
+
+Estados iniciais:
+
+- `active`
+- `superseded`
 
 ### WorkUnit
 
@@ -86,6 +95,7 @@ Node executavel do `TaskGraph`.
 Campos minimos:
 
 - `id`
+- `task_id`
 - `task_graph_id`
 - `title`
 - `objective`

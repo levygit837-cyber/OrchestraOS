@@ -185,6 +185,143 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	}
 }
 
+func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+	ctx := context.Background()
+
+	taskService := services.NewTaskService(db)
+	graphService := services.NewTaskGraphService(db)
+	workUnitService := services.NewWorkUnitService(db)
+	runService := services.NewRunService(db)
+
+	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+		Title:     "Task graph decomposition",
+		Priority:  domain.PriorityP2,
+		RiskLevel: domain.RiskLevelLow,
+		AcceptanceCriteria: []string{
+			"Criar schema do task graph",
+			"Criar repository do task graph",
+		},
+	})
+	if err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	result, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+		TaskID:    taskResult.Value.ID,
+		CreatedBy: "integration_test",
+	})
+	if err != nil {
+		t.Fatalf("decompose task graph: %v", err)
+	}
+	if result.Graph.Status != domain.TaskGraphStatusActive || result.Graph.Version != 1 {
+		t.Fatalf("expected active graph version 1, got %+v", result.Graph)
+	}
+	if len(result.WorkUnits) != 2 {
+		t.Fatalf("expected 2 work units, got %d", len(result.WorkUnits))
+	}
+	for _, wu := range result.WorkUnits {
+		if wu.TaskID != taskResult.Value.ID || wu.TaskGraphID != result.Graph.ID {
+			t.Fatalf("expected work unit task and graph refs, got %+v", wu)
+		}
+	}
+	events, err := services.NewEventService(db).ListByTask(ctx, taskResult.Value.ID)
+	if err != nil {
+		t.Fatalf("list task events: %v", err)
+	}
+	graphEvents := 0
+	for _, event := range events {
+		if event.Type == "task.graph_created" {
+			var payload domain.TaskGraphCreatedPayload
+			if err := json.Unmarshal(event.Payload, &payload); err != nil {
+				t.Fatalf("decode graph event payload: %v", err)
+			}
+			if payload.TaskID != taskResult.Value.ID {
+				t.Fatalf("expected graph payload task_id %s, got %s", taskResult.Value.ID, payload.TaskID)
+			}
+			graphEvents++
+		}
+	}
+	if graphEvents != 1 {
+		t.Fatalf("expected one task.graph_created event, got %d", graphEvents)
+	}
+
+	if _, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+		TaskID:               taskResult.Value.ID,
+		Title:                "Manual mutation",
+		Objective:            "Reject direct mutation of a planned graph",
+		AssignedAgentProfile: "fake",
+	}); err == nil {
+		t.Fatal("expected direct work unit creation on active planned graph to be rejected")
+	}
+	if _, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+		TaskID:               taskResult.Value.ID,
+		TaskGraphID:          result.Graph.ID,
+		Title:                "Explicit planned graph mutation",
+		Objective:            "Reject direct mutation of a planned graph by id",
+		AssignedAgentProfile: "fake",
+	}); err == nil {
+		t.Fatal("expected direct work unit creation on explicit planned graph to be rejected")
+	}
+
+	if _, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{TaskID: taskResult.Value.ID}); err == nil {
+		t.Fatal("expected active graph conflict")
+	}
+	replanned, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+		TaskID:        taskResult.Value.ID,
+		ReplaceActive: true,
+		CreatedBy:     "integration_test",
+	})
+	if err != nil {
+		t.Fatalf("replace active graph: %v", err)
+	}
+	if replanned.Graph.Version != 2 || replanned.Graph.Status != domain.TaskGraphStatusActive {
+		t.Fatalf("expected active graph version 2, got %+v", replanned.Graph)
+	}
+	graphs, err := graphService.ListByTask(ctx, taskResult.Value.ID)
+	if err != nil {
+		t.Fatalf("list graphs: %v", err)
+	}
+	activeCount := 0
+	supersededCount := 0
+	for _, graph := range graphs {
+		if graph.Status == domain.TaskGraphStatusActive {
+			activeCount++
+		}
+		if graph.Status == domain.TaskGraphStatusSuperseded {
+			supersededCount++
+		}
+	}
+	if activeCount != 1 || supersededCount != 1 {
+		t.Fatalf("expected one active and one superseded graph, got active=%d superseded=%d", activeCount, supersededCount)
+	}
+
+	otherTask, err := taskService.Create(ctx, services.CreateTaskInput{
+		Title:     "Other task",
+		Priority:  domain.PriorityP2,
+		RiskLevel: domain.RiskLevelLow,
+	})
+	if err != nil {
+		t.Fatalf("create other task: %v", err)
+	}
+	if _, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+		TaskID:               otherTask.Value.ID,
+		TaskGraphID:          result.Graph.ID,
+		Title:                "Mismatched graph work unit",
+		Objective:            "Reject a work unit linked to another task graph",
+		AssignedAgentProfile: "fake",
+	}); err == nil {
+		t.Fatal("expected work unit creation with mismatched task graph to be rejected")
+	}
+	if _, err := runService.Create(ctx, services.CreateRunInput{
+		TaskID:     otherTask.Value.ID,
+		WorkUnitID: result.WorkUnits[0].ID,
+	}); err == nil {
+		t.Fatal("expected run creation with mismatched task and work unit to be rejected")
+	}
+}
+
 func TestEventServiceIdempotencyAndConflict(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()

@@ -204,6 +204,17 @@ func (s *Store) ReplayRunState(runID string) (*statemachine.ReplayState, error) 
 
 func validateOperationalPayload(envelope *domain.EventEnvelope) error {
 	switch envelope.Type {
+	case "task.graph_created":
+		var payload domain.TaskGraphCreatedPayload
+		if err := decodePayload(envelope.Payload, &payload); err != nil {
+			return err
+		}
+		if payload.TaskID == "" || payload.GraphID == "" || payload.GraphVersion < 1 || payload.PlannerStrategy == "" || len(payload.Nodes) == 0 || payload.Edges == nil {
+			return payloadError(envelope.Type, "task_id, graph_id, graph_version, planner_strategy, nodes, and edges are required")
+		}
+		if payload.TaskID != envelope.TaskID {
+			return payloadError(envelope.Type, "payload task_id must match envelope task_id")
+		}
 	case "agent.ledger_updated":
 		var payload domain.AgentLedgerUpdatedPayload
 		if err := decodePayload(envelope.Payload, &payload); err != nil {

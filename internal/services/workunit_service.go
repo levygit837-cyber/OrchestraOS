@@ -22,6 +22,7 @@ type CreateWorkUnitInput struct {
 	ID                   string
 	EventID              string
 	TaskID               string
+	TaskGraphID          string
 	Title                string
 	Objective            string
 	AssignedAgentProfile string
@@ -66,7 +67,7 @@ func (s *WorkUnitService) Assign(ctx context.Context, workUnitID, agentProfile s
 	if err != nil {
 		return nil, err
 	}
-	event, duplicate, err := appendTransition(ctx, tx, input.EventID, "work_unit.assigned", wu.TaskGraphID, "", wu.ID, input.AgentID, map[string]interface{}{
+	event, duplicate, err := appendTransition(ctx, tx, input.EventID, "work_unit.assigned", wu.TaskID, "", wu.ID, input.AgentID, map[string]interface{}{
 		"from_agent_profile": wu.AssignedAgentProfile,
 		"to_agent_profile":   agentProfile,
 		"justification":      input.Justification,
@@ -124,6 +125,7 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "at least one work unit is required")
 	}
 	taskID := inputs[0].TaskID
+	taskGraphID := inputs[0].TaskGraphID
 	for i := range inputs {
 		if inputs[i].ID == "" {
 			inputs[i].ID = uuid.New().String()
@@ -137,6 +139,12 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		if inputs[i].TaskID != taskID {
 			return nil, apperrors.New(apperrors.CodeInvalidInput, op, "all work units in one create batch must belong to the same task")
 		}
+		if taskGraphID == "" {
+			taskGraphID = inputs[i].TaskGraphID
+		}
+		if inputs[i].TaskGraphID != "" && inputs[i].TaskGraphID != taskGraphID {
+			return nil, apperrors.New(apperrors.CodeInvalidInput, op, "all work units in one create batch must belong to the same task graph")
+		}
 	}
 
 	tx, err := beginTx(ctx, s.db, "work_unit_service.begin_create_many")
@@ -145,10 +153,39 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	}
 	defer rollbackTx(tx)
 
-	if _, err := getTask(ctx, tx, taskID); err != nil {
+	task, err := getTask(ctx, tx, taskID)
+	if err != nil {
 		return nil, err
 	}
-	existing, err := repository.NewWorkUnitRepository(tx).ListByTask(taskID)
+
+	graphRepo := repository.NewTaskGraphRepository(tx)
+	var graph *domain.TaskGraph
+	if taskGraphID == "" {
+		graph, err = ensureActiveManualTaskGraph(ctx, tx, task)
+		if err != nil {
+			return nil, err
+		}
+		taskGraphID = graph.ID
+	} else {
+		graph, err = graphRepo.GetByID(taskGraphID)
+		if err != nil {
+			return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.get_task_graph", err)
+		}
+		if graph == nil {
+			return nil, apperrors.New(apperrors.CodeNotFound, "work_unit_service.get_task_graph", "task graph not found")
+		}
+		if graph.TaskID != taskID {
+			return nil, apperrors.New(apperrors.CodeInvalidInput, "work_unit_service.task_mismatch", "task_graph_id does not belong to task_id")
+		}
+		if !isManualTaskGraph(graph) {
+			return nil, apperrors.New(apperrors.CodeConflict, "work_unit_service.graph_immutable", "work units for planned task graphs must be created by task decomposition")
+		}
+	}
+	for i := range inputs {
+		inputs[i].TaskGraphID = taskGraphID
+	}
+
+	existing, err := repository.NewWorkUnitRepository(tx).ListByTaskGraph(taskGraphID)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.list_existing", err)
 	}
@@ -161,7 +198,8 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	for _, input := range inputs {
 		wu := &domain.WorkUnit{
 			ID:                   input.ID,
-			TaskGraphID:          input.TaskID,
+			TaskID:               input.TaskID,
+			TaskGraphID:          input.TaskGraphID,
 			Title:                input.Title,
 			Objective:            input.Objective,
 			AssignedAgentProfile: input.AssignedAgentProfile,
@@ -177,7 +215,8 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		}
 		payload, err := marshalPayload("work_unit_service.create_payload", map[string]interface{}{
 			"work_unit_id":           wu.ID,
-			"task_id":                wu.TaskGraphID,
+			"task_id":                wu.TaskID,
+			"task_graph_id":          wu.TaskGraphID,
 			"title":                  wu.Title,
 			"objective":              wu.Objective,
 			"assigned_agent_profile": wu.AssignedAgentProfile,
@@ -191,11 +230,15 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		if err != nil {
 			return nil, err
 		}
+		eventID := input.EventID
+		if len(inputs) > 1 {
+			eventID = ""
+		}
 		appendResult, err := appendServiceEvent(ctx, tx, &domain.EventEnvelope{
-			ID:          input.EventID,
+			ID:          eventID,
 			Type:        "work_unit.created",
 			Version:     eventVersionV1,
-			TaskID:      wu.TaskGraphID,
+			TaskID:      wu.TaskID,
 			WorkUnitID:  wu.ID,
 			Priority:    domain.EventPriorityNotification,
 			RequiresAck: false,
@@ -211,6 +254,52 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		return nil, err
 	}
 	return results, nil
+}
+
+func ensureActiveManualTaskGraph(ctx context.Context, tx *sql.Tx, task *domain.Task) (*domain.TaskGraph, error) {
+	if err := acquireAdvisoryTxLock(ctx, tx, "task_graph:"+task.ID, "work_unit_service.task_graph_lock"); err != nil {
+		return nil, err
+	}
+	repo := repository.NewTaskGraphRepository(tx)
+	active, err := repo.GetActiveByTask(task.ID)
+	if err != nil {
+		return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.get_active_task_graph", err)
+	}
+	if active != nil {
+		if !isManualTaskGraph(active) {
+			return nil, apperrors.New(apperrors.CodeConflict, "work_unit_service.active_graph_exists", "active task graph was created by task decomposition")
+		}
+		return active, nil
+	}
+	version, err := repo.NextVersion(task.ID)
+	if err != nil {
+		return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.next_task_graph_version", err)
+	}
+	now := time.Now().UTC()
+	graph := &domain.TaskGraph{
+		ID:              uuid.New().String(),
+		TaskID:          task.ID,
+		Version:         version,
+		Status:          domain.TaskGraphStatusActive,
+		PlannerStrategy: "manual",
+		Rationale:       "Manual graph for work units created outside task decomposition.",
+		CreatedBy:       "workunit_service",
+		NodeCount:       0,
+		EdgeCount:       0,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	if err := repo.Create(graph); err != nil {
+		return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.create_manual_task_graph", err)
+	}
+	return graph, nil
+}
+
+func isManualTaskGraph(graph *domain.TaskGraph) bool {
+	if graph == nil {
+		return false
+	}
+	return graph.PlannerStrategy == "manual" || graph.PlannerStrategy == "legacy_manual"
 }
 
 func (s *WorkUnitService) transition(ctx context.Context, workUnitID string, target domain.WorkUnitStatus, input TransitionInput) (*OperationResult[*domain.WorkUnit], error) {
@@ -233,7 +322,7 @@ func (s *WorkUnitService) transition(ctx context.Context, workUnitID string, tar
 		return nil, err
 	}
 	if target == domain.WorkUnitStatusScheduled || target == domain.WorkUnitStatusRunning {
-		if err := acquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskGraphID, "work_unit_service.path_lock"); err != nil {
+		if err := acquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskID, "work_unit_service.path_lock"); err != nil {
 			return nil, err
 		}
 		if err := validateDependenciesCompleted(ctx, tx, wu); err != nil {
@@ -250,7 +339,7 @@ func (s *WorkUnitService) transition(ctx context.Context, workUnitID string, tar
 		return nil, err
 	}
 
-	event, duplicate, err := appendTransition(ctx, tx, input.EventID, eventTypeForWorkUnitStatus(target), wu.TaskGraphID, "", wu.ID, input.AgentID, transitionPayload(wu.Status, target, input))
+	event, duplicate, err := appendTransition(ctx, tx, input.EventID, eventTypeForWorkUnitStatus(target), wu.TaskID, "", wu.ID, input.AgentID, transitionPayload(wu.Status, target, input))
 	if err != nil {
 		return nil, err
 	}
@@ -279,6 +368,9 @@ func validateCreateWorkUnitInput(input CreateWorkUnitInput) error {
 		return err
 	}
 	if err := validateRequiredUUID(input.TaskID, "task_id", op); err != nil {
+		return err
+	}
+	if err := validateOptionalUUID(input.TaskGraphID, "task_graph_id", op); err != nil {
 		return err
 	}
 	if err := validateRequiredText(input.Title, "title", op); err != nil {
@@ -372,8 +464,8 @@ func validateDependenciesCompleted(ctx context.Context, tx *sql.Tx, wu *domain.W
 		if dep == nil {
 			return apperrors.New(apperrors.CodeInvalidInput, "work_unit_service.get_dependency", "dependency not found")
 		}
-		if dep.TaskGraphID != wu.TaskGraphID {
-			return apperrors.New(apperrors.CodeInvalidInput, "work_unit_service.get_dependency", "dependency belongs to a different task")
+		if dep.TaskID != wu.TaskID || dep.TaskGraphID != wu.TaskGraphID {
+			return apperrors.New(apperrors.CodeInvalidInput, "work_unit_service.get_dependency", "dependency belongs to a different task graph")
 		}
 		if dep.Status != domain.WorkUnitStatusCompleted {
 			return apperrors.New(apperrors.CodeInvalidTransition, "work_unit_service.dependencies", "dependencies must be completed before scheduling or starting")
@@ -387,7 +479,7 @@ func validateOwnedPathAvailability(ctx context.Context, tx *sql.Tx, wu *domain.W
 	if len(wu.OwnedPaths) == 0 {
 		return nil
 	}
-	all, err := repository.NewWorkUnitRepository(tx).ListByTask(wu.TaskGraphID)
+	all, err := repository.NewWorkUnitRepository(tx).ListByTask(wu.TaskID)
 	if err != nil {
 		return apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.path_conflict", err)
 	}

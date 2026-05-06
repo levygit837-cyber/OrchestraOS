@@ -41,7 +41,7 @@ var runStartCmd = &cobra.Command{
 
 		runService := services.NewRunService(getDB())
 		runResult, err := runService.Create(cmd.Context(), services.CreateRunInput{
-			TaskID:     wu.TaskGraphID,
+			TaskID:     wu.TaskID,
 			WorkUnitID: workUnitID,
 			Attempt:    1,
 		})
@@ -82,7 +82,7 @@ var runStartCmd = &cobra.Command{
 			config := agent.RuntimeConfig{
 				RunID:      run.ID,
 				WorkUnitID: workUnitID,
-				TaskID:     wu.TaskGraphID,
+				TaskID:     wu.TaskID,
 				AgentID:    agentID,
 				Prompt:     fmt.Sprintf("Execute work unit: %s", wu.Title),
 				MaxSteps:   10,

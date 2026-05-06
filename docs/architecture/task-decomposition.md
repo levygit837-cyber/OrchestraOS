@@ -28,6 +28,27 @@ UserMessage
 
 O grafo de decomposicao deve ser aciclico.
 
+No primeiro corte executavel, a decomposicao automatica usa uma heuristica local deterministica baseada em `acceptance_criteria` da `Task`. O planner nao usa LLM neste corte.
+
+Regras iniciais:
+
+- a task precisa ter pelo menos dois criterios de aceite;
+- o planner gera de 2 a 5 `WorkUnit`;
+- os criterios sao agrupados por peso textual para manter work units similares;
+- o maior peso de work unit nao pode ultrapassar 1.5x o menor peso;
+- criterios podem declarar dependencia explicita com marcador inicial `[after: 1,2]`;
+- sem marcador explicito, work units sao independentes por padrao;
+- ciclos e dependencias para criterios inexistentes rejeitam o graph antes da persistencia.
+
+Persistencia:
+
+- `task.graph_created` e o evento canonico do DAG planejado, com `task_id` no payload consistente com o envelope;
+- `task_graphs` e a projecao relacional versionada para consulta;
+- apenas um graph por task pode ficar `active`;
+- replanejamento cria nova versao e supersede o graph ativo anterior;
+- `work_units.task_id` aponta para a Task real e `work_units.task_graph_id` aponta para a versao do graph;
+- graphs planejados sao imutaveis por `WorkUnitService`; novas work units exigem replanejamento pelo `TaskGraphService`.
+
 Nodes:
 
 - representam `WorkUnit`;

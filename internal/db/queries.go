@@ -22,19 +22,48 @@ const (
 		UPDATE tasks SET title = $2, description = $3, status = $4, priority = $5, risk_level = $6, 
 		acceptance_criteria = $7, updated_at = $8 WHERE id = $1`
 
+	// TaskGraph queries
+	QueryTaskGraphInsert = `
+		INSERT INTO task_graphs (id, task_id, version, status, planner_strategy, rationale, created_by, node_count, edge_count, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id`
+
+	QueryTaskGraphGetByID = `
+		SELECT id, task_id, version, status, planner_strategy, rationale, created_by, node_count, edge_count, created_at, updated_at
+		FROM task_graphs WHERE id = $1`
+
+	QueryTaskGraphGetActiveByTask = `
+		SELECT id, task_id, version, status, planner_strategy, rationale, created_by, node_count, edge_count, created_at, updated_at
+		FROM task_graphs WHERE task_id = $1 AND status = 'active'
+		ORDER BY version DESC LIMIT 1`
+
+	QueryTaskGraphListByTask = `
+		SELECT id, task_id, version, status, planner_strategy, rationale, created_by, node_count, edge_count, created_at, updated_at
+		FROM task_graphs WHERE task_id = $1 ORDER BY version DESC`
+
+	QueryTaskGraphNextVersion = `
+		SELECT COALESCE(MAX(version), 0) + 1 FROM task_graphs WHERE task_id = $1`
+
+	QueryTaskGraphSupersedeActiveByTask = `
+		UPDATE task_graphs SET status = 'superseded', updated_at = $2 WHERE task_id = $1 AND status = 'active'`
+
 	// WorkUnit queries
 	QueryWorkUnitInsert = `
-		INSERT INTO work_units (id, task_id, title, objective, assigned_agent_profile, status, owned_paths, read_paths, acceptance_criteria, validation_plan, depends_on, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO work_units (id, task_id, task_graph_id, title, objective, assigned_agent_profile, status, owned_paths, read_paths, acceptance_criteria, validation_plan, depends_on, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id`
 
 	QueryWorkUnitGetByID = `
-		SELECT id, task_id, title, objective, assigned_agent_profile, status, owned_paths, read_paths, acceptance_criteria, validation_plan, depends_on, created_at, updated_at
+		SELECT id, task_id, task_graph_id, title, objective, assigned_agent_profile, status, owned_paths, read_paths, acceptance_criteria, validation_plan, depends_on, created_at, updated_at
 		FROM work_units WHERE id = $1`
 
 	QueryWorkUnitListByTask = `
-		SELECT id, task_id, title, objective, assigned_agent_profile, status, owned_paths, read_paths, acceptance_criteria, validation_plan, depends_on, created_at, updated_at
+		SELECT id, task_id, task_graph_id, title, objective, assigned_agent_profile, status, owned_paths, read_paths, acceptance_criteria, validation_plan, depends_on, created_at, updated_at
 		FROM work_units WHERE task_id = $1 ORDER BY created_at ASC`
+
+	QueryWorkUnitListByTaskGraph = `
+		SELECT id, task_id, task_graph_id, title, objective, assigned_agent_profile, status, owned_paths, read_paths, acceptance_criteria, validation_plan, depends_on, created_at, updated_at
+		FROM work_units WHERE task_graph_id = $1 ORDER BY created_at ASC`
 
 	QueryWorkUnitUpdateStatus = `
 		UPDATE work_units SET status = $2, updated_at = $3 WHERE id = $1`

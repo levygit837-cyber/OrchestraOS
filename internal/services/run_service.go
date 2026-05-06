@@ -55,7 +55,7 @@ func (s *RunService) Create(ctx context.Context, input CreateRunInput) (*Operati
 	if err != nil {
 		return nil, err
 	}
-	if wu.TaskGraphID != task.ID {
+	if wu.TaskID != task.ID {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, "run_service.validate_refs", "work_unit_id does not belong to task_id")
 	}
 
@@ -361,7 +361,7 @@ func transitionRelatedWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 		return nil
 	}
 	if wuTarget == domain.WorkUnitStatusRunning {
-		if err := acquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskGraphID, "run_service.work_unit_path_lock"); err != nil {
+		if err := acquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskID, "run_service.work_unit_path_lock"); err != nil {
 			return err
 		}
 		if err := validateDependenciesCompleted(ctx, tx, wu); err != nil {

@@ -53,6 +53,27 @@ type Task struct {
 	UpdatedAt            time.Time  `json:"updated_at"`
 }
 
+type TaskGraphStatus string
+
+const (
+	TaskGraphStatusActive     TaskGraphStatus = "active"
+	TaskGraphStatusSuperseded TaskGraphStatus = "superseded"
+)
+
+type TaskGraph struct {
+	ID              string          `json:"id"`
+	TaskID          string          `json:"task_id"`
+	Version         int             `json:"version"`
+	Status          TaskGraphStatus `json:"status"`
+	PlannerStrategy string          `json:"planner_strategy"`
+	Rationale       string          `json:"rationale"`
+	CreatedBy       string          `json:"created_by"`
+	NodeCount       int             `json:"node_count"`
+	EdgeCount       int             `json:"edge_count"`
+	CreatedAt       time.Time       `json:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at"`
+}
+
 type WorkUnitStatus string
 
 const (
@@ -71,6 +92,7 @@ const (
 
 type WorkUnit struct {
 	ID                   string         `json:"id"`
+	TaskID               string         `json:"task_id"`
 	TaskGraphID          string         `json:"task_graph_id"`
 	Title                string         `json:"title"`
 	Objective            string         `json:"objective"`

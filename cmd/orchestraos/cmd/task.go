@@ -97,6 +97,69 @@ var taskGetCmd = &cobra.Command{
 	},
 }
 
+var taskGraphCmd = &cobra.Command{
+	Use:   "graph",
+	Short: "Manage task graphs",
+}
+
+var taskGraphCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a task graph from task acceptance criteria",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		taskID, _ := cmd.Flags().GetString("task-id")
+		replaceActive, _ := cmd.Flags().GetBool("replace-active")
+		createdBy, _ := cmd.Flags().GetString("created-by")
+
+		service := services.NewTaskGraphService(getDB())
+		result, err := service.Decompose(cmd.Context(), services.DecomposeTaskGraphInput{
+			TaskID:        taskID,
+			ReplaceActive: replaceActive,
+			CreatedBy:     createdBy,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create task graph: %w", err)
+		}
+
+		fmt.Printf("Task graph created: %s (task: %s, version: %d, work units: %d)\n",
+			result.Graph.ID,
+			result.Graph.TaskID,
+			result.Graph.Version,
+			len(result.WorkUnits),
+		)
+		return nil
+	},
+}
+
+var taskGraphListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List task graphs for a task",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		taskID, _ := cmd.Flags().GetString("task-id")
+
+		service := services.NewTaskGraphService(getDB())
+		graphs, err := service.ListByTask(cmd.Context(), taskID)
+		if err != nil {
+			return fmt.Errorf("failed to list task graphs: %w", err)
+		}
+		if len(graphs) == 0 {
+			fmt.Println("No task graphs found")
+			return nil
+		}
+		fmt.Printf("%-36s %-8s %-12s %-20s %-10s %-10s\n", "ID", "VERSION", "STATUS", "PLANNER", "NODES", "EDGES")
+		for _, graph := range graphs {
+			fmt.Printf("%-36s %-8d %-12s %-20s %-10d %-10d\n",
+				graph.ID,
+				graph.Version,
+				graph.Status,
+				truncate(graph.PlannerStrategy, 20),
+				graph.NodeCount,
+				graph.EdgeCount,
+			)
+		}
+		return nil
+	},
+}
+
 func init() {
 	taskCreateCmd.Flags().String("title", "", "Task title (required)")
 	taskCreateCmd.Flags().String("description", "", "Task description")
@@ -105,9 +168,21 @@ func init() {
 	taskCreateCmd.Flags().StringArray("acceptance", nil, "Acceptance criterion (repeatable)")
 	taskCreateCmd.MarkFlagRequired("title")
 
+	taskGraphCreateCmd.Flags().String("task-id", "", "Task ID to decompose (required)")
+	taskGraphCreateCmd.Flags().Bool("replace-active", false, "Supersede the active task graph before creating a new one")
+	taskGraphCreateCmd.Flags().String("created-by", "cli", "Actor creating the task graph")
+	taskGraphCreateCmd.MarkFlagRequired("task-id")
+
+	taskGraphListCmd.Flags().String("task-id", "", "Task ID to list graphs for (required)")
+	taskGraphListCmd.MarkFlagRequired("task-id")
+
+	taskGraphCmd.AddCommand(taskGraphCreateCmd)
+	taskGraphCmd.AddCommand(taskGraphListCmd)
+
 	taskCmd.AddCommand(taskCreateCmd)
 	taskCmd.AddCommand(taskListCmd)
 	taskCmd.AddCommand(taskGetCmd)
+	taskCmd.AddCommand(taskGraphCmd)
 }
 
 func truncate(s string, maxLen int) string {

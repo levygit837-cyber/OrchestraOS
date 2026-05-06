@@ -319,10 +319,12 @@ func createTestTaskWithID(t *testing.T, db *sql.DB, id string) string {
 func createTestWorkUnit(t *testing.T, db *sql.DB, taskID string) string {
 	t.Helper()
 
+	taskGraphID := createTestTaskGraph(t, db, taskID)
 	repo := repository.NewWorkUnitRepository(db)
 	wu := &domain.WorkUnit{
 		ID:                   uuid.New().String(),
-		TaskGraphID:          taskID,
+		TaskID:               taskID,
+		TaskGraphID:          taskGraphID,
 		Title:                "Integration Test Work Unit",
 		Objective:            "Validate event persistence",
 		AssignedAgentProfile: "default",
@@ -332,6 +334,36 @@ func createTestWorkUnit(t *testing.T, db *sql.DB, taskID string) string {
 		t.Fatalf("Failed to create test work unit: %v", err)
 	}
 	return wu.ID
+}
+
+func createTestTaskGraph(t *testing.T, db *sql.DB, taskID string) string {
+	t.Helper()
+
+	repo := repository.NewTaskGraphRepository(db)
+	existing, err := repo.GetActiveByTask(taskID)
+	if err != nil {
+		t.Fatalf("Failed to get active task graph: %v", err)
+	}
+	if existing != nil {
+		return existing.ID
+	}
+	graph := &domain.TaskGraph{
+		ID:              uuid.New().String(),
+		TaskID:          taskID,
+		Version:         1,
+		Status:          domain.TaskGraphStatusActive,
+		PlannerStrategy: "integration_test",
+		Rationale:       "Integration test graph",
+		CreatedBy:       "integration_test",
+		NodeCount:       0,
+		EdgeCount:       0,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+	if err := repo.Create(graph); err != nil {
+		t.Fatalf("Failed to create test task graph: %v", err)
+	}
+	return graph.ID
 }
 
 func createTestRun(t *testing.T, db *sql.DB, taskID, workUnitID string) string {

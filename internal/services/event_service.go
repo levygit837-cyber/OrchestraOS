@@ -211,7 +211,7 @@ func (s *EventService) validateReferences(ctx context.Context, envelope *domain.
 		if wu == nil {
 			return apperrors.New(apperrors.CodeNotFound, "event_service.validate_work_unit_ref", "work unit not found")
 		}
-		if envelope.TaskID != "" && wu.TaskGraphID != envelope.TaskID {
+		if envelope.TaskID != "" && wu.TaskID != envelope.TaskID {
 			return apperrors.New(apperrors.CodeInvalidInput, "event_service.validate_work_unit_ref", "work_unit_id does not belong to task_id")
 		}
 	}

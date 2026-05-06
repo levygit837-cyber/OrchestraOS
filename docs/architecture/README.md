@@ -82,6 +82,7 @@ flowchart TD
 - [Estrategia de testes](testing-strategy.md)
 - [Falhas e rollback](failures-and-rollback.md)
 - [MVP local-first](mvp.md)
+- [Proposta futura: Massive Agents System](massive-agents-system.md)
 - [Plano de implementacao](../implementation/roadmap.md)
 - [ADR 0002: Orchestrator como control plane](../adr/0002-orchestrator-control-plane.md)
 - [ADR 0003: Stack inicial](../adr/0003-initial-technology-stack.md)

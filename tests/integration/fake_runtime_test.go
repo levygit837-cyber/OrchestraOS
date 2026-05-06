@@ -152,8 +152,10 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 		}
 
 		// 2. Create work unit
+		taskGraphID := createTestTaskGraph(t, db, task.ID)
 		wu := &domain.WorkUnit{
-			TaskGraphID:          task.ID,
+			TaskID:               task.ID,
+			TaskGraphID:          taskGraphID,
 			Title:                "Integration Work Unit",
 			AssignedAgentProfile: "default",
 			Status:               domain.WorkUnitStatusCreated,

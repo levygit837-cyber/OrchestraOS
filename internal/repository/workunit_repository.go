@@ -57,6 +57,7 @@ func (r *WorkUnitRepository) Create(wu *domain.WorkUnit) error {
 	_, err = r.db.Exec(
 		db.QueryWorkUnitInsert,
 		wu.ID,
+		wu.TaskID,
 		wu.TaskGraphID,
 		wu.Title,
 		wu.Objective,
@@ -103,6 +104,26 @@ func (r *WorkUnitRepository) ListByTask(taskID string) ([]domain.WorkUnit, error
 	return workUnits, rows.Err()
 }
 
+// ListByTaskGraph retrieves all work units for a task graph.
+func (r *WorkUnitRepository) ListByTaskGraph(taskGraphID string) ([]domain.WorkUnit, error) {
+	rows, err := r.db.Query(db.QueryWorkUnitListByTaskGraph, taskGraphID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list work units by task graph: %w", err)
+	}
+	defer rows.Close()
+
+	var workUnits []domain.WorkUnit
+	for rows.Next() {
+		wu, err := r.scanWorkUnit(rows)
+		if err != nil {
+			return nil, err
+		}
+		workUnits = append(workUnits, *wu)
+	}
+
+	return workUnits, rows.Err()
+}
+
 // UpdateStatus updates the status of a work unit
 func (r *WorkUnitRepository) UpdateStatus(id string, status domain.WorkUnitStatus) error {
 	_, err := r.db.Exec(db.QueryWorkUnitUpdateStatus, id, status, time.Now())
@@ -121,6 +142,7 @@ func (r *WorkUnitRepository) scanWorkUnit(scanner interface {
 
 	err := scanner.Scan(
 		&wu.ID,
+		&wu.TaskID,
 		&wu.TaskGraphID,
 		&wu.Title,
 		&wu.Objective,

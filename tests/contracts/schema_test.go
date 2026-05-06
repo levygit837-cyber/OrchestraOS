@@ -227,6 +227,26 @@ func schemaCases() []schemaCase {
 			}`,
 		},
 		{
+			name:           "TaskGraph",
+			path:           "schemas/domain/task-graph.schema.json",
+			requiredField:  "planner_strategy",
+			enumField:      "status",
+			invalidEnumVal: "draft",
+			valid: `{
+				"id": "graph_001",
+				"task_id": "task_001",
+				"version": 1,
+				"status": "active",
+				"planner_strategy": "local_heuristic_v1",
+				"rationale": "Local decomposition from acceptance criteria.",
+				"created_by": "test",
+				"node_count": 2,
+				"edge_count": 1,
+				"created_at": "2026-05-03T12:00:00Z",
+				"updated_at": "2026-05-03T12:00:00Z"
+			}`,
+		},
+		{
 			name:           "Run",
 			path:           "schemas/domain/run.schema.json",
 			requiredField:  "attempt",
@@ -252,6 +272,7 @@ func schemaCases() []schemaCase {
 			invalidEnumVal: "waiting",
 			valid: `{
 				"id": "wu_001",
+				"task_id": "task_001",
 				"task_graph_id": "graph_001",
 				"title": "Criar schemas de dominio",
 				"objective": "Definir contratos executaveis do M0.",

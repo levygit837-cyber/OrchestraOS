@@ -85,16 +85,19 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		}
 
 		// Create multiple work units
+		taskGraphID := createTestTaskGraph(t, db, task.ID)
 		workUnits := []domain.WorkUnit{
 			{
-				TaskGraphID:          task.ID,
+				TaskID:               task.ID,
+				TaskGraphID:          taskGraphID,
 				Title:                "Work Unit 1",
 				Objective:            "First objective",
 				AssignedAgentProfile: "default",
 				Status:               domain.WorkUnitStatusCreated,
 			},
 			{
-				TaskGraphID:          task.ID,
+				TaskID:               task.ID,
+				TaskGraphID:          taskGraphID,
 				Title:                "Work Unit 2",
 				Objective:            "Second objective",
 				AssignedAgentProfile: "default",
@@ -153,8 +156,10 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 			t.Fatalf("Failed to create task: %v", err)
 		}
 
+		taskGraphID := createTestTaskGraph(t, db, task.ID)
 		wu := &domain.WorkUnit{
-			TaskGraphID:          task.ID,
+			TaskID:               task.ID,
+			TaskGraphID:          taskGraphID,
 			Title:                "Work Unit with Run",
 			AssignedAgentProfile: "default",
 			Status:               domain.WorkUnitStatusCreated,
@@ -256,8 +261,10 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Create work unit
+		taskGraphID := createTestTaskGraph(t, db, task.ID)
 		wu := &domain.WorkUnit{
-			TaskGraphID:          task.ID,
+			TaskID:               task.ID,
+			TaskGraphID:          taskGraphID,
 			Title:                "Work Unit for Agent",
 			AssignedAgentProfile: "default",
 			Status:               domain.WorkUnitStatusCreated,

@@ -11,11 +11,12 @@ Este documento define os contratos iniciais de eventos e comandos. Os schemas ex
 - `event_id` deve ser idempotente: reprocessar o mesmo envelope retorna a entrada persistida, enquanto reutilizar o ID com conteudo divergente deve retornar conflito.
 - `sequence` deve ser monotonicamente crescente por `run_id` quando aplicavel.
 
-## Escopo M0 De Schemas Executaveis
+## Schemas Executaveis
 
 | Schema | Tipo Go | Finalidade |
 | --- | --- | --- |
 | `contracts/schemas/domain/task.schema.json` | `internal/domain.Task` | Contrato da entidade `Task`. |
+| `contracts/schemas/domain/task-graph.schema.json` | `internal/domain.TaskGraph` | Contrato da projecao versionada do DAG de decomposicao. |
 | `contracts/schemas/domain/run.schema.json` | `internal/domain.Run` | Contrato da entidade `Run`. |
 | `contracts/schemas/domain/work-unit.schema.json` | `internal/domain.WorkUnit` | Contrato da entidade `WorkUnit`. |
 | `contracts/schemas/domain/agent.schema.json` | `internal/domain.Agent` | Contrato minimo da entidade `Agent`. |
@@ -173,10 +174,14 @@ Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contr
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["graph_id", "graph_version", "nodes", "edges"],
+  "required": ["task_id", "graph_id", "graph_version", "planner_strategy", "nodes", "edges"],
   "properties": {
+    "task_id": { "type": "string" },
     "graph_id": { "type": "string" },
     "graph_version": { "type": "integer", "minimum": 1 },
+    "planner_strategy": { "type": "string" },
+    "rationale": { "type": "string" },
+    "created_by": { "type": "string" },
     "nodes": {
       "type": "array",
       "items": {
