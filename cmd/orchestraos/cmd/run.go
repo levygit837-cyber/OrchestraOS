@@ -83,11 +83,17 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to prepare prompt: %w", err)
 		}
 
-		// Start runtime if fake
-		if runtimeType == "fake" {
-			fmt.Printf("Starting fake runtime for run %s...\n", run.ID)
+		// Start runtime if fake or gemini
+		if runtimeType == "fake" || runtimeType == "gemini" {
+			fmt.Printf("Starting %s runtime for run %s...\n", runtimeType, run.ID)
 
-			fakeRuntime := agent.NewFakeRuntime()
+			var runtime agent.Runtime
+			if runtimeType == "fake" {
+				runtime = agent.NewFakeRuntime()
+			} else {
+				runtime = agent.NewGeminiRuntime()
+			}
+
 			config := agent.RuntimeConfig{
 				RunID:             run.ID,
 				WorkUnitID:        workUnitID,
@@ -107,14 +113,14 @@ var runStartCmd = &cobra.Command{
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 
-			if err := fakeRuntime.Start(ctx, config); err != nil {
-				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to start fake runtime: %w", err))
+			if err := runtime.Start(ctx, config); err != nil {
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to start %s runtime: %w", runtimeType, err))
 			}
 
 			for {
-				event, err := fakeRuntime.ReceiveEvent(ctx)
+				event, err := runtime.ReceiveEvent(ctx)
 				if err != nil {
-					return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to receive fake runtime event: %w", err))
+					return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to receive %s runtime event: %w", runtimeType, err))
 				}
 				switch event.Type {
 				case "agent.heartbeat":
@@ -126,16 +132,16 @@ var runStartCmd = &cobra.Command{
 						EventID: event.ID,
 						Payload: payload,
 					}); err != nil {
-						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist fake runtime heartbeat: %w", err))
+						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist %s runtime heartbeat: %w", runtimeType, err))
 					}
 				case "agent.checkpoint_reached":
 					if _, err := sessionService.CheckpointFromEvent(ctx, session.ID, event); err != nil {
-						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist fake runtime checkpoint: %w", err))
+						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist %s runtime checkpoint: %w", runtimeType, err))
 					}
 				default:
 					eventService := services.NewEventService(getDB())
 					if _, err := eventService.Append(ctx, event); err != nil {
-						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to append fake runtime event %q: %w", event.Type, err))
+						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to append %s runtime event %q: %w", runtimeType, event.Type, err))
 					}
 				}
 				if err := maybeAutoCheckpointRuntimeEvent(ctx, sessionService, session.ID, runtimeType, event); err != nil {
@@ -149,21 +155,24 @@ var runStartCmd = &cobra.Command{
 			if _, err := sessionService.Stop(context.Background(), session.ID, services.TransitionInput{
 				Runtime: runtimeType,
 			}); err != nil {
-				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to stop fake runtime session: %w", err))
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to stop %s runtime session: %w", runtimeType, err))
 			}
 
 			if _, err := runService.Validate(context.Background(), run.ID, services.TransitionInput{
 				Runtime: runtimeType,
 			}); err != nil {
-				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to validate fake runtime run: %w", err))
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to validate %s runtime run: %w", runtimeType, err))
 			}
+
+			evidenceRef := fmt.Sprintf("%s-runtime:agent.completed", runtimeType)
+			justification := fmt.Sprintf("%s runtime completed with agent.completed event", runtimeType)
 			if _, err := runService.Complete(context.Background(), run.ID, services.TransitionInput{
 				Runtime:       runtimeType,
 				AgentID:       agentID,
-				EvidenceRefs:  []string{"fake-runtime:agent.completed"},
-				Justification: "fake runtime completed with agent.completed event",
+				EvidenceRefs:  []string{evidenceRef},
+				Justification: justification,
 			}); err != nil {
-				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to complete fake runtime run: %w", err))
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to complete %s runtime run: %w", runtimeType, err))
 			}
 		}
 
@@ -314,7 +323,7 @@ var runGetCmd = &cobra.Command{
 
 func init() {
 	runStartCmd.Flags().String("workunit-id", "", "Work unit ID to run (required)")
-	runStartCmd.Flags().String("runtime", "fake", "Runtime type (fake, codex_cli)")
+	runStartCmd.Flags().String("runtime", "fake", "Runtime type (fake, codex_cli, gemini)")
 	runStartCmd.MarkFlagRequired("workunit-id")
 
 	runListCmd.Flags().String("task-id", "", "Filter by task ID")

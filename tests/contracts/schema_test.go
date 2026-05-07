@@ -301,7 +301,7 @@ func schemaCases() []schemaCase {
 				"capabilities": ["code_edit", "test_run"],
 				"allowed_tools": ["shell.read", "shell.test"],
 				"default_prompt_fragments": ["project_instructions"],
-				"runtime_type": "codex_cli"
+				"runtime_type": "gemini"
 			}`,
 		},
 		{

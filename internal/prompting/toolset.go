@@ -5,7 +5,7 @@ import "fmt"
 func SelectToolset(profile string) (ToolsetSelection, error) {
 	normalized := normalizeProfile(profile)
 	switch normalized {
-	case "default", "codex", "general_engineering":
+	case "default", "codex", "general_engineering", "gemini":
 		normalized = "code_worker"
 	}
 

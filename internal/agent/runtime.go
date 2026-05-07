@@ -57,4 +57,5 @@ const (
 	RuntimeTypeCodexCLI RuntimeType = "codex_cli"
 	RuntimeTypeFake     RuntimeType = "fake"
 	RuntimeTypeExternal RuntimeType = "external"
+	RuntimeTypeGemini   RuntimeType = "gemini"
 )

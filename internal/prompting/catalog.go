@@ -170,7 +170,7 @@ func normalizeProfile(profile string) string {
 		return "code_worker"
 	}
 	switch profile {
-	case "default", "codex", "general_engineering":
+	case "default", "codex", "general_engineering", "gemini":
 		return "code_worker"
 	}
 	return profile

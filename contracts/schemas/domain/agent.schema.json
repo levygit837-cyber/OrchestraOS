@@ -31,7 +31,7 @@
     },
     "runtime_type": {
       "type": "string",
-      "enum": ["codex_cli", "fake", "external"]
+      "enum": ["codex_cli", "fake", "external", "gemini"]
     }
   }
 }

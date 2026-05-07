@@ -144,6 +144,7 @@ const (
 	AgentRuntimeTypeCodexCLI AgentRuntimeType = "codex_cli"
 	AgentRuntimeTypeFake     AgentRuntimeType = "fake"
 	AgentRuntimeTypeExternal AgentRuntimeType = "external"
+	AgentRuntimeTypeGemini   AgentRuntimeType = "gemini"
 )
 
 type Agent struct {

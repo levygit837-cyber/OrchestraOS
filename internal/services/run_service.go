@@ -415,7 +415,7 @@ func validateRuntime(runtime, op string) error {
 		return nil
 	}
 	switch domain.AgentRuntimeType(runtime) {
-	case domain.AgentRuntimeTypeFake, domain.AgentRuntimeTypeCodexCLI, domain.AgentRuntimeTypeExternal:
+	case domain.AgentRuntimeTypeFake, domain.AgentRuntimeTypeCodexCLI, domain.AgentRuntimeTypeExternal, domain.AgentRuntimeTypeGemini:
 		return nil
 	default:
 		return apperrors.New(apperrors.CodeInvalidInput, op, fmt.Sprintf("invalid runtime %q", runtime))
