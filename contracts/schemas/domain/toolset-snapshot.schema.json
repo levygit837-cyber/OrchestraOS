@@ -1,0 +1,39 @@
+{
+  "$id": "https://orchestraos.local/schemas/domain/toolset-snapshot.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ToolsetSnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "run_id",
+    "agent_session_id",
+    "tools",
+    "created_reason",
+    "created_at"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "agent_session_id": { "type": "string", "minLength": 1 },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "scope", "risk"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "scope": { "type": "string", "minLength": 1 },
+          "risk": {
+            "type": "string",
+            "enum": ["safe", "guarded", "approval_required", "destructive", "forbidden"]
+          },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "created_reason": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

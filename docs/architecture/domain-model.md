@@ -397,8 +397,11 @@ Campos minimos:
 
 - `id`
 - `version`
+- `category`
 - `kind`
 - `title`
+- `body_hash`
+- `metadata_hash`
 - `body`
 - `applies_when`
 - `requires`
@@ -429,11 +432,22 @@ Campos minimos:
 
 - `id`
 - `run_id`
+- `work_unit_id`
+- `agent_session_id`
+- `system_prompt`
+- `task_prompt`
+- `combined_prompt`
 - `system_prompt_hash`
 - `task_prompt_hash`
+- `combined_prompt_hash`
+- `composition_hash`
+- `category_signature`
 - `fragment_refs`
-- `dynamic_fragment_refs`
-- `rendered_refs`
+- `assembly_order`
+- `variables_applied`
+- `count_used`
+- `first_used_at`
+- `last_used_at`
 - `created_at`
 
 ### ToolsetSnapshot

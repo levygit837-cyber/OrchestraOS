@@ -26,7 +26,7 @@ O planner nao deve criar dependencias ciclicas. Loops de tentativa e correcao pe
 
 ### Prompt Composer
 
-Monta SystemPrompt e TaskPrompt por work unit usando fragmentos versionados. Cada run deve ter um `PromptSnapshot` para auditoria e reproducibilidade.
+Monta SystemPrompt e TaskPrompt por WorkUnit usando fragmentos versionados, categorias canonicas e `SystemProfile`. O `TaskPrompt` nasce depois do perfil sistemico e inclui `TaskPromptDecompose` com ownership, dependencias e limites da unidade do TaskGraph. Cada run referencia um `PromptSnapshot` para auditoria e reproducibilidade; composicoes identicas reutilizam o snapshot e incrementam `count_used`.
 
 ### Policy Engine
 

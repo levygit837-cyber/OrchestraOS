@@ -33,13 +33,17 @@ func TestFakeRuntimeEvents(t *testing.T) {
 
 		fakeRuntime := agent.NewFakeRuntime()
 		config := agent.RuntimeConfig{
-			RunID:      runID,
-			WorkUnitID: workUnitID,
-			TaskID:     taskID,
-			AgentID:    agentID,
-			Prompt:     "Test work unit",
-			MaxSteps:   10,
-			Timeout:    300,
+			RunID:             runID,
+			WorkUnitID:        workUnitID,
+			TaskID:            taskID,
+			AgentID:           agentID,
+			Prompt:            "Test work unit",
+			PromptSnapshotID:  uuid.New().String(),
+			ToolsetSnapshotID: uuid.New().String(),
+			PromptHash:        "sha256:test",
+			Toolset:           []string{"runtime.fake.emit"},
+			MaxSteps:          10,
+			Timeout:           300,
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -93,6 +97,18 @@ func TestFakeRuntimeEvents(t *testing.T) {
 		for _, event := range events {
 			if _, exists := expectedTypes[event.Type]; exists {
 				expectedTypes[event.Type] = true
+			}
+			if event.Type == "agent.started" {
+				var payload map[string]interface{}
+				if err := json.Unmarshal(event.Payload, &payload); err != nil {
+					t.Fatalf("Failed to decode agent.started payload: %v", err)
+				}
+				if _, exists := payload["prompt"]; exists {
+					t.Fatalf("agent.started should reference prompt snapshot instead of embedding prompt body")
+				}
+				if payload["prompt_snapshot_id"] != config.PromptSnapshotID || payload["toolset_snapshot_id"] != config.ToolsetSnapshotID {
+					t.Fatalf("agent.started should reference prompt/toolset snapshots, got %+v", payload)
+				}
 			}
 
 			// Verify event structure

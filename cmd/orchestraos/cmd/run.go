@@ -74,19 +74,34 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to connect agent session: %w", err)
 		}
 
+		preparedPrompt, err := services.NewPromptService(getDB()).PrepareRunPrompt(cmd.Context(), services.PrepareRunPromptInput{
+			RunID:          run.ID,
+			AgentSessionID: session.ID,
+		})
+		if err != nil {
+			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
+			return fmt.Errorf("failed to prepare prompt: %w", err)
+		}
+
 		// Start runtime if fake
 		if runtimeType == "fake" {
 			fmt.Printf("Starting fake runtime for run %s...\n", run.ID)
 
 			fakeRuntime := agent.NewFakeRuntime()
 			config := agent.RuntimeConfig{
-				RunID:      run.ID,
-				WorkUnitID: workUnitID,
-				TaskID:     wu.TaskID,
-				AgentID:    agentID,
-				Prompt:     fmt.Sprintf("Execute work unit: %s", wu.Title),
-				MaxSteps:   10,
-				Timeout:    300,
+				RunID:             run.ID,
+				WorkUnitID:        workUnitID,
+				TaskID:            wu.TaskID,
+				AgentID:           agentID,
+				Prompt:            preparedPrompt.CombinedPrompt,
+				SystemPrompt:      preparedPrompt.SystemPrompt,
+				TaskPrompt:        preparedPrompt.TaskPrompt,
+				PromptSnapshotID:  preparedPrompt.PromptSnapshot.ID,
+				ToolsetSnapshotID: preparedPrompt.ToolsetSnapshot.ID,
+				PromptHash:        preparedPrompt.PromptHash,
+				Toolset:           preparedPrompt.Toolset,
+				MaxSteps:          10,
+				Timeout:           300,
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -152,7 +167,13 @@ var runStartCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Printf("Run started: %s (runtime: %s, agent: %s)\n", run.ID, runtimeType, agentID)
+		fmt.Printf("Run started: %s (runtime: %s, agent: %s, prompt_snapshot: %s, toolset_snapshot: %s)\n",
+			run.ID,
+			runtimeType,
+			agentID,
+			preparedPrompt.PromptSnapshot.ID,
+			preparedPrompt.ToolsetSnapshot.ID,
+		)
 		return nil
 	},
 }

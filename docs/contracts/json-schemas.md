@@ -13,6 +13,8 @@ Este documento define os contratos iniciais de eventos e comandos. Os schemas ex
 
 ## Schemas Executaveis
 
+A tabela abaixo representa os schemas executaveis atuais. Os contratos de prompt e toolset foram adicionados no corte M3, sem alterar a decisao da ADR 0013 sobre o escopo original do M0.
+
 | Schema | Tipo Go | Finalidade |
 | --- | --- | --- |
 | `contracts/schemas/domain/task.schema.json` | `internal/domain.Task` | Contrato da entidade `Task`. |
@@ -21,6 +23,9 @@ Este documento define os contratos iniciais de eventos e comandos. Os schemas ex
 | `contracts/schemas/domain/work-unit.schema.json` | `internal/domain.WorkUnit` | Contrato da entidade `WorkUnit`. |
 | `contracts/schemas/domain/agent.schema.json` | `internal/domain.Agent` | Contrato minimo da entidade `Agent`. |
 | `contracts/schemas/domain/agent-session.schema.json` | `internal/domain.AgentSession` | Contrato da entidade `AgentSession`. |
+| `contracts/schemas/domain/prompt-fragment.schema.json` | `internal/domain.PromptFragment` | Contrato de fragmento versionado do Prompt Composer, com categoria canonica e assinatura de metadados. |
+| `contracts/schemas/domain/prompt-snapshot.schema.json` | `internal/domain.PromptSnapshot` | Contrato do prompt renderizado e persistido por composicao deduplicada, com contagem de uso. |
+| `contracts/schemas/domain/toolset-snapshot.schema.json` | `internal/domain.ToolsetSnapshot` | Contrato do toolset minimo concedido por AgentSession. |
 | `contracts/schemas/protocol/event-envelope.schema.json` | `internal/domain.EventEnvelope` | Envelope comum de eventos e comandos; representa `Event` no M0. |
 
 Nao criar no M0:
@@ -102,6 +107,7 @@ Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contr
 | `agent.heartbeat` | Agent -> Orchestrator | Sinal de vida. |
 | `agent.checkpoint_reached` | Agent -> Orchestrator | Ponto seguro para comandos pendentes. |
 | `agent.message` | Bidirecional | Mensagem auditavel. |
+| `prompt.snapshot_created` | Orchestrator -> Store | Registrar prompt renderizado, fragmentos, hashes e variaveis usados na run. |
 | `prompt.dynamic_fragment_created` | Orchestrator -> Store | Registrar fragmento temporario de prompt. |
 | `toolset.snapshot_created` | Orchestrator -> Store | Registrar ferramentas disponiveis para a sessao. |
 | `toolset.change_requested` | Agent -> Orchestrator | Solicitar ferramenta ausente ou expansao de toolset. |
@@ -366,6 +372,26 @@ Essa decisao de escopo esta registrada na [ADR 0013](../adr/0013-m0-domain-contr
     "body_hash": { "type": "string" },
     "expires_after_run": { "type": "boolean" },
     "created_for_work_unit_id": { "type": "string" }
+  }
+}
+```
+
+### `prompt.snapshot_created`
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["prompt_snapshot_id", "hash"],
+  "properties": {
+    "prompt_snapshot_id": { "type": "string" },
+    "hash": { "type": "string" },
+    "run_id": { "type": "string" },
+    "work_unit_id": { "type": "string" },
+    "agent_session_id": { "type": "string" },
+    "system_prompt_hash": { "type": "string" },
+    "task_prompt_hash": { "type": "string" },
+    "fragment_count": { "type": "integer", "minimum": 0 }
   }
 }
 ```

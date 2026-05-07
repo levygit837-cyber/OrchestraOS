@@ -26,16 +26,21 @@ type Runtime interface {
 
 // RuntimeConfig holds configuration for starting a runtime
 type RuntimeConfig struct {
-	RunID      string
-	WorkUnitID string
-	TaskID     string
-	AgentID    string
-	Prompt     string
-	Toolset    []string
-	OwnedPaths []string
-	ReadPaths  []string
-	MaxSteps   int
-	Timeout    int // in seconds
+	RunID             string
+	WorkUnitID        string
+	TaskID            string
+	AgentID           string
+	Prompt            string
+	SystemPrompt      string
+	TaskPrompt        string
+	PromptSnapshotID  string
+	ToolsetSnapshotID string
+	PromptHash        string
+	Toolset           []string
+	OwnedPaths        []string
+	ReadPaths         []string
+	MaxSteps          int
+	Timeout           int // in seconds
 }
 
 // RuntimeStatus represents the current status of a runtime

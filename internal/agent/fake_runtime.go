@@ -52,10 +52,13 @@ func (f *FakeRuntime) Start(ctx context.Context, config RuntimeConfig) error {
 	// Emit agent.started event
 	f.status.State = "running"
 	f.emitEvent("agent.started", "v1", map[string]interface{}{
-		"agent_id":  config.AgentID,
-		"run_id":    config.RunID,
-		"work_unit": config.WorkUnitID,
-		"prompt":    config.Prompt,
+		"agent_id":            config.AgentID,
+		"run_id":              config.RunID,
+		"work_unit":           config.WorkUnitID,
+		"prompt_hash":         config.PromptHash,
+		"prompt_snapshot_id":  config.PromptSnapshotID,
+		"toolset_snapshot_id": config.ToolsetSnapshotID,
+		"toolset":             config.Toolset,
 	})
 
 	f.emitHeartbeat()

@@ -38,6 +38,10 @@ Conteudo tipico:
 - riscos conhecidos;
 - todo ledger inicial.
 
+O `TaskPrompt` e renderizado somente depois da selecao, validacao e montagem do perfil sistemico. Esse `SystemProfile` resume persona, modo operacional, dominio, contrato de saida, operacoes permitidas/bloqueadas, ferramentas concedidas e assinatura das categorias selecionadas. Assim, uma WorkUnit de review recebe foco de analise, enquanto uma WorkUnit de implementacao recebe foco de mudanca controlada.
+
+Para TaskGraphs, nao ha uma decomposicao paralela ao `TaskGraphService`. Cada `Run` aponta para uma `WorkUnit`, e o `TaskPrompt` inclui uma secao `TaskPromptDecompose` com `work_unit_id`, `task_graph_id`, ownership, dependencias, criterios, validacoes e limites de escopo. O agente deve executar apenas essa unidade e nao assumir WorkUnits irmas.
+
 ### PromptFragment
 
 Bloco reutilizavel.
@@ -46,8 +50,9 @@ Campos recomendados:
 
 ```json
 {
-  "id": "fragment.agent.code_worker",
+  "id": "prompt.persona.code_worker",
   "version": "1.0.0",
+  "category": "persona",
   "kind": "persona",
   "title": "Code Worker",
   "priority": 300,
@@ -60,9 +65,13 @@ Campos recomendados:
   "conflicts_with": [
     "fragment.agent.reviewer_only"
   ],
+  "body_hash": "sha256:...",
+  "metadata_hash": "sha256:...",
   "body": "..."
 }
 ```
+
+No corte M3 estatico, `category` e a chave canonica de composicao e `kind` continua como tipo semantico. O catalogo embutido fica organizado por folders normalizados, como `policy/global/default.md`, `persona/code_worker.md`, `operating_mode/implementer.md`, `output_contract/final_summary.md` e `task_template/work_unit_default.md`. A selecao valida exatamente um fragmento por categoria obrigatoria e no maximo um por qualquer categoria, evitando duas personas, dois modos operacionais ou responsabilidades duplicadas.
 
 ### DynamicPromptFragment
 
@@ -217,13 +226,14 @@ O Orchestrator deve:
 3. selecionar fragmentos obrigatorios;
 4. selecionar fragmentos condicionais;
 5. resolver conflitos;
-6. renderizar variaveis;
-7. selecionar toolset minimo;
-8. recuperar memoria relevante quando a capacidade estiver habilitada;
-9. criar `PromptSnapshot`;
-10. criar `ToolsetSnapshot`;
-11. persistir hashes e referencias;
-12. iniciar agente com o prompt e toolset montados.
+6. selecionar toolset minimo;
+7. montar `SystemProfile`;
+8. renderizar o `TaskPrompt` com o `SystemProfile`;
+9. recuperar memoria relevante quando a capacidade estiver habilitada;
+10. criar ou referenciar `PromptSnapshot`;
+11. criar `ToolsetSnapshot`;
+12. persistir hashes e referencias;
+13. iniciar agente com o prompt e toolset montados.
 
 ## PromptSnapshot
 
@@ -233,11 +243,15 @@ Cada run deve registrar:
 - fragmentos dinamicos usados;
 - memorias recuperadas usadas no prompt inicial;
 - valores de variaveis usados;
-- system prompt renderizado ou referencia segura;
-- task prompt renderizado ou referencia segura;
+- system prompt renderizado;
+- task prompt renderizado;
 - hash dos prompts;
 - data de criacao;
 - run associada.
+
+No corte M3 estatico, o prompt renderizado completo fica persistido em banco em `prompt_snapshots` como `system_prompt`, `task_prompt` e `combined_prompt`, junto com hashes SHA-256, `composition_hash`, `category_signature`, `fragment_refs`, `assembly_order`, `variables_applied`, `count_used`, `first_used_at` e `last_used_at`. A tabela deduplica por `composition_hash`: se a mesma composicao renderizada aparecer novamente, o snapshot existente e referenciado, `count_used` sobe e um novo evento da run registra `reused`.
+
+Fragmentos estaticos do catalogo ficam registrados em `prompt_fragments` por `id` e `version`. Se o mesmo `id/version` ja existir com `metadata_hash` diferente, a composicao deve falhar em vez de sobrescrever o fragmento versionado. O `metadata_hash` cobre `kind`, `category`, prioridade, grupo exclusivo, condicoes, requisitos, conflitos, operacoes permitidas/bloqueadas, aprovacao exigida, autonomia e `body_hash`.
 
 ## Especializacao Dinamica
 
@@ -265,10 +279,13 @@ Exemplos:
 
 | Perfil | Toolset inicial |
 | --- | --- |
+| `fake` | emissao deterministica de eventos, ledger, pedido de toolset e runtime fake. |
 | `docs_writer` | leitura do worktree, edicao em caminhos de docs, diff local. |
 | `code_worker` | leitura, edicao no ownership, testes locais, diff local. |
 | `reviewer` | leitura, diff, testes locais se aprovados, comentarios estruturados. |
 | `debugger` | leitura, testes locais, logs, comandos diagnosticos com timeout. |
+
+Perfis `default`, `codex` e `general_engineering` usam o toolset seguro de `code_worker`.
 
 O agente pode solicitar ferramenta ausente por evento estruturado. O pedido deve incluir:
 

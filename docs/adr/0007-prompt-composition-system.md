@@ -28,7 +28,7 @@ Fragmentos de prompt devem ser pequenos, versionados e classificados por funcao:
 - validacao;
 - registro de progresso e todo persistente.
 
-O Orchestrator deve criar um `PromptSnapshot` para cada run, registrando fragmentos usados, versoes, ordem de montagem, variaveis aplicadas e hash do resultado.
+O Orchestrator deve criar ou referenciar um `PromptSnapshot` para cada run, registrando fragmentos usados, versoes, ordem de montagem, variaveis aplicadas e hash do resultado. A partir do corte M3, snapshots identicos sao deduplicados por `composition_hash`; a rastreabilidade por run continua no evento `prompt.snapshot_created`, que informa se o snapshot foi reutilizado e o `count_used` atual.
 
 ## Especialização Dinâmica Controlada
 

@@ -52,11 +52,23 @@ type ValidationCompletedPayload struct {
 }
 
 type PromptSnapshotCreatedPayload struct {
-	PromptSnapshotID string `json:"prompt_snapshot_id"`
-	Hash             string `json:"hash"`
+	PromptSnapshotID  string `json:"prompt_snapshot_id"`
+	Hash              string `json:"hash"`
+	RunID             string `json:"run_id,omitempty"`
+	WorkUnitID        string `json:"work_unit_id,omitempty"`
+	AgentSessionID    string `json:"agent_session_id,omitempty"`
+	SystemPromptHash  string `json:"system_prompt_hash,omitempty"`
+	TaskPromptHash    string `json:"task_prompt_hash,omitempty"`
+	CompositionHash   string `json:"composition_hash,omitempty"`
+	CategorySignature string `json:"category_signature,omitempty"`
+	FragmentCount     int    `json:"fragment_count,omitempty"`
+	Reused            bool   `json:"reused,omitempty"`
+	CountUsed         int    `json:"count_used,omitempty"`
 }
 
 type ToolsetSnapshotCreatedPayload struct {
 	ToolsetSnapshotID string `json:"toolset_snapshot_id"`
 	AgentSessionID    string `json:"agent_session_id"`
+	RunID             string `json:"run_id,omitempty"`
+	ToolCount         int    `json:"tool_count,omitempty"`
 }

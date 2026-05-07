@@ -67,6 +67,9 @@ func TestSchemasRejectMissingRequiredFields(t *testing.T) {
 
 func TestSchemasRejectInvalidEnums(t *testing.T) {
 	for _, tc := range schemaCases() {
+		if tc.enumField == "" {
+			continue
+		}
 		t.Run(tc.name, func(t *testing.T) {
 			schema := compileSchema(t, tc.path)
 			instance := decodeObject(t, tc.valid)
@@ -316,6 +319,89 @@ func schemaCases() []schemaCase {
 				"status": "running",
 				"last_heartbeat_at": "2026-05-03T12:06:00Z",
 				"last_checkpoint_at": null
+			}`,
+		},
+		{
+			name:           "PromptFragment",
+			path:           "schemas/domain/prompt-fragment.schema.json",
+			requiredField:  "body_hash",
+			enumField:      "kind",
+			invalidEnumVal: "freeform",
+			valid: `{
+				"id": "fragment.policy.global",
+				"version": "1.0.0",
+				"category": "policy.global",
+				"kind": "global_policy",
+				"title": "Global Prompt Policy",
+				"priority": 100,
+				"exclusive_group": "global_policy",
+				"body_hash": "sha256:68b9a174cc95bea839d40eb07ddbd7c5a17feb7f900d61ca1d613205f9da1384",
+				"metadata_hash": "sha256:ef73569da6f8fcf17d738ddea2361a2b0b64a51071184667990a98d0be293c88",
+				"body": "Repository is source of truth.",
+				"applies_when": {},
+				"requires": [],
+				"conflicts_with": [],
+				"allows": ["read_authorized_context"],
+				"denies": ["raise_autonomy_level"],
+				"approval_required": ["network_access"],
+				"autonomy_level": 0,
+				"created_at": "2026-05-03T12:00:00Z",
+				"updated_at": "2026-05-03T12:00:00Z"
+			}`,
+		},
+		{
+			name:          "PromptSnapshot",
+			path:          "schemas/domain/prompt-snapshot.schema.json",
+			requiredField: "combined_prompt_hash",
+			valid: `{
+				"id": "ps_001",
+				"run_id": "run_001",
+				"work_unit_id": "wu_001",
+				"agent_session_id": "as_001",
+				"system_prompt": "System prompt",
+				"task_prompt": "Task prompt",
+				"combined_prompt": "System prompt\n\nTask prompt",
+				"system_prompt_hash": "sha256:68b9a174cc95bea839d40eb07ddbd7c5a17feb7f900d61ca1d613205f9da1384",
+				"task_prompt_hash": "sha256:ef73569da6f8fcf17d738ddea2361a2b0b64a51071184667990a98d0be293c88",
+				"combined_prompt_hash": "sha256:1ac4d66aa4e5adc769f549f82588b64265113d38d6be2a17cff8cd328d716124",
+				"composition_hash": "sha256:8880a90cbad0dd05c597004a491c3cb2a3b7bad661ceabf839ffdfb154a80706",
+				"category_signature": "sha256:abd5318eefb44a71edf41079221c27a1822a3d7997058934082bd7a277e93165",
+				"fragment_refs": [{
+					"id": "fragment.policy.global",
+					"version": "1.0.0",
+					"category": "policy.global",
+					"kind": "global_policy",
+					"order": 1,
+					"body_hash": "sha256:68b9a174cc95bea839d40eb07ddbd7c5a17feb7f900d61ca1d613205f9da1384",
+					"metadata_hash": "sha256:ef73569da6f8fcf17d738ddea2361a2b0b64a51071184667990a98d0be293c88",
+					"title": "Global Prompt Policy"
+				}],
+				"assembly_order": ["fragment.policy.global@1.0.0"],
+				"variables_applied": {"TaskID": "task_001"},
+				"count_used": 1,
+				"first_used_at": "2026-05-03T12:00:00Z",
+				"last_used_at": "2026-05-03T12:00:00Z",
+				"created_at": "2026-05-03T12:00:00Z"
+			}`,
+		},
+		{
+			name:           "ToolsetSnapshot",
+			path:           "schemas/domain/toolset-snapshot.schema.json",
+			requiredField:  "tools",
+			enumField:      "tools",
+			invalidEnumVal: "not-used",
+			valid: `{
+				"id": "ts_001",
+				"run_id": "run_001",
+				"agent_session_id": "as_001",
+				"tools": [{
+					"name": "filesystem.read",
+					"scope": "approved_read_paths",
+					"risk": "safe",
+					"reason": "Read authorized context."
+				}],
+				"created_reason": "minimum toolset for code_worker profile",
+				"created_at": "2026-05-03T12:00:00Z"
 			}`,
 		},
 		{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 
@@ -126,6 +127,206 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	}
 	if state.RunStatuses[runResult.Value.ID] != domain.RunStatusCompleted {
 		t.Fatalf("expected replayed run completed, got %s", state.RunStatuses[runResult.Value.ID])
+	}
+}
+
+func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+	ctx := context.Background()
+
+	taskService := services.NewTaskService(db)
+	workUnitService := services.NewWorkUnitService(db)
+	runService := services.NewRunService(db)
+	sessionService := services.NewAgentSessionService(db)
+	promptService := services.NewPromptService(db)
+
+	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+		Title:       "Prompt composition",
+		Description: "Build prompt snapshots for a run.",
+		Priority:    domain.PriorityP1,
+		RiskLevel:   domain.RiskLevelLow,
+		AcceptanceCriteria: []string{
+			"PromptSnapshot persisted",
+			"ToolsetSnapshot persisted",
+		},
+	})
+	if err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+	wuResult, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+		TaskID:               taskResult.Value.ID,
+		Title:                "Prepare prompt",
+		Objective:            "Compose and persist prompts.",
+		AssignedAgentProfile: "fake",
+		OwnedPaths:           []string{"internal/prompting"},
+		ReadPaths:            []string{"docs/adr/0007-prompt-composition-system.md"},
+		AcceptanceCriteria:   []string{"snapshot has hash"},
+		ValidationPlan:       []string{"go test ./..."},
+	})
+	if err != nil {
+		t.Fatalf("create work unit: %v", err)
+	}
+	runResult, err := runService.Create(ctx, services.CreateRunInput{
+		TaskID:     taskResult.Value.ID,
+		WorkUnitID: wuResult.Value.ID,
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	sessionResult, err := sessionService.Create(ctx, services.CreateAgentSessionInput{
+		AgentID: "agent-prompt-test",
+		RunID:   runResult.Value.ID,
+	})
+	if err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	prepared, err := promptService.PrepareRunPrompt(ctx, services.PrepareRunPromptInput{
+		RunID:          runResult.Value.ID,
+		AgentSessionID: sessionResult.Value.ID,
+	})
+	if err != nil {
+		t.Fatalf("prepare prompt: %v", err)
+	}
+	if prepared.PromptSnapshot.ID == "" || prepared.ToolsetSnapshot.ID == "" {
+		t.Fatalf("expected prompt and toolset snapshots, got %+v", prepared)
+	}
+	if prepared.PromptHash == "" || prepared.CombinedPrompt == "" {
+		t.Fatalf("expected rendered prompt and hash")
+	}
+	if len(prepared.Toolset) == 0 {
+		t.Fatalf("expected runtime toolset")
+	}
+
+	promptRepo := repository.NewPromptRepository(db)
+	storedPrompt, err := promptRepo.GetPromptSnapshot(prepared.PromptSnapshot.ID)
+	if err != nil {
+		t.Fatalf("get prompt snapshot: %v", err)
+	}
+	if storedPrompt == nil || storedPrompt.CombinedPromptHash != prepared.PromptHash {
+		t.Fatalf("expected stored prompt snapshot hash %s, got %+v", prepared.PromptHash, storedPrompt)
+	}
+	if storedPrompt.CompositionHash == "" || storedPrompt.CategorySignature == "" || storedPrompt.CountUsed != 1 {
+		t.Fatalf("expected prompt composition audit fields, got %+v", storedPrompt)
+	}
+	if storedPrompt.SystemPrompt == "Execute work unit: Prepare prompt" {
+		t.Fatalf("expected composed prompt, got old placeholder")
+	}
+	if !strings.Contains(storedPrompt.TaskPrompt, "TaskPromptDecompose") || !strings.Contains(storedPrompt.TaskPrompt, wuResult.Value.TaskGraphID) {
+		t.Fatalf("expected task prompt to include WorkUnit decomposition context, got %s", storedPrompt.TaskPrompt)
+	}
+	if !strings.Contains(storedPrompt.TaskPrompt, "Do not edit paths outside Owned Paths") {
+		t.Fatalf("expected task prompt to constrain parallel WorkUnit ownership")
+	}
+	storedToolset, err := promptRepo.GetToolsetSnapshot(prepared.ToolsetSnapshot.ID)
+	if err != nil {
+		t.Fatalf("get toolset snapshot: %v", err)
+	}
+	if storedToolset == nil || len(storedToolset.Tools) == 0 {
+		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
+	}
+	referenced, err := promptService.PrepareRunPrompt(ctx, services.PrepareRunPromptInput{
+		RunID:          runResult.Value.ID,
+		AgentSessionID: sessionResult.Value.ID,
+	})
+	if err != nil {
+		t.Fatalf("prepare repeated prompt: %v", err)
+	}
+	if referenced.PromptSnapshot.ID != prepared.PromptSnapshot.ID {
+		t.Fatalf("expected duplicate composition to reuse prompt snapshot %s, got %s", prepared.PromptSnapshot.ID, referenced.PromptSnapshot.ID)
+	}
+	if referenced.PromptSnapshot.CountUsed != 2 {
+		t.Fatalf("expected duplicate composition to increment count_used to 2, got %d", referenced.PromptSnapshot.CountUsed)
+	}
+
+	firstFragment := storedPrompt.FragmentRefs[0]
+	storedFragment, err := promptRepo.GetFragment(firstFragment.ID, firstFragment.Version)
+	if err != nil {
+		t.Fatalf("get prompt fragment: %v", err)
+	}
+	if storedFragment == nil {
+		t.Fatalf("expected persisted prompt fragment %s@%s", firstFragment.ID, firstFragment.Version)
+	}
+	if err := promptRepo.CreateOrVerifyFragment(storedFragment); err != nil {
+		t.Fatalf("identical prompt fragment should verify: %v", err)
+	}
+	divergent := *storedFragment
+	divergent.MetadataHash = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+	if err := promptRepo.CreateOrVerifyFragment(&divergent); err == nil {
+		t.Fatal("expected divergent fragment metadata to be rejected")
+	}
+
+	reviewerWU, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+		TaskID:               taskResult.Value.ID,
+		TaskGraphID:          wuResult.Value.TaskGraphID,
+		Title:                "Review prompt",
+		Objective:            "Review the prompt composition.",
+		AssignedAgentProfile: "reviewer",
+		OwnedPaths:           []string{"internal/prompting"},
+		ReadPaths:            []string{"internal/prompting"},
+		DependsOn:            []string{wuResult.Value.ID},
+		AcceptanceCriteria:   []string{"review findings are structured"},
+		ValidationPlan:       []string{"go test ./internal/prompting"},
+	})
+	if err != nil {
+		t.Fatalf("create reviewer work unit: %v", err)
+	}
+	reviewerRun, err := runService.Create(ctx, services.CreateRunInput{
+		TaskID:     taskResult.Value.ID,
+		WorkUnitID: reviewerWU.Value.ID,
+	})
+	if err != nil {
+		t.Fatalf("create reviewer run: %v", err)
+	}
+	reviewerSession, err := sessionService.Create(ctx, services.CreateAgentSessionInput{
+		AgentID: "agent-prompt-reviewer",
+		RunID:   reviewerRun.Value.ID,
+	})
+	if err != nil {
+		t.Fatalf("create reviewer session: %v", err)
+	}
+	reviewerPrepared, err := promptService.PrepareRunPrompt(ctx, services.PrepareRunPromptInput{
+		RunID:          reviewerRun.Value.ID,
+		AgentSessionID: reviewerSession.Value.ID,
+	})
+	if err != nil {
+		t.Fatalf("prepare reviewer prompt: %v", err)
+	}
+	if reviewerPrepared.PromptSnapshot.ID == prepared.PromptSnapshot.ID {
+		t.Fatal("expected different WorkUnit/profile composition to create a prompt snapshot variant")
+	}
+	if !strings.Contains(reviewerPrepared.TaskPrompt, "findings-first") || !strings.Contains(reviewerPrepared.TaskPrompt, wuResult.Value.ID) {
+		t.Fatalf("expected reviewer WorkUnit prompt to include profile focus and dependency, got %s", reviewerPrepared.TaskPrompt)
+	}
+
+	events, err := services.NewEventService(db).ListByRun(ctx, runResult.Value.ID)
+	if err != nil {
+		t.Fatalf("list run events: %v", err)
+	}
+	seenPrompt := false
+	seenToolset := false
+	seenReusedPrompt := false
+	for _, event := range events {
+		switch event.Type {
+		case "prompt.snapshot_created":
+			seenPrompt = true
+			var payload map[string]interface{}
+			if err := json.Unmarshal(event.Payload, &payload); err != nil {
+				t.Fatalf("decode prompt snapshot payload: %v", err)
+			}
+			if reused, _ := payload["reused"].(bool); reused {
+				seenReusedPrompt = true
+			}
+		case "toolset.snapshot_created":
+			seenToolset = true
+		}
+	}
+	if !seenPrompt || !seenToolset {
+		t.Fatalf("expected prompt and toolset snapshot events, got prompt=%t toolset=%t", seenPrompt, seenToolset)
+	}
+	if !seenReusedPrompt {
+		t.Fatalf("expected repeated prompt event to record reused=true")
 	}
 }
 
