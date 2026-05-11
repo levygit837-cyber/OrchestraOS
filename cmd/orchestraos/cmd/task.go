@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
@@ -172,6 +173,7 @@ func init() {
 	taskGraphCreateCmd.Flags().String("task-id", "", "Task ID to decompose (required)")
 	taskGraphCreateCmd.Flags().Bool("replace-active", false, "Supersede the active task graph before creating a new one")
 	taskGraphCreateCmd.Flags().String("created-by", "cli", "Actor creating the task graph")
+	taskGraphCreateCmd.Flags().String("planner", os.Getenv("ORCHESTRAOS_PLANNER_STRATEGY"), "Planner strategy (local_heuristic_v1, llm_gemini_v1)")
 	taskGraphCreateCmd.MarkFlagRequired("task-id")
 
 	taskGraphListCmd.Flags().String("task-id", "", "Task ID to list graphs for (required)")

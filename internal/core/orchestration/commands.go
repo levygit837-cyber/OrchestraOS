@@ -14,6 +14,8 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
+// Deprecated: Commander is superseded by domain services (TaskService, RunService, AgentSessionService, WorkUnitService).
+// Use those services directly instead of Commander for all new code.
 type Commander struct {
 	db *sql.DB
 }
