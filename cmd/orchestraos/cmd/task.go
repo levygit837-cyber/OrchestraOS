@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 	"github.com/spf13/cobra"
 )
 
@@ -25,8 +26,8 @@ var taskCreateCmd = &cobra.Command{
 		riskLevel, _ := cmd.Flags().GetString("risk-level")
 		acceptanceCriteria, _ := cmd.Flags().GetStringArray("acceptance")
 
-		service := services.NewTaskService(getDB())
-		result, err := service.Create(cmd.Context(), services.CreateTaskInput{
+		service := bootstrap.TaskService(getDB())
+		result, err := service.Create(cmd.Context(), taskmod.CreateTaskInput{
 			Title:              title,
 			Description:        description,
 			Priority:           domain.Priority(priority),
@@ -46,7 +47,7 @@ var taskListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all tasks",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := repository.NewTaskRepository(getDB())
+		repo := taskmod.NewRepository(getDB())
 		tasks, err := repo.List()
 		if err != nil {
 			return fmt.Errorf("failed to list tasks: %w", err)
@@ -76,7 +77,7 @@ var taskGetCmd = &cobra.Command{
 	Short: "Get task details",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := repository.NewTaskRepository(getDB())
+		repo := taskmod.NewRepository(getDB())
 		task, err := repo.GetByID(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to get task: %w", err)
@@ -110,8 +111,8 @@ var taskGraphCreateCmd = &cobra.Command{
 		replaceActive, _ := cmd.Flags().GetBool("replace-active")
 		createdBy, _ := cmd.Flags().GetString("created-by")
 
-		service := services.NewTaskGraphService(getDB())
-		result, err := service.Decompose(cmd.Context(), services.DecomposeTaskGraphInput{
+		service := bootstrap.TaskGraphService(getDB())
+		result, err := service.Decompose(cmd.Context(), taskgraphmod.DecomposeTaskGraphInput{
 			TaskID:        taskID,
 			ReplaceActive: replaceActive,
 			CreatedBy:     createdBy,
@@ -136,7 +137,7 @@ var taskGraphListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID, _ := cmd.Flags().GetString("task-id")
 
-		service := services.NewTaskGraphService(getDB())
+		service := bootstrap.TaskGraphService(getDB())
 		graphs, err := service.ListByTask(cmd.Context(), taskID)
 		if err != nil {
 			return fmt.Errorf("failed to list task graphs: %w", err)

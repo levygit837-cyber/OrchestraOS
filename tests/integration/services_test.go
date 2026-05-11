@@ -10,9 +10,16 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/event"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 func TestDomainServicesFullLifecycle(t *testing.T) {
@@ -20,13 +27,13 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	workUnitService := services.NewWorkUnitService(db)
-	runService := services.NewRunService(db)
-	sessionService := services.NewAgentSessionService(db)
-	eventService := services.NewEventService(db)
+	taskService := bootstrap.TaskService(db)
+	workUnitService := bootstrap.WorkUnitService(db)
+	runService := bootstrap.RunService(db)
+	sessionService := bootstrap.AgentSessionService(db)
+	eventService := eventmod.NewService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Service lifecycle",
 		Description:        "Validate service orchestration",
 		Priority:           domain.PriorityP1,
@@ -38,7 +45,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	}
 	taskID := taskResult.Value.ID
 
-	wuResult, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	wuResult, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskID,
 		Title:                "Implement service lifecycle",
 		Objective:            "Exercise all service boundaries",
@@ -51,33 +58,33 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 		t.Fatalf("create work unit: %v", err)
 	}
 
-	runResult, err := runService.Create(ctx, services.CreateRunInput{
+	runResult, err := runService.Create(ctx, runmod.CreateRunInput{
 		TaskID:     taskID,
 		WorkUnitID: wuResult.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Start(ctx, runResult.Value.ID, services.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Start(ctx, runResult.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("start run: %v", err)
 	}
 
-	sessionResult, err := sessionService.Create(ctx, services.CreateAgentSessionInput{
+	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: "agent-service-test",
 		RunID:   runResult.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create session: %v", err)
 	}
-	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-service-test", "sandbox-service-test", services.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-service-test", "sandbox-service-test", orchestration.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("connect session: %v", err)
 	}
-	if _, err := sessionService.Heartbeat(ctx, sessionResult.Value.ID, services.HeartbeatInput{
+	if _, err := sessionService.Heartbeat(ctx, sessionResult.Value.ID, agentsessionmod.HeartbeatInput{
 		Payload: map[string]interface{}{"source": "test"},
 	}); err != nil {
 		t.Fatalf("heartbeat: %v", err)
 	}
-	if _, err := sessionService.Checkpoint(ctx, sessionResult.Value.ID, services.CheckpointInput{
+	if _, err := sessionService.Checkpoint(ctx, sessionResult.Value.ID, agentsessionmod.CheckpointInput{
 		CheckpointID:   "checkpoint-service-test",
 		CurrentGoal:    "validate lifecycle",
 		MinimalSummary: "checkpoint persisted",
@@ -89,10 +96,10 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 		t.Fatalf("checkpoint: %v", err)
 	}
 
-	if _, err := runService.Validate(ctx, runResult.Value.ID, services.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Validate(ctx, runResult.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("validate run: %v", err)
 	}
-	if _, err := runService.Complete(ctx, runResult.Value.ID, services.TransitionInput{
+	if _, err := runService.Complete(ctx, runResult.Value.ID, orchestration.TransitionInput{
 		Runtime:       "fake",
 		EvidenceRefs:  []string{"validation:service-test"},
 		Justification: "service lifecycle validated",
@@ -100,21 +107,21 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 		t.Fatalf("complete run: %v", err)
 	}
 
-	run, err := repository.NewRunRepository(db).GetByID(runResult.Value.ID)
+	run, err := runmod.NewRepository(db).GetByID(runResult.Value.ID)
 	if err != nil {
 		t.Fatalf("get run: %v", err)
 	}
 	if run.Status != domain.RunStatusCompleted {
 		t.Fatalf("expected run completed, got %s", run.Status)
 	}
-	wu, err := repository.NewWorkUnitRepository(db).GetByID(wuResult.Value.ID)
+	wu, err := workunitmod.NewRepository(db).GetByID(wuResult.Value.ID)
 	if err != nil {
 		t.Fatalf("get work unit: %v", err)
 	}
 	if wu.Status != domain.WorkUnitStatusCompleted {
 		t.Fatalf("expected work unit completed, got %s", wu.Status)
 	}
-	session, err := repository.NewAgentSessionRepository(db).GetByID(sessionResult.Value.ID)
+	session, err := agentsessionmod.NewRepository(db).GetByID(sessionResult.Value.ID)
 	if err != nil {
 		t.Fatalf("get session: %v", err)
 	}
@@ -135,13 +142,13 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	workUnitService := services.NewWorkUnitService(db)
-	runService := services.NewRunService(db)
-	sessionService := services.NewAgentSessionService(db)
-	promptService := services.NewPromptService(db)
+	taskService := bootstrap.TaskService(db)
+	workUnitService := bootstrap.WorkUnitService(db)
+	runService := bootstrap.RunService(db)
+	sessionService := bootstrap.AgentSessionService(db)
+	promptService := bootstrap.PromptService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "Prompt composition",
 		Description: "Build prompt snapshots for a run.",
 		Priority:    domain.PriorityP1,
@@ -154,7 +161,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create task: %v", err)
 	}
-	wuResult, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	wuResult, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Prepare prompt",
 		Objective:            "Compose and persist prompts.",
@@ -167,14 +174,14 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create work unit: %v", err)
 	}
-	runResult, err := runService.Create(ctx, services.CreateRunInput{
+	runResult, err := runService.Create(ctx, runmod.CreateRunInput{
 		TaskID:     taskResult.Value.ID,
 		WorkUnitID: wuResult.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	sessionResult, err := sessionService.Create(ctx, services.CreateAgentSessionInput{
+	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: "agent-prompt-test",
 		RunID:   runResult.Value.ID,
 	})
@@ -182,7 +189,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 
-	prepared, err := promptService.PrepareRunPrompt(ctx, services.PrepareRunPromptInput{
+	prepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -199,7 +206,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("expected runtime toolset")
 	}
 
-	promptRepo := repository.NewPromptRepository(db)
+	promptRepo := prompt.NewRepository(db)
 	storedPrompt, err := promptRepo.GetPromptSnapshot(prepared.PromptSnapshot.ID)
 	if err != nil {
 		t.Fatalf("get prompt snapshot: %v", err)
@@ -226,7 +233,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if storedToolset == nil || len(storedToolset.Tools) == 0 {
 		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
 	}
-	referenced, err := promptService.PrepareRunPrompt(ctx, services.PrepareRunPromptInput{
+	referenced, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -257,7 +264,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatal("expected divergent fragment metadata to be rejected")
 	}
 
-	reviewerWU, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	reviewerWU, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		TaskGraphID:          wuResult.Value.TaskGraphID,
 		Title:                "Review prompt",
@@ -272,21 +279,21 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reviewer work unit: %v", err)
 	}
-	reviewerRun, err := runService.Create(ctx, services.CreateRunInput{
+	reviewerRun, err := runService.Create(ctx, runmod.CreateRunInput{
 		TaskID:     taskResult.Value.ID,
 		WorkUnitID: reviewerWU.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create reviewer run: %v", err)
 	}
-	reviewerSession, err := sessionService.Create(ctx, services.CreateAgentSessionInput{
+	reviewerSession, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: "agent-prompt-reviewer",
 		RunID:   reviewerRun.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
 	}
-	reviewerPrepared, err := promptService.PrepareRunPrompt(ctx, services.PrepareRunPromptInput{
+	reviewerPrepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          reviewerRun.Value.ID,
 		AgentSessionID: reviewerSession.Value.ID,
 	})
@@ -300,7 +307,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("expected reviewer WorkUnit prompt to include profile focus and dependency, got %s", reviewerPrepared.TaskPrompt)
 	}
 
-	events, err := services.NewEventService(db).ListByRun(ctx, runResult.Value.ID)
+	events, err := eventmod.NewService(db).ListByRun(ctx, runResult.Value.ID)
 	if err != nil {
 		t.Fatalf("list run events: %v", err)
 	}
@@ -335,11 +342,11 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	workUnitService := services.NewWorkUnitService(db)
-	runService := services.NewRunService(db)
+	taskService := bootstrap.TaskService(db)
+	workUnitService := bootstrap.WorkUnitService(db)
+	runService := bootstrap.RunService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Cascade cancel",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -347,7 +354,7 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create task: %v", err)
 	}
-	wuResult, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	wuResult, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Cancelable work unit",
 		Objective:            "Be cancelled",
@@ -356,28 +363,28 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create work unit: %v", err)
 	}
-	runResult, err := runService.Create(ctx, services.CreateRunInput{
+	runResult, err := runService.Create(ctx, runmod.CreateRunInput{
 		TaskID:     taskResult.Value.ID,
 		WorkUnitID: wuResult.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Complete(ctx, runResult.Value.ID, services.TransitionInput{EvidenceRefs: []string{"validation:test"}}); err == nil {
+	if _, err := runService.Complete(ctx, runResult.Value.ID, orchestration.TransitionInput{EvidenceRefs: []string{"validation:test"}}); err == nil {
 		t.Fatal("expected run completion from created state to be rejected")
 	}
 
-	if _, err := taskService.Cancel(ctx, taskResult.Value.ID, services.TransitionInput{Justification: "test cascade cancel"}); err != nil {
+	if _, err := taskService.Cancel(ctx, taskResult.Value.ID, orchestration.TransitionInput{Justification: "test cascade cancel"}); err != nil {
 		t.Fatalf("cancel task: %v", err)
 	}
-	run, err := repository.NewRunRepository(db).GetByID(runResult.Value.ID)
+	run, err := runmod.NewRepository(db).GetByID(runResult.Value.ID)
 	if err != nil {
 		t.Fatalf("get run: %v", err)
 	}
 	if run.Status != domain.RunStatusCancelled {
 		t.Fatalf("expected related run cancelled, got %s", run.Status)
 	}
-	wu, err := repository.NewWorkUnitRepository(db).GetByID(wuResult.Value.ID)
+	wu, err := workunitmod.NewRepository(db).GetByID(wuResult.Value.ID)
 	if err != nil {
 		t.Fatalf("get work unit: %v", err)
 	}
@@ -391,12 +398,12 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	graphService := services.NewTaskGraphService(db)
-	workUnitService := services.NewWorkUnitService(db)
-	runService := services.NewRunService(db)
+	taskService := bootstrap.TaskService(db)
+	graphService := bootstrap.TaskGraphService(db)
+	workUnitService := bootstrap.WorkUnitService(db)
+	runService := bootstrap.RunService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Task graph decomposition",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -409,7 +416,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 		t.Fatalf("create task: %v", err)
 	}
 
-	result, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:    taskResult.Value.ID,
 		CreatedBy: "integration_test",
 	})
@@ -427,7 +434,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 			t.Fatalf("expected work unit task and graph refs, got %+v", wu)
 		}
 	}
-	events, err := services.NewEventService(db).ListByTask(ctx, taskResult.Value.ID)
+	events, err := eventmod.NewService(db).ListByTask(ctx, taskResult.Value.ID)
 	if err != nil {
 		t.Fatalf("list task events: %v", err)
 	}
@@ -448,7 +455,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 		t.Fatalf("expected one task.graph_created event, got %d", graphEvents)
 	}
 
-	if _, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	if _, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Manual mutation",
 		Objective:            "Reject direct mutation of a planned graph",
@@ -456,7 +463,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	}); err == nil {
 		t.Fatal("expected direct work unit creation on active planned graph to be rejected")
 	}
-	if _, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	if _, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		TaskGraphID:          result.Graph.ID,
 		Title:                "Explicit planned graph mutation",
@@ -466,10 +473,10 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 		t.Fatal("expected direct work unit creation on explicit planned graph to be rejected")
 	}
 
-	if _, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{TaskID: taskResult.Value.ID}); err == nil {
+	if _, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{TaskID: taskResult.Value.ID}); err == nil {
 		t.Fatal("expected active graph conflict")
 	}
-	replanned, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	replanned, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:        taskResult.Value.ID,
 		ReplaceActive: true,
 		CreatedBy:     "integration_test",
@@ -498,7 +505,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 		t.Fatalf("expected one active and one superseded graph, got active=%d superseded=%d", activeCount, supersededCount)
 	}
 
-	otherTask, err := taskService.Create(ctx, services.CreateTaskInput{
+	otherTask, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Other task",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -506,7 +513,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create other task: %v", err)
 	}
-	if _, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	if _, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               otherTask.Value.ID,
 		TaskGraphID:          result.Graph.ID,
 		Title:                "Mismatched graph work unit",
@@ -515,7 +522,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	}); err == nil {
 		t.Fatal("expected work unit creation with mismatched task graph to be rejected")
 	}
-	if _, err := runService.Create(ctx, services.CreateRunInput{
+	if _, err := runService.Create(ctx, runmod.CreateRunInput{
 		TaskID:     otherTask.Value.ID,
 		WorkUnitID: result.WorkUnits[0].ID,
 	}); err == nil {
@@ -528,7 +535,7 @@ func TestEventServiceIdempotencyAndConflict(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskResult, err := services.NewTaskService(db).Create(ctx, services.CreateTaskInput{
+	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Event service idempotency",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -539,7 +546,7 @@ func TestEventServiceIdempotencyAndConflict(t *testing.T) {
 
 	eventID := uuid.New().String()
 	payload := json.RawMessage(`{"note":"same"}`)
-	eventService := services.NewEventService(db)
+	eventService := eventmod.NewService(db)
 	first, err := eventService.Append(ctx, &domain.EventEnvelope{
 		ID:          eventID,
 		Type:        "task.triaged",
@@ -585,7 +592,7 @@ func TestEventServiceConcurrentIdempotencyConflict(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskResult, err := services.NewTaskService(db).Create(ctx, services.CreateTaskInput{
+	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Concurrent event idempotency",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -595,7 +602,7 @@ func TestEventServiceConcurrentIdempotencyConflict(t *testing.T) {
 	}
 
 	eventID := uuid.New().String()
-	eventService := services.NewEventService(db)
+	eventService := eventmod.NewService(db)
 	start := make(chan struct{})
 	errs := make(chan error, 2)
 	for _, payload := range []json.RawMessage{json.RawMessage(`{"note":"first"}`), json.RawMessage(`{"note":"second"}`)} {
@@ -655,11 +662,11 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	workUnitService := services.NewWorkUnitService(db)
-	runService := services.NewRunService(db)
+	taskService := bootstrap.TaskService(db)
+	workUnitService := bootstrap.WorkUnitService(db)
+	runService := bootstrap.RunService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Parallel services",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -670,7 +677,7 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 
 	runIDs := make([]string, 10)
 	for i := 0; i < 10; i++ {
-		wuResult, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+		wuResult, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 			TaskID:               taskResult.Value.ID,
 			Title:                "Parallel work unit",
 			Objective:            "Run independently",
@@ -680,7 +687,7 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create work unit %d: %v", i, err)
 		}
-		runResult, err := runService.Create(ctx, services.CreateRunInput{
+		runResult, err := runService.Create(ctx, runmod.CreateRunInput{
 			TaskID:     taskResult.Value.ID,
 			WorkUnitID: wuResult.Value.ID,
 		})
@@ -696,7 +703,7 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 		wg.Add(1)
 		go func(id string) {
 			defer wg.Done()
-			_, err := runService.Start(ctx, id, services.TransitionInput{Runtime: "fake"})
+			_, err := runService.Start(ctx, id, orchestration.TransitionInput{Runtime: "fake"})
 			errs <- err
 		}(runID)
 	}
@@ -708,7 +715,7 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 		}
 	}
 
-	conflictA, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	conflictA, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Conflict A",
 		Objective:            "Own same path",
@@ -718,7 +725,7 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create conflict A: %v", err)
 	}
-	conflictB, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+	conflictB, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Conflict B",
 		Objective:            "Own same path",
@@ -728,18 +735,18 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create conflict B: %v", err)
 	}
-	runA, err := runService.Create(ctx, services.CreateRunInput{TaskID: taskResult.Value.ID, WorkUnitID: conflictA.Value.ID})
+	runA, err := runService.Create(ctx, runmod.CreateRunInput{TaskID: taskResult.Value.ID, WorkUnitID: conflictA.Value.ID})
 	if err != nil {
 		t.Fatalf("create run A: %v", err)
 	}
-	runB, err := runService.Create(ctx, services.CreateRunInput{TaskID: taskResult.Value.ID, WorkUnitID: conflictB.Value.ID})
+	runB, err := runService.Create(ctx, runmod.CreateRunInput{TaskID: taskResult.Value.ID, WorkUnitID: conflictB.Value.ID})
 	if err != nil {
 		t.Fatalf("create run B: %v", err)
 	}
-	if _, err := runService.Start(ctx, runA.Value.ID, services.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Start(ctx, runA.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("start run A: %v", err)
 	}
-	if _, err := runService.Start(ctx, runB.Value.ID, services.TransitionInput{Runtime: "fake"}); err == nil {
+	if _, err := runService.Start(ctx, runB.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err == nil {
 		t.Fatal("expected owned path conflict")
 	} else if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeConflict {
 		t.Fatalf("expected conflict error, got %v", err)
@@ -751,11 +758,11 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	workUnitService := services.NewWorkUnitService(db)
-	runService := services.NewRunService(db)
+	taskService := bootstrap.TaskService(db)
+	workUnitService := bootstrap.WorkUnitService(db)
+	runService := bootstrap.RunService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Concurrent path conflict",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -766,7 +773,7 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 
 	runIDs := make([]string, 0, 2)
 	for _, title := range []string{"Conflict A", "Conflict B"} {
-		wuResult, err := workUnitService.Create(ctx, services.CreateWorkUnitInput{
+		wuResult, err := workUnitService.Create(ctx, workunitmod.CreateWorkUnitInput{
 			TaskID:               taskResult.Value.ID,
 			Title:                title,
 			Objective:            "Own the same path concurrently",
@@ -776,7 +783,7 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create work unit %s: %v", title, err)
 		}
-		runResult, err := runService.Create(ctx, services.CreateRunInput{
+		runResult, err := runService.Create(ctx, runmod.CreateRunInput{
 			TaskID:     taskResult.Value.ID,
 			WorkUnitID: wuResult.Value.ID,
 		})
@@ -792,7 +799,7 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 		runID := runID
 		go func() {
 			<-start
-			_, err := runService.Start(ctx, runID, services.TransitionInput{Runtime: "fake"})
+			_, err := runService.Start(ctx, runID, orchestration.TransitionInput{Runtime: "fake"})
 			errs <- err
 		}()
 	}
@@ -823,7 +830,7 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskResult, err := services.NewTaskService(db).Create(ctx, services.CreateTaskInput{
+	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Replay starting session",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -831,7 +838,7 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create task: %v", err)
 	}
-	wuResult, err := services.NewWorkUnitService(db).Create(ctx, services.CreateWorkUnitInput{
+	wuResult, err := bootstrap.WorkUnitService(db).Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Replay session work unit",
 		Objective:            "Create a session only",
@@ -840,7 +847,7 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create work unit: %v", err)
 	}
-	runResult, err := services.NewRunService(db).Create(ctx, services.CreateRunInput{
+	runResult, err := bootstrap.RunService(db).Create(ctx, runmod.CreateRunInput{
 		TaskID:     taskResult.Value.ID,
 		WorkUnitID: wuResult.Value.ID,
 	})
@@ -848,14 +855,14 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 		t.Fatalf("create run: %v", err)
 	}
 	agentID := "agent-replay-starting"
-	if _, err := services.NewAgentSessionService(db).Create(ctx, services.CreateAgentSessionInput{
+	if _, err := bootstrap.AgentSessionService(db).Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: agentID,
 		RunID:   runResult.Value.ID,
 	}); err != nil {
 		t.Fatalf("create agent session: %v", err)
 	}
 
-	state, err := services.NewEventService(db).ReplayRun(ctx, runResult.Value.ID)
+	state, err := eventmod.NewService(db).ReplayRun(ctx, runResult.Value.ID)
 	if err != nil {
 		t.Fatalf("replay run: %v", err)
 	}
@@ -869,7 +876,7 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskResult, err := services.NewTaskService(db).Create(ctx, services.CreateTaskInput{
+	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Automatic checkpoints",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -877,7 +884,7 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create task: %v", err)
 	}
-	wuResult, err := services.NewWorkUnitService(db).Create(ctx, services.CreateWorkUnitInput{
+	wuResult, err := bootstrap.WorkUnitService(db).Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Checkpointed work unit",
 		Objective:            "Persist recoverable state",
@@ -886,32 +893,32 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create work unit: %v", err)
 	}
-	runService := services.NewRunService(db)
-	runResult, err := runService.Create(ctx, services.CreateRunInput{
+	runService := bootstrap.RunService(db)
+	runResult, err := runService.Create(ctx, runmod.CreateRunInput{
 		TaskID:     taskResult.Value.ID,
 		WorkUnitID: wuResult.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Start(ctx, runResult.Value.ID, services.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Start(ctx, runResult.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("start run: %v", err)
 	}
 
-	sessionService := services.NewAgentSessionService(db)
-	sessionResult, err := sessionService.Create(ctx, services.CreateAgentSessionInput{
+	sessionService := bootstrap.AgentSessionService(db)
+	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: "agent-auto-checkpoint",
 		RunID:   runResult.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create session: %v", err)
 	}
-	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-auto-checkpoint", "sandbox-auto-checkpoint", services.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-auto-checkpoint", "sandbox-auto-checkpoint", orchestration.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("connect session: %v", err)
 	}
 
-	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, services.AutoCheckpointInput{
-		Trigger:        services.CheckpointTriggerGoalCompleted,
+	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, agentsessionmod.AutoCheckpointInput{
+		Trigger:        agentsessionmod.CheckpointTriggerGoalCompleted,
 		CurrentGoal:    "analysis",
 		MinimalSummary: "analysis completed",
 		PendingTodos:   []string{"implementation"},
@@ -923,8 +930,8 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 		t.Fatalf("expected first automatic checkpoint to persist, result=%+v suggestion=%+v", result, suggestion)
 	}
 
-	second, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, services.AutoCheckpointInput{
-		Trigger:        services.CheckpointTriggerDiffProduced,
+	second, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, agentsessionmod.AutoCheckpointInput{
+		Trigger:        agentsessionmod.CheckpointTriggerDiffProduced,
 		CurrentGoal:    "implementation",
 		MinimalSummary: "diff produced and ready for validation",
 		CompletedGoals: []string{"analysis"},
@@ -940,8 +947,8 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 		t.Fatalf("expected second automatic checkpoint to persist, result=%+v suggestion=%+v", second, suggestion)
 	}
 
-	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, services.AutoCheckpointInput{
-		Trigger: services.CheckpointTriggerHeartbeat,
+	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, agentsessionmod.AutoCheckpointInput{
+		Trigger: agentsessionmod.CheckpointTriggerHeartbeat,
 	}); err != nil {
 		t.Fatalf("heartbeat checkpoint suggestion: %v", err)
 	} else if result != nil || suggestion == nil || suggestion.ShouldCheckpoint {
@@ -986,7 +993,7 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskResult, err := services.NewTaskService(db).Create(ctx, services.CreateTaskInput{
+	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Retry policy",
 		Priority:  domain.PriorityP2,
 		RiskLevel: domain.RiskLevelLow,
@@ -994,7 +1001,7 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create task: %v", err)
 	}
-	wuResult, err := services.NewWorkUnitService(db).Create(ctx, services.CreateWorkUnitInput{
+	wuResult, err := bootstrap.WorkUnitService(db).Create(ctx, workunitmod.CreateWorkUnitInput{
 		TaskID:               taskResult.Value.ID,
 		Title:                "Retryable work unit",
 		Objective:            "Retry failed run",
@@ -1003,28 +1010,28 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create work unit: %v", err)
 	}
-	runService := services.NewRunService(db)
-	runResult, err := runService.Create(ctx, services.CreateRunInput{
+	runService := bootstrap.RunService(db)
+	runResult, err := runService.Create(ctx, runmod.CreateRunInput{
 		TaskID:     taskResult.Value.ID,
 		WorkUnitID: wuResult.Value.ID,
 	})
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Fail(ctx, runResult.Value.ID, services.TransitionInput{
+	if _, err := runService.Fail(ctx, runResult.Value.ID, orchestration.TransitionInput{
 		FailureReason: "transient runtime failure",
 		Justification: "prepare retry test",
 	}); err != nil {
 		t.Fatalf("fail run: %v", err)
 	}
-	if _, err := runService.Retry(ctx, runResult.Value.ID, services.TransitionInput{
+	if _, err := runService.Retry(ctx, runResult.Value.ID, orchestration.TransitionInput{
 		Justification: "missing idempotency key",
 	}); err == nil {
 		t.Fatal("expected retry without event_id to be rejected")
 	}
 
 	retryEventID := uuid.New().String()
-	retryInput := services.TransitionInput{
+	retryInput := orchestration.TransitionInput{
 		EventID:       retryEventID,
 		FailureReason: "transient runtime failure",
 		Justification: "retry transient runtime failure",

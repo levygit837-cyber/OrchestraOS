@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	_ "github.com/lib/pq"
 )
 
@@ -19,9 +22,9 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	taskRepo := repository.NewTaskRepository(db)
-	wuRepo := repository.NewWorkUnitRepository(db)
-	runRepo := repository.NewRunRepository(db)
+	taskRepo := taskmod.NewRepository(db)
+	wuRepo := workunitmod.NewRepository(db)
+	runRepo := runmod.NewRepository(db)
 	eventStore, _ := eventstore.NewStore(db)
 
 	t.Run("create task generates event", func(t *testing.T) {
@@ -241,10 +244,10 @@ func TestAgentSessionWithRun(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	taskRepo := repository.NewTaskRepository(db)
-	wuRepo := repository.NewWorkUnitRepository(db)
-	runRepo := repository.NewRunRepository(db)
-	sessionRepo := repository.NewAgentSessionRepository(db)
+	taskRepo := taskmod.NewRepository(db)
+	wuRepo := workunitmod.NewRepository(db)
+	runRepo := runmod.NewRepository(db)
+	sessionRepo := agentsessionmod.NewRepository(db)
 
 	t.Run("agent session lifecycle", func(t *testing.T) {
 		// Create task
@@ -301,14 +304,14 @@ func TestAgentSessionWithRun(t *testing.T) {
 			t.Fatalf("Failed to update session to running: %v", err)
 		}
 
-		sessionService := services.NewAgentSessionService(db)
-		if _, err := sessionService.Heartbeat(context.Background(), session.ID, services.HeartbeatInput{
+		sessionService := bootstrap.AgentSessionService(db)
+		if _, err := sessionService.Heartbeat(context.Background(), session.ID, agentsessionmod.HeartbeatInput{
 			Payload: map[string]interface{}{"source": "integration-test"},
 		}); err != nil {
 			t.Fatalf("Failed to persist heartbeat via service: %v", err)
 		}
 
-		if _, err := sessionService.Checkpoint(context.Background(), session.ID, services.CheckpointInput{
+		if _, err := sessionService.Checkpoint(context.Background(), session.ID, agentsessionmod.CheckpointInput{
 			CheckpointID:   "integration-checkpoint-" + uuid.New().String(),
 			CurrentGoal:    "agent session integration",
 			MinimalSummary: "session state persisted through service checkpoint",

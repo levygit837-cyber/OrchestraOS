@@ -11,7 +11,10 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/migrations"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
+taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	_ "github.com/lib/pq"
 )
 
@@ -299,7 +302,7 @@ func createTestTask(t *testing.T, db *sql.DB) string {
 func createTestTaskWithID(t *testing.T, db *sql.DB, id string) string {
 	t.Helper()
 
-	repo := repository.NewTaskRepository(db)
+	repo := taskmod.NewRepository(db)
 	task := &domain.Task{
 		ID:          id,
 		Title:       "Integration Test Task",
@@ -320,7 +323,7 @@ func createTestWorkUnit(t *testing.T, db *sql.DB, taskID string) string {
 	t.Helper()
 
 	taskGraphID := createTestTaskGraph(t, db, taskID)
-	repo := repository.NewWorkUnitRepository(db)
+	repo := workunitmod.NewRepository(db)
 	wu := &domain.WorkUnit{
 		ID:                   uuid.New().String(),
 		TaskID:               taskID,
@@ -339,7 +342,7 @@ func createTestWorkUnit(t *testing.T, db *sql.DB, taskID string) string {
 func createTestTaskGraph(t *testing.T, db *sql.DB, taskID string) string {
 	t.Helper()
 
-	repo := repository.NewTaskGraphRepository(db)
+	repo := taskgraphmod.NewRepository(db)
 	existing, err := repo.GetActiveByTask(taskID)
 	if err != nil {
 		t.Fatalf("Failed to get active task graph: %v", err)
@@ -369,7 +372,7 @@ func createTestTaskGraph(t *testing.T, db *sql.DB, taskID string) string {
 func createTestRun(t *testing.T, db *sql.DB, taskID, workUnitID string) string {
 	t.Helper()
 
-	repo := repository.NewRunRepository(db)
+	repo := runmod.NewRepository(db)
 	run := &domain.Run{
 		ID:         uuid.New().String(),
 		TaskID:     taskID,

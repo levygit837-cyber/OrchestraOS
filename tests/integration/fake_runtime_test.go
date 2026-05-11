@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/levygit837-cyber/OrchestraOS/internal/agent"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	_ "github.com/lib/pq"
 )
 
@@ -147,10 +150,10 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	taskRepo := repository.NewTaskRepository(db)
-	wuRepo := repository.NewWorkUnitRepository(db)
-	runRepo := repository.NewRunRepository(db)
-	sessionRepo := repository.NewAgentSessionRepository(db)
+	taskRepo := taskmod.NewRepository(db)
+	wuRepo := workunitmod.NewRepository(db)
+	runRepo := runmod.NewRepository(db)
+	sessionRepo := agentsessionmod.NewRepository(db)
 	eventStore, _ := eventstore.NewStore(db)
 
 	t.Run("full integration flow", func(t *testing.T) {
@@ -236,7 +239,7 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 		// 6. Collect and store events
 		var eventTypes []string
 		timeout := time.After(8 * time.Second)
-		sessionService := services.NewAgentSessionService(db)
+		sessionService := bootstrap.AgentSessionService(db)
 
 	collectLoop:
 		for {
@@ -256,7 +259,7 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 					if err := json.Unmarshal(event.Payload, &payload); err != nil {
 						t.Fatalf("Failed to decode heartbeat payload: %v", err)
 					}
-					if _, err := sessionService.Heartbeat(ctx, session.ID, services.HeartbeatInput{
+					if _, err := sessionService.Heartbeat(ctx, session.ID, agentsessionmod.HeartbeatInput{
 						EventID: event.ID,
 						Payload: payload,
 					}); err != nil {

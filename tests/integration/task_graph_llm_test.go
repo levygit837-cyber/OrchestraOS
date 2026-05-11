@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 func TestTaskGraphService_Decompose_Heuristic_Default(t *testing.T) {
@@ -14,10 +16,10 @@ func TestTaskGraphService_Decompose_Heuristic_Default(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	graphService := services.NewTaskGraphService(db)
+	taskService := bootstrap.TaskService(db)
+	graphService := bootstrap.TaskGraphService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Heuristic decomposition test",
 		Description:        "Test default heuristic decomposition",
 		Priority:           domain.PriorityP1,
@@ -28,7 +30,7 @@ func TestTaskGraphService_Decompose_Heuristic_Default(t *testing.T) {
 		t.Fatalf("create task: %v", err)
 	}
 
-	result, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		PlannerStrategy: "local_heuristic_v1",
 	})
@@ -54,10 +56,10 @@ func TestTaskGraphService_Decompose_LLM_FallbackToHeuristic(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	graphService := services.NewTaskGraphService(db)
+	taskService := bootstrap.TaskService(db)
+	graphService := bootstrap.TaskGraphService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "LLM fallback test",
 		Description:        "Test LLM fallback when API key is missing",
 		Priority:           domain.PriorityP1,
@@ -68,7 +70,7 @@ func TestTaskGraphService_Decompose_LLM_FallbackToHeuristic(t *testing.T) {
 		t.Fatalf("create task: %v", err)
 	}
 
-	result, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		PlannerStrategy: "llm_gemini_v1",
 	})
@@ -90,10 +92,10 @@ func TestTaskGraphService_Decompose_UnknownStrategy(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	graphService := services.NewTaskGraphService(db)
+	taskService := bootstrap.TaskService(db)
+	graphService := bootstrap.TaskGraphService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Unknown strategy test",
 		Description:        "Test fallback on unknown strategy",
 		Priority:           domain.PriorityP1,
@@ -104,7 +106,7 @@ func TestTaskGraphService_Decompose_UnknownStrategy(t *testing.T) {
 		t.Fatalf("create task: %v", err)
 	}
 
-	result, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		PlannerStrategy: "unknown_strategy_v999",
 	})
@@ -122,10 +124,10 @@ func TestTaskGraphService_Decompose_ReplaceActive(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	graphService := services.NewTaskGraphService(db)
+	taskService := bootstrap.TaskService(db)
+	graphService := bootstrap.TaskGraphService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Replace active graph test",
 		Description:        "Test replacing active graph",
 		Priority:           domain.PriorityP1,
@@ -137,7 +139,7 @@ func TestTaskGraphService_Decompose_ReplaceActive(t *testing.T) {
 	}
 
 	// First decomposition
-	_, err = graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	_, err = graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		PlannerStrategy: "local_heuristic_v1",
 	})
@@ -146,7 +148,7 @@ func TestTaskGraphService_Decompose_ReplaceActive(t *testing.T) {
 	}
 
 	// Second decomposition without ReplaceActive should fail
-	_, err = graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	_, err = graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		PlannerStrategy: "local_heuristic_v1",
 	})
@@ -155,7 +157,7 @@ func TestTaskGraphService_Decompose_ReplaceActive(t *testing.T) {
 	}
 
 	// Third decomposition with ReplaceActive should succeed
-	result, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		PlannerStrategy: "local_heuristic_v1",
 		ReplaceActive:   true,
@@ -173,10 +175,10 @@ func TestTaskGraphService_Decompose_Idempotency(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	graphService := services.NewTaskGraphService(db)
+	taskService := bootstrap.TaskService(db)
+	graphService := bootstrap.TaskGraphService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Idempotency test",
 		Description:        "Test idempotent decomposition",
 		Priority:           domain.PriorityP1,
@@ -190,7 +192,7 @@ func TestTaskGraphService_Decompose_Idempotency(t *testing.T) {
 	eventID := uuid.New().String()
 
 	// First call
-	result1, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result1, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		EventID:         eventID,
 		PlannerStrategy: "local_heuristic_v1",
@@ -200,7 +202,7 @@ func TestTaskGraphService_Decompose_Idempotency(t *testing.T) {
 	}
 
 	// Second call with same event ID should return duplicate
-	result2, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result2, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		EventID:         eventID,
 		PlannerStrategy: "local_heuristic_v1",

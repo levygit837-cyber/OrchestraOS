@@ -1,0 +1,7 @@
+package {{PACKAGE}}
+
+// EventTypeForStatus returns the canonical event type for a given status.
+// TODO: update signature when status type is defined.
+func EventTypeForStatus(status string) string {
+	return "{{PACKAGE}}." + status
+}

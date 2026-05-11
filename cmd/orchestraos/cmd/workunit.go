@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	"github.com/spf13/cobra"
 )
 
@@ -28,8 +28,8 @@ var workUnitCreateCmd = &cobra.Command{
 		validationPlan, _ := cmd.Flags().GetStringArray("validation")
 		dependsOn, _ := cmd.Flags().GetStringArray("depends-on")
 
-		service := services.NewWorkUnitService(getDB())
-		result, err := service.Create(cmd.Context(), services.CreateWorkUnitInput{
+		service := bootstrap.WorkUnitService(getDB())
+		result, err := service.Create(cmd.Context(), workunitmod.CreateWorkUnitInput{
 			TaskID:               taskID,
 			Title:                title,
 			Objective:            objective,
@@ -55,7 +55,7 @@ var workUnitListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID, _ := cmd.Flags().GetString("task-id")
 
-		repo := repository.NewWorkUnitRepository(getDB())
+		repo := workunitmod.NewRepository(getDB())
 		workUnits, err := repo.ListByTask(taskID)
 		if err != nil {
 			return fmt.Errorf("failed to list work units: %w", err)

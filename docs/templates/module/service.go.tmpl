@@ -1,0 +1,41 @@
+package {{PACKAGE}}
+
+import (
+	"context"
+	"database/sql"
+
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+)
+
+// Service is the domain service for {{MODULE_NAME}} operations.
+type Service struct {
+	db *sql.DB
+}
+
+// NewService creates a new service instance.
+func NewService(database *sql.DB) *Service {
+	return &Service{db: database}
+}
+
+// Create handles creation of a new {{MODULE_NAME}}.
+func (s *Service) Create(ctx context.Context, input CreateInput) (*orchestration.OperationResult[string], error) {
+	// TODO: implement creation logic
+	_ = ctx
+	_ = input
+	tx, err := dbcore.BeginTx(ctx, s.db, "{{PACKAGE}}.create")
+	if err != nil {
+		return nil, err
+	}
+	defer dbcore.RollbackTx(tx)
+
+	// TODO: persist and emit event
+
+	return nil, apperrors.New(apperrors.CodeInternal, "{{PACKAGE}}.create", "not implemented")
+}
+
+// CreateInput holds the fields required to create a {{MODULE_NAME}}.
+type CreateInput struct {
+	ID string
+}

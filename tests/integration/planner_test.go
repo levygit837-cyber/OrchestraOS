@@ -5,22 +5,23 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 // fakePlanner is a test double that returns a predetermined plan.
 type fakePlanner struct {
-	plan *services.GraphPlan
+	plan *taskgraphmod.GraphPlan
 	err  error
 }
 
-func (f *fakePlanner) Plan(ctx context.Context, task *domain.Task) (*services.GraphPlan, error) {
+func (f *fakePlanner) Plan(ctx context.Context, task *domain.Task) (*taskgraphmod.GraphPlan, error) {
 	return f.plan, f.err
 }
 
 func TestPlannerValidator_ValidPlan(t *testing.T) {
-	plan := &services.GraphPlan{
+	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
 		WorkUnits: []domain.WorkUnit{
 			{
@@ -43,7 +44,7 @@ func TestPlannerValidator_ValidPlan(t *testing.T) {
 			},
 		},
 	}
-	if err := services.ValidateGraphPlan(plan); err != nil {
+	if err := bootstrap.ValidateGraphPlan(plan); err != nil {
 		t.Fatalf("expected valid plan, got error: %v", err)
 	}
 }
@@ -53,7 +54,7 @@ func TestPlannerValidator_CycleDetected(t *testing.T) {
 	wu2ID := uuid.New().String()
 	wu3ID := uuid.New().String()
 
-	plan := &services.GraphPlan{
+	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
 		WorkUnits: []domain.WorkUnit{
 			{
@@ -86,7 +87,7 @@ func TestPlannerValidator_CycleDetected(t *testing.T) {
 		},
 	}
 
-	err := services.ValidateGraphPlan(plan)
+	err := bootstrap.ValidateGraphPlan(plan)
 	if err == nil {
 		t.Fatal("expected cycle detection error, got nil")
 	}
@@ -96,7 +97,7 @@ func TestPlannerValidator_CycleDetected(t *testing.T) {
 }
 
 func TestPlannerValidator_InvalidProfile(t *testing.T) {
-	plan := &services.GraphPlan{
+	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
 		WorkUnits: []domain.WorkUnit{
 			{
@@ -111,7 +112,7 @@ func TestPlannerValidator_InvalidProfile(t *testing.T) {
 		},
 	}
 
-	err := services.ValidateGraphPlan(plan)
+	err := bootstrap.ValidateGraphPlan(plan)
 	if err == nil {
 		t.Fatal("expected invalid profile error, got nil")
 	}
@@ -122,11 +123,11 @@ func TestPlannerValidator_InvalidProfile(t *testing.T) {
 
 func TestPlannerValidator_CountBounds(t *testing.T) {
 	// Empty plan
-	emptyPlan := &services.GraphPlan{
+	emptyPlan := &taskgraphmod.GraphPlan{
 		GraphID:   uuid.New().String(),
 		WorkUnits: []domain.WorkUnit{},
 	}
-	if err := services.ValidateGraphPlan(emptyPlan); err == nil {
+	if err := bootstrap.ValidateGraphPlan(emptyPlan); err == nil {
 		t.Fatal("expected error for empty plan, got nil")
 	}
 
@@ -143,17 +144,17 @@ func TestPlannerValidator_CountBounds(t *testing.T) {
 			DependsOn:            []string{},
 		})
 	}
-	bigPlan := &services.GraphPlan{
+	bigPlan := &taskgraphmod.GraphPlan{
 		GraphID:   uuid.New().String(),
 		WorkUnits: tooMany,
 	}
-	if err := services.ValidateGraphPlan(bigPlan); err == nil {
+	if err := bootstrap.ValidateGraphPlan(bigPlan); err == nil {
 		t.Fatal("expected error for too many work units, got nil")
 	}
 }
 
 func TestPlannerValidator_MissingDependency(t *testing.T) {
-	plan := &services.GraphPlan{
+	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
 		WorkUnits: []domain.WorkUnit{
 			{
@@ -168,7 +169,7 @@ func TestPlannerValidator_MissingDependency(t *testing.T) {
 		},
 	}
 
-	err := services.ValidateGraphPlan(plan)
+	err := bootstrap.ValidateGraphPlan(plan)
 	if err == nil {
 		t.Fatal("expected missing dependency error, got nil")
 	}
@@ -181,7 +182,7 @@ func TestPlannerValidator_DependencyOrder(t *testing.T) {
 	wu1ID := uuid.New().String()
 	wu2ID := uuid.New().String()
 
-	plan := &services.GraphPlan{
+	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
 		WorkUnits: []domain.WorkUnit{
 			{
@@ -205,7 +206,7 @@ func TestPlannerValidator_DependencyOrder(t *testing.T) {
 		},
 	}
 
-	if err := services.ValidateGraphPlan(plan); err != nil {
+	if err := bootstrap.ValidateGraphPlan(plan); err != nil {
 		t.Fatalf("expected valid plan with dependency, got error: %v", err)
 	}
 }
@@ -219,7 +220,7 @@ func TestPlannerPrompt_Render(t *testing.T) {
 		AcceptanceCriteria: []string{"Criterion A", "Criterion B"},
 	}
 
-	prompt, err := services.PlannerPrompt(task)
+	prompt, err := bootstrap.PlannerPrompt(task)
 	if err != nil {
 		t.Fatalf("failed to render planner prompt: %v", err)
 	}

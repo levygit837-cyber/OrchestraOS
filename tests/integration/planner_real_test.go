@@ -6,8 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 func TestGeminiPlanner_RealInference(t *testing.T) {
@@ -34,7 +36,7 @@ func TestGeminiPlanner_RealInference(t *testing.T) {
 		},
 	}
 
-	planner, err := services.NewGeminiPlanner()
+	planner, err := bootstrap.GeminiPlanner()
 	if err != nil {
 		t.Fatalf("failed to create gemini planner: %v", err)
 	}
@@ -49,7 +51,7 @@ func TestGeminiPlanner_RealInference(t *testing.T) {
 	t.Logf("Generated %d work units", len(plan.WorkUnits))
 
 	// Validate the plan
-	if err := services.ValidateGraphPlan(plan); err != nil {
+	if err := bootstrap.ValidateGraphPlan(plan); err != nil {
 		t.Fatalf("plan validation failed: %v", err)
 	}
 
@@ -116,10 +118,10 @@ func TestTaskGraphService_Decompose_RealLLM(t *testing.T) {
 	defer db.Close()
 	ctx := context.Background()
 
-	taskService := services.NewTaskService(db)
-	graphService := services.NewTaskGraphService(db)
+	taskService := bootstrap.TaskService(db)
+	graphService := bootstrap.TaskGraphService(db)
 
-	taskResult, err := taskService.Create(ctx, services.CreateTaskInput{
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "Implementar sistema de cache distribuído",
 		Description: "Criar um sistema de cache distribuído com Redis, suportando TTL, invalidação por padrão e fallback para banco de dados. Deve incluir testes de integração e documentação.",
 		Priority:    domain.PriorityP1,
@@ -137,7 +139,7 @@ func TestTaskGraphService_Decompose_RealLLM(t *testing.T) {
 		t.Fatalf("create task: %v", err)
 	}
 
-	result, err := graphService.Decompose(ctx, services.DecomposeTaskGraphInput{
+	result, err := graphService.Decompose(ctx, taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskResult.Value.ID,
 		PlannerStrategy: "llm_gemini_v1",
 	})
