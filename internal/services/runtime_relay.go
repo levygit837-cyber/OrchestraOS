@@ -51,17 +51,14 @@ func NewRuntimeEventRelay(
 // Run blocks, consuming runtime events until the runtime completes, fails, or
 // the context is cancelled. It returns the final run status and any error.
 func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, config RelayConfig) (domain.RunStatus, error) {
-	var lastErr error
-	var completed bool
-
 	for {
 		event, err := runtime.ReceiveEvent(ctx)
 		if err != nil {
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(ctx.Err(), context.Canceled) {
-				lastErr = r.handleTimeout(ctx, config)
+				lastErr := r.handleTimeout(ctx, config)
 				return domain.RunStatusFailed, lastErr
 			}
-			lastErr = fmt.Errorf("runtime event receive error: %w", err)
+			lastErr := fmt.Errorf("runtime event receive error: %w", err)
 			_ = r.handleRuntimeError(ctx, config, lastErr)
 			return domain.RunStatusFailed, lastErr
 		}
@@ -70,39 +67,39 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, conf
 			config.OnEvent(event)
 		}
 
+		var processErr error
 		switch event.Type {
 		case "agent.heartbeat":
-			if err := r.handleHeartbeat(ctx, config, event); err != nil {
-				lastErr = err
-			}
+			processErr = r.handleHeartbeat(ctx, config, event)
 		case "agent.checkpoint_reached":
-			if err := r.handleCheckpoint(ctx, config, event); err != nil {
-				lastErr = err
-			}
+			processErr = r.handleCheckpoint(ctx, config, event)
 		case "agent.completed":
-			if err := r.handleCompleted(ctx, config, event); err != nil {
-				lastErr = err
-			} else {
-				completed = true
-			}
-			// Break after handling the completion event so we can do cleanup.
-			break
+			processErr = r.handleCompleted(ctx, config, event)
 		case "agent.failed":
-			if err := r.handleFailed(ctx, config, event); err != nil {
-				lastErr = err
+			processErr = r.handleFailed(ctx, config, event)
+			if processErr != nil {
+				_ = r.handleRuntimeError(ctx, config, processErr)
 			}
-			return domain.RunStatusFailed, lastErr
+			return domain.RunStatusFailed, processErr
 		case "agent.tool_requested":
-			if err := r.handleToolRequested(ctx, config, event); err != nil {
-				lastErr = err
-			}
+			processErr = r.handleToolRequested(ctx, config, event)
 		default:
-			if err := r.appendEvent(ctx, event); err != nil {
-				lastErr = err
-			}
+			processErr = r.appendEvent(ctx, event)
 		}
 
-		if completed {
+		if processErr != nil {
+			_ = r.handleRuntimeError(ctx, config, processErr)
+			return domain.RunStatusFailed, processErr
+		}
+
+		// Auto-checkpoint is evaluated for all event types; only matching
+		// triggers (tool_request, tool_executed, completed) produce a checkpoint.
+		if err := r.maybeAutoCheckpoint(ctx, config, event); err != nil {
+			_ = r.handleRuntimeError(ctx, config, err)
+			return domain.RunStatusFailed, err
+		}
+
+		if event.Type == "agent.completed" {
 			break
 		}
 	}
@@ -114,7 +111,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, conf
 	}); err != nil {
 		var appErr *apperrors.Error
 		if !errors.As(err, &appErr) || appErr.Code != apperrors.CodeInvalidTransition {
-			lastErr = fmt.Errorf("failed to stop session after completion: %w", err)
+			return domain.RunStatusFailed, fmt.Errorf("failed to stop session after completion: %w", err)
 		}
 	}
 
@@ -124,7 +121,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, conf
 	}); err != nil {
 		var appErr *apperrors.Error
 		if !errors.As(err, &appErr) || appErr.Code != apperrors.CodeInvalidTransition {
-			lastErr = fmt.Errorf("failed to validate run after completion: %w", err)
+			return domain.RunStatusFailed, fmt.Errorf("failed to validate run after completion: %w", err)
 		}
 	}
 
@@ -136,7 +133,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, conf
 		EvidenceRefs:  []string{evidenceRef},
 		Justification: justification,
 	}); err != nil {
-		lastErr = fmt.Errorf("failed to complete run: %w", err)
+		lastErr := fmt.Errorf("failed to complete run: %w", err)
 		_ = r.handleRuntimeError(ctx, config, lastErr)
 		return domain.RunStatusFailed, lastErr
 	}
@@ -166,9 +163,6 @@ func (r *RuntimeEventRelay) handleCheckpoint(ctx context.Context, config RelayCo
 
 func (r *RuntimeEventRelay) handleCompleted(ctx context.Context, config RelayConfig, event *domain.EventEnvelope) error {
 	if err := r.appendEvent(ctx, event); err != nil {
-		return err
-	}
-	if err := r.maybeAutoCheckpoint(ctx, config, event); err != nil {
 		return err
 	}
 	return nil
@@ -218,9 +212,6 @@ func (r *RuntimeEventRelay) handleFailed(ctx context.Context, config RelayConfig
 
 func (r *RuntimeEventRelay) handleToolRequested(ctx context.Context, config RelayConfig, event *domain.EventEnvelope) error {
 	if err := r.appendEvent(ctx, event); err != nil {
-		return err
-	}
-	if err := r.maybeAutoCheckpoint(ctx, config, event); err != nil {
 		return err
 	}
 	return nil
