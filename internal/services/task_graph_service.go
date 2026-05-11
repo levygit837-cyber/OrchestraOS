@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
 )
@@ -32,10 +32,11 @@ type TaskGraphService struct {
 }
 
 type DecomposeTaskGraphInput struct {
-	TaskID        string
-	EventID       string
-	ReplaceActive bool
-	CreatedBy     string
+	TaskID          string
+	EventID         string
+	ReplaceActive   bool
+	CreatedBy       string
+	PlannerStrategy string
 }
 
 type TaskGraphDecomposeResult struct {
@@ -43,14 +44,6 @@ type TaskGraphDecomposeResult struct {
 	WorkUnits []domain.WorkUnit
 	Event     *domain.EventEnvelope
 	Duplicate bool
-}
-
-type graphPlan struct {
-	GraphID   string
-	WorkUnits []domain.WorkUnit
-	Nodes     []domain.TaskGraphNodeInfo
-	Edges     []domain.TaskGraphEdgeInfo
-	Rationale string
 }
 
 type criterionPlan struct {
@@ -80,6 +73,9 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 	if input.CreatedBy == "" {
 		input.CreatedBy = "task_graph_service"
 	}
+	if input.PlannerStrategy == "" {
+		input.PlannerStrategy = localHeuristicPlanner
+	}
 	if input.EventID != "" {
 		if result, duplicate, err := s.duplicateResult(ctx, input); err != nil {
 			return nil, err
@@ -96,10 +92,7 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 		return nil, apperrors.New(apperrors.CodeNotFound, "task_graph_service.get_task", "task not found")
 	}
 
-	plan, err := buildLocalHeuristicGraphPlan(task)
-	if err != nil {
-		return nil, err
-	}
+	plan, strategyUsed, rationale := s.buildPlan(ctx, task, input.PlannerStrategy)
 
 	tx, err := beginTx(ctx, s.db, "task_graph_service.begin_decompose")
 	if err != nil {
@@ -149,8 +142,8 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 		TaskID:          task.ID,
 		Version:         version,
 		Status:          domain.TaskGraphStatusActive,
-		PlannerStrategy: localHeuristicPlanner,
-		Rationale:       plan.Rationale,
+		PlannerStrategy: strategyUsed,
+		Rationale:       rationale,
 		CreatedBy:       input.CreatedBy,
 		NodeCount:       len(plan.WorkUnits),
 		EdgeCount:       len(plan.Edges),
@@ -237,6 +230,85 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 	}, nil
 }
 
+// buildPlan selects and executes the appropriate planner, with automatic fallback to heuristic on failure.
+func (s *TaskGraphService) buildPlan(ctx context.Context, task *domain.Task, strategy string) (*GraphPlan, string, string) {
+	if strategy == localHeuristicPlanner {
+		plan, err := buildLocalHeuristicGraphPlan(task)
+		if err != nil {
+			// Heuristic should rarely fail, but if it does we still return a minimal plan
+			return s.buildFallbackPlan(task, fmt.Sprintf("heuristic failed: %v", err))
+		}
+		return plan, localHeuristicPlanner, plan.Rationale
+	}
+
+	if strategy == llmGeminiPlanner {
+		planner, err := NewGeminiPlanner()
+		if err != nil {
+			plan, _ := buildLocalHeuristicGraphPlan(task)
+			rationale := fmt.Sprintf("LLM planner initialization failed (%v), fallback to %s", err, localHeuristicPlanner)
+			return plan, localHeuristicPlanner, rationale
+		}
+
+		plan, err := planner.Plan(ctx, task)
+		if err != nil {
+			plan, _ := buildLocalHeuristicGraphPlan(task)
+			rationale := fmt.Sprintf("LLM planner failed (%v), fallback to %s", err, localHeuristicPlanner)
+			return plan, localHeuristicPlanner, rationale
+		}
+
+		if err := ValidateGraphPlan(plan); err != nil {
+			plan, _ := buildLocalHeuristicGraphPlan(task)
+			rationale := fmt.Sprintf("LLM plan validation failed (%v), fallback to %s", err, localHeuristicPlanner)
+			return plan, localHeuristicPlanner, rationale
+		}
+
+		return plan, llmGeminiPlanner, plan.Rationale
+	}
+
+	// Unknown strategy: fallback to heuristic
+	plan, err := buildLocalHeuristicGraphPlan(task)
+	if err != nil {
+		return s.buildFallbackPlan(task, fmt.Sprintf("unknown strategy %q and heuristic failed: %v", strategy, err))
+	}
+	rationale := fmt.Sprintf("Unknown strategy %q, fallback to %s", strategy, localHeuristicPlanner)
+	return plan, localHeuristicPlanner, rationale
+}
+
+// buildFallbackPlan creates a minimal valid plan when everything else fails.
+func (s *TaskGraphService) buildFallbackPlan(task *domain.Task, reason string) (*GraphPlan, string, string) {
+	graphID := uuid.New().String()
+	wu := domain.WorkUnit{
+		ID:                   uuid.New().String(),
+		TaskID:               task.ID,
+		TaskGraphID:          graphID,
+		Title:                task.Title,
+		Objective:            task.Description,
+		AssignedAgentProfile: "default",
+		Status:               domain.WorkUnitStatusCreated,
+		OwnedPaths:           []string{},
+		ReadPaths:            []string{},
+		AcceptanceCriteria:   task.AcceptanceCriteria,
+		ValidationPlan:       []string{"Validar critérios de aceite da task e registrar evidência."},
+		DependsOn:            []string{},
+	}
+	return &GraphPlan{
+		GraphID:   graphID,
+		WorkUnits: []domain.WorkUnit{wu},
+		Nodes: []domain.TaskGraphNodeInfo{{
+			ID:                 wu.ID,
+			Title:              wu.Title,
+			Objective:          wu.Objective,
+			AgentProfile:       wu.AssignedAgentProfile,
+			OwnedPaths:         wu.OwnedPaths,
+			ReadPaths:          wu.ReadPaths,
+			AcceptanceCriteria: wu.AcceptanceCriteria,
+			ValidationPlan:     wu.ValidationPlan,
+		}},
+		Edges:     []domain.TaskGraphEdgeInfo{},
+		Rationale: fmt.Sprintf("Emergency fallback plan: %s", reason),
+	}, localHeuristicPlanner, fmt.Sprintf("Emergency fallback plan: %s", reason)
+}
+
 func (s *TaskGraphService) ListByTask(ctx context.Context, taskID string) ([]domain.TaskGraph, error) {
 	_ = ctx
 	if err := validateRequiredUUID(taskID, "task_id", "task_graph_service.list_by_task"); err != nil {
@@ -292,7 +364,7 @@ func (s *TaskGraphService) duplicateResultWithExecutor(ctx context.Context, exec
 	}, true, nil
 }
 
-func buildLocalHeuristicGraphPlan(task *domain.Task) (*graphPlan, error) {
+func buildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 	criteria, err := parseCriterionPlans(task.AcceptanceCriteria)
 	if err != nil {
 		return nil, err
@@ -392,7 +464,7 @@ func buildLocalHeuristicGraphPlan(task *domain.Task) (*graphPlan, error) {
 			ValidationPlan:     wu.ValidationPlan,
 		})
 	}
-	return &graphPlan{
+	return &GraphPlan{
 		GraphID:   graphID,
 		WorkUnits: workUnits,
 		Nodes:     nodes,

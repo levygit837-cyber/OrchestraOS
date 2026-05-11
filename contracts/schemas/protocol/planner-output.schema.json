@@ -1,0 +1,97 @@
+{
+  "$id": "https://orchestraos.local/schemas/protocol/planner-output.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlannerOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["rationale", "work_units"],
+  "properties": {
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Explicação semântica das decisões de decomposição"
+    },
+    "work_units": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "description": "Work units geradas pelo planner",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "objective",
+          "assigned_agent_profile",
+          "acceptance_criteria",
+          "validation_plan"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Título curto e descritivo da work unit"
+          },
+          "objective": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Objetivo claro do que a work unit deve alcançar"
+          },
+          "assigned_agent_profile": {
+            "type": "string",
+            "enum": [
+              "code_worker",
+              "docs_writer",
+              "reviewer",
+              "debugger",
+              "default"
+            ],
+            "description": "Perfil de agente adequado para executar esta work unit"
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Critérios de aceite específicos desta work unit"
+          },
+          "validation_plan": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Passos para validar a conclusão desta work unit"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Índices 0-based das work units das quais esta depende"
+          },
+          "owned_paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Caminhos de arquivo que esta work unit pode modificar"
+          },
+          "read_paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Caminhos de arquivo que esta work unit pode ler"
+          }
+        }
+      }
+    }
+  }
+}

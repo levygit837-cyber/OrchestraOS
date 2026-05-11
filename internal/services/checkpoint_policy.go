@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 

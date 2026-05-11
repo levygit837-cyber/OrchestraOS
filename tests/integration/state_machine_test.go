@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/eventstore"
-	"github.com/levygit837-cyber/OrchestraOS/internal/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
 )
 

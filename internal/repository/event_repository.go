@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )

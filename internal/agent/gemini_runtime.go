@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"google.golang.org/genai"
 )
@@ -63,7 +63,7 @@ func (g *GeminiRuntime) Start(ctx context.Context, config RuntimeConfig) error {
 	}
 
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey: apiKey,
+		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
 	})
 	if err != nil {

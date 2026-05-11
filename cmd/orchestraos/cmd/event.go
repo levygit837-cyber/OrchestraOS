@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/services"
-	"github.com/levygit837-cyber/OrchestraOS/internal/statemachine"
 	"github.com/spf13/cobra"
 )
 

@@ -60,6 +60,21 @@ func SelectToolset(profile string) (ToolsetSelection, error) {
 	}, nil
 }
 
+// IsValidAgentProfile returns true if the profile is recognized by the system.
+func IsValidAgentProfile(profile string) bool {
+	normalized := normalizeProfile(profile)
+	switch normalized {
+	case "default", "codex", "general_engineering", "gemini":
+		normalized = "code_worker"
+	}
+	switch normalized {
+	case "fake", "docs_writer", "code_worker", "reviewer", "debugger":
+		return true
+	default:
+		return false
+	}
+}
+
 func ToolNames(tools []Tool) []string {
 	names := make([]string, 0, len(tools))
 	for _, tool := range tools {
