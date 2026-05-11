@@ -44,6 +44,38 @@ O projeto deve ganhar autonomia por níveis:
 
 Nenhum agente deve assumir autonomia maior que a aprovada explicitamente nos documentos do projeto.
 
+## Commits e Branches
+
+**NUNCA commit ou push diretamente na branch `main`.**
+
+Sempre use o script controlado:
+```bash
+./scripts/safe-commit.sh "mensagem do commit"
+```
+
+Este script automaticamente:
+- Cria uma feature branch se você estiver na `main`
+- Roda todas as validações (`go vet`, architecture tests, contracts)
+- Só commita se tudo passar
+
+Depois do commit, push a feature branch e abra um Pull Request. Aguarde o CI passar antes de mergear.
+
+Para instalar os hooks localmente (proteção adicional):
+```bash
+cp scripts/pre-commit.sh .git/hooks/pre-commit
+cp scripts/pre-push.sh .git/hooks/pre-push
+chmod +x .git/hooks/pre-commit .git/hooks/pre-push
+```
+
+## Novo Módulo
+
+Antes de criar um novo módulo, execute `./scripts/new-module.sh <nome>` para gerar a estrutura padronizada.
+Após implementar, execute `./scripts/verify-contracts.sh` e `./scripts/lint.sh` antes de commitar.
+
+## Padrões de Código
+
+Consulte `docs/development/CODING_STANDARDS.md` para regras detalhadas de estilo, naming, error handling e testes.
+
 ## Decisões
 
 Decisões relevantes devem virar ADR em `docs/adr/`. Use o formato:

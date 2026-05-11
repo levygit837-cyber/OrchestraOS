@@ -8,7 +8,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
 func TestCommanderRunStateMachine(t *testing.T) {
@@ -20,7 +20,7 @@ func TestCommanderRunStateMachine(t *testing.T) {
 	runID := createTestRun(t, db, taskID, workUnitID)
 
 	commander := orchestration.NewCommander(db)
-	runRepo := repository.NewRunRepository(db)
+	runRepo := runmod.NewRepository(db)
 
 	t.Run("invalid completed transition does not update projection", func(t *testing.T) {
 		err := commander.TransitionRun(context.Background(), runID, domain.RunStatusCompleted, orchestration.TransitionOptions{

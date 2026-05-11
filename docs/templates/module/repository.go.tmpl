@@ -1,0 +1,15 @@
+package {{PACKAGE}}
+
+import "database/sql"
+
+// Repository handles persistence for the {{MODULE_NAME}} domain.
+type Repository struct {
+	db *sql.DB
+}
+
+// NewRepository creates a new repository instance.
+func NewRepository(db *sql.DB) *Repository {
+	return &Repository{db: db}
+}
+
+// TODO: implement CRUD operations

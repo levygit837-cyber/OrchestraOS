@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/db"
+	db "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/spf13/cobra"
 )
 

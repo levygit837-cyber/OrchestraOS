@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/db"
+	db "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
 )

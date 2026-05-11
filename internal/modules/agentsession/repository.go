@@ -1,0 +1,229 @@
+// LLM AGENT: BEFORE MODIFYING THIS FILE, READ:
+//   1. README.md  in this directory -> purpose, file map, dependencies
+//   2. CONTRACTS.md in this directory -> invariants, state machine, boundary rules
+// Ignoring these files will cause architecture test failures.
+
+package agentsession
+
+import (
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+)
+
+// Repository handles agent session persistence
+type Repository struct {
+	db db.DBTX
+}
+
+// NewRepository creates a new agent session repository
+func NewRepository(db db.DBTX) *Repository {
+	return &Repository{db: db}
+}
+
+// Create inserts a new agent session
+func (r *Repository) Create(session *domain.AgentSession) error {
+	if session.ID == "" {
+		session.ID = uuid.New().String()
+	}
+
+	now := time.Now()
+
+	_, err := r.db.Exec(
+		QueryInsert,
+		session.ID,
+		session.AgentID,
+		session.RunID,
+		session.SandboxID,
+		session.ConnectionID,
+		session.Status,
+		session.LastHeartbeatAt,
+		session.LastCheckpointAt,
+		nullString(session.LastSeenEventID),
+		nullableRawJSON(session.RecoverableState),
+		now,
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create agent session: %w", err)
+	}
+
+	return nil
+}
+
+// GetByID retrieves an agent session by ID
+func (r *Repository) GetByID(id string) (*domain.AgentSession, error) {
+	row := r.db.QueryRow(QueryGetByID, id)
+	return r.scanAgentSession(row)
+}
+
+// GetByRunID retrieves the most recent agent session for a run
+func (r *Repository) GetByRunID(runID string) (*domain.AgentSession, error) {
+	row := r.db.QueryRow(QueryGetByRunID, runID)
+	return r.scanAgentSession(row)
+}
+
+// UpdateStatus updates agent session status and timestamps
+func (r *Repository) UpdateStatus(id string, status Status) error {
+	var heartbeatAt, checkpointAt *time.Time
+	now := time.Now()
+
+	if status == StatusRunning {
+		heartbeatAt = &now
+	}
+
+	_, err := r.db.Exec(
+		QueryUpdateStatus,
+		id,
+		status,
+		heartbeatAt,
+		checkpointAt,
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update agent session status: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateHeartbeat updates the last heartbeat timestamp
+func (r *Repository) UpdateHeartbeat(id string) error {
+	now := time.Now()
+	_, err := r.db.Exec(
+		`UPDATE agent_sessions SET last_heartbeat_at = $2, updated_at = $3 WHERE id = $1`,
+		id,
+		now,
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update heartbeat: %w", err)
+	}
+	return nil
+}
+
+// UpdateHeartbeat updates the last heartbeat timestamp and optional last seen event.
+func (r *Repository) UpdateHeartbeatWithEvent(id, lastSeenEventID string) error {
+	now := time.Now().UTC()
+	_, err := r.db.Exec(
+		`UPDATE agent_sessions SET last_heartbeat_at = $2, last_seen_event_id = COALESCE($3, last_seen_event_id), updated_at = $4 WHERE id = $1`,
+		id,
+		now,
+		nullString(lastSeenEventID),
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update heartbeat: %w", err)
+	}
+	return nil
+}
+
+// UpdateCheckpoint updates the last checkpoint timestamp
+func (r *Repository) UpdateCheckpoint(id string) error {
+	now := time.Now()
+	_, err := r.db.Exec(
+		`UPDATE agent_sessions SET last_checkpoint_at = $2, updated_at = $3 WHERE id = $1`,
+		id,
+		now,
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update checkpoint: %w", err)
+	}
+	return nil
+}
+
+// UpdateCheckpointWithEvent updates the last checkpoint timestamp and optional last seen event.
+func (r *Repository) UpdateCheckpointWithEvent(id, lastSeenEventID string) error {
+	now := time.Now().UTC()
+	_, err := r.db.Exec(
+		`UPDATE agent_sessions SET last_checkpoint_at = $2, last_seen_event_id = COALESCE($3, last_seen_event_id), updated_at = $4 WHERE id = $1`,
+		id,
+		now,
+		nullString(lastSeenEventID),
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update checkpoint: %w", err)
+	}
+	return nil
+}
+
+// UpdateRecoverableState stores resume context for a disconnected or timed-out session.
+func (r *Repository) UpdateRecoverableState(id string, state json.RawMessage) error {
+	now := time.Now().UTC()
+	_, err := r.db.Exec(
+		`UPDATE agent_sessions SET recoverable_state = $2, updated_at = $3 WHERE id = $1`,
+		id,
+		nullableRawJSON(state),
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update recoverable state: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) scanAgentSession(scanner interface {
+	Scan(dest ...interface{}) error
+}) (*domain.AgentSession, error) {
+	var session domain.AgentSession
+	var sandboxID, connectionID, lastSeenEventID sql.NullString
+	var recoverableState []byte
+	var createdAt, updatedAt time.Time
+
+	err := scanner.Scan(
+		&session.ID,
+		&session.AgentID,
+		&session.RunID,
+		&sandboxID,
+		&connectionID,
+		&session.Status,
+		&session.LastHeartbeatAt,
+		&session.LastCheckpointAt,
+		&lastSeenEventID,
+		&recoverableState,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to scan agent session: %w", err)
+	}
+
+	if sandboxID.Valid {
+		session.SandboxID = sandboxID.String
+	}
+	if connectionID.Valid {
+		session.ConnectionID = connectionID.String
+	}
+	if lastSeenEventID.Valid {
+		session.LastSeenEventID = lastSeenEventID.String
+	}
+	if len(recoverableState) > 0 {
+		session.RecoverableState = json.RawMessage(recoverableState)
+	}
+
+	return &session, nil
+}
+
+func nullableRawJSON(raw json.RawMessage) interface{} {
+	if len(raw) == 0 {
+		return nil
+	}
+	return raw
+}
+
+func nullString(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{Valid: false}
+	}
+	return sql.NullString{String: s, Valid: true}
+}

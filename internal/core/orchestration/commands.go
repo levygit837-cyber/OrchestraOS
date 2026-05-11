@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
-	"github.com/levygit837-cyber/OrchestraOS/internal/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
@@ -80,7 +80,7 @@ func (c *Commander) TransitionWorkUnit(ctx context.Context, workUnitID string, t
 	if err := appendTransitionEvent(tx, workUnitTransitionEvent(target), taskID, "", workUnitID, options.AgentID, current, target, options); err != nil {
 		return err
 	}
-	result, err := tx.ExecContext(ctx, db.QueryWorkUnitUpdateStatus, workUnitID, target, time.Now().UTC())
+	result, err := tx.ExecContext(ctx, QueryWorkUnitUpdateStatus, workUnitID, target, time.Now().UTC())
 	if err != nil {
 		return apperrors.Wrap(apperrors.CodePersistence, "orchestration.update_work_unit_projection", err)
 	}
@@ -125,7 +125,7 @@ func (c *Commander) TransitionRun(ctx context.Context, runID string, target doma
 		}
 	}
 
-	if err := updateRunProjection(ctx, tx, runID, target, result, options.FailureReason); err != nil {
+	if err := UpdateRunProjection(ctx, tx, runID, target, result, options.FailureReason); err != nil {
 		return err
 	}
 
@@ -164,7 +164,7 @@ func (c *Commander) TransitionAgentSession(ctx context.Context, sessionID string
 	if target == domain.AgentSessionStatusRunning {
 		heartbeatAt = &now
 	}
-	result, err := tx.ExecContext(ctx, db.QueryAgentSessionUpdateStatus, sessionID, target, heartbeatAt, checkpointAt, now)
+	result, err := tx.ExecContext(ctx, QueryAgentSessionUpdateStatus, sessionID, target, heartbeatAt, checkpointAt, now)
 	if err != nil {
 		return apperrors.Wrap(apperrors.CodePersistence, "orchestration.update_agent_session_projection", err)
 	}
@@ -244,29 +244,6 @@ func getRunContext(ctx context.Context, tx *sql.Tx, runID string) (runContext, e
 	}
 	run.workUnitID = workUnitID.String
 	return run, nil
-}
-
-func updateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status domain.RunStatus, result *domain.RunResult, failureReason *string) error {
-	now := time.Now().UTC()
-	var startedAt, finishedAt *time.Time
-	if status == domain.RunStatusRunning {
-		startedAt = &now
-	}
-	if status == domain.RunStatusCompleted || status == domain.RunStatusFailed || status == domain.RunStatusCancelled {
-		finishedAt = &now
-	}
-
-	var resultStr *string
-	if result != nil {
-		r := string(*result)
-		resultStr = &r
-	}
-
-	res, err := tx.ExecContext(ctx, db.QueryRunUpdateStatus, runID, status, startedAt, finishedAt, resultStr, failureReason, now)
-	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "orchestration.update_run_projection", err)
-	}
-	return ensureUpdated(res, "run")
 }
 
 func appendTransitionEvent(tx *sql.Tx, eventType, taskID, runID, workUnitID, agentID string, from, to interface{}, options TransitionOptions) error {
@@ -372,4 +349,27 @@ func runTransitionEvent(status domain.RunStatus) string {
 
 func agentSessionTransitionEvent(status domain.AgentSessionStatus) string {
 	return "agent.session_" + string(status)
+}
+
+func UpdateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status domain.RunStatus, result *domain.RunResult, failureReason *string) error {
+	now := time.Now().UTC()
+	var startedAt, finishedAt *time.Time
+	if status == domain.RunStatusRunning {
+		startedAt = &now
+	}
+	if status == domain.RunStatusCompleted || status == domain.RunStatusFailed || status == domain.RunStatusCancelled {
+		finishedAt = &now
+	}
+
+	var resultStr *string
+	if result != nil {
+		r := string(*result)
+		resultStr = &r
+	}
+
+	res, err := tx.ExecContext(ctx, QueryRunUpdateStatus, runID, status, startedAt, finishedAt, resultStr, failureReason, now)
+	if err != nil {
+		return apperrors.Wrap(apperrors.CodePersistence, "orchestration.update_run_projection", err)
+	}
+	return dbcore.EnsureRowsAffected(res, "run", "orchestration.update_run_projection")
 }

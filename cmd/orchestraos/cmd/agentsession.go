@@ -5,9 +5,10 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	"github.com/spf13/cobra"
 )
 
@@ -26,8 +27,8 @@ var agentSessionCreateCmd = &cobra.Command{
 		connectionID, _ := cmd.Flags().GetString("connection-id")
 		sandboxID, _ := cmd.Flags().GetString("sandbox-id")
 
-		service := services.NewAgentSessionService(getDB())
-		result, err := service.Create(cmd.Context(), services.CreateAgentSessionInput{
+		service := bootstrap.AgentSessionService(getDB())
+		result, err := service.Create(cmd.Context(), agentsessionmod.CreateAgentSessionInput{
 			RunID:        runID,
 			AgentID:      agentID,
 			ConnectionID: connectionID,
@@ -47,7 +48,7 @@ var agentSessionGetCmd = &cobra.Command{
 	Short: "Get agent session details",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := repository.NewAgentSessionRepository(getDB())
+		repo := agentsessionmod.NewRepository(getDB())
 		session, err := repo.GetByID(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to get agent session: %w", err)
@@ -83,7 +84,7 @@ var agentSessionStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		status, _ := cmd.Flags().GetString("status")
 
-		service := services.NewAgentSessionService(getDB())
+		service := bootstrap.AgentSessionService(getDB())
 		if err := updateAgentSessionStatus(context.Background(), service, args[0], domain.AgentSessionStatus(status)); err != nil {
 			return fmt.Errorf("failed to update status: %w", err)
 		}
@@ -98,8 +99,8 @@ var agentSessionHeartbeatCmd = &cobra.Command{
 	Short: "Update agent session heartbeat",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		service := services.NewAgentSessionService(getDB())
-		if _, err := service.Heartbeat(cmd.Context(), args[0], services.HeartbeatInput{
+		service := bootstrap.AgentSessionService(getDB())
+		if _, err := service.Heartbeat(cmd.Context(), args[0], agentsessionmod.HeartbeatInput{
 			Payload: map[string]interface{}{"source": "cli"},
 		}); err != nil {
 			return fmt.Errorf("failed to update heartbeat: %w", err)
@@ -115,8 +116,8 @@ var agentSessionCheckpointCmd = &cobra.Command{
 	Short: "Record a manual debug/test checkpoint",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		service := services.NewAgentSessionService(getDB())
-		if _, err := service.Checkpoint(cmd.Context(), args[0], services.CheckpointInput{
+		service := bootstrap.AgentSessionService(getDB())
+		if _, err := service.Checkpoint(cmd.Context(), args[0], agentsessionmod.CheckpointInput{
 			CheckpointID:   "cli-debug-" + uuid.New().String(),
 			CurrentGoal:    "debug/manual checkpoint",
 			MinimalSummary: "manual debug checkpoint recorded from CLI",
@@ -153,19 +154,19 @@ func init() {
 	agentSessionCmd.AddCommand(agentSessionCheckpointCmd)
 }
 
-func updateAgentSessionStatus(ctx context.Context, service *services.AgentSessionService, sessionID string, status domain.AgentSessionStatus) error {
+func updateAgentSessionStatus(ctx context.Context, service *agentsessionmod.AgentSessionService, sessionID string, status domain.AgentSessionStatus) error {
 	switch status {
 	case domain.AgentSessionStatusRunning:
-		_, err := service.Resume(ctx, sessionID, services.TransitionInput{})
+		_, err := service.Resume(ctx, sessionID, orchestration.TransitionInput{})
 		return err
 	case domain.AgentSessionStatusDisconnected:
-		_, err := service.Disconnect(ctx, sessionID, services.TransitionInput{Justification: "manual status update"})
+		_, err := service.Disconnect(ctx, sessionID, orchestration.TransitionInput{Justification: "manual status update"})
 		return err
 	case domain.AgentSessionStatusStopped:
-		_, err := service.Stop(ctx, sessionID, services.TransitionInput{Justification: "manual status update"})
+		_, err := service.Stop(ctx, sessionID, orchestration.TransitionInput{Justification: "manual status update"})
 		return err
 	case domain.AgentSessionStatusFailed:
-		_, err := service.Fail(ctx, sessionID, services.TransitionInput{FailureReason: "manual status update"})
+		_, err := service.Fail(ctx, sessionID, orchestration.TransitionInput{FailureReason: "manual status update"})
 		return err
 	case domain.AgentSessionStatusPaused, domain.AgentSessionStatusWaitingApproval, domain.AgentSessionStatusStopping:
 		return fmt.Errorf("manual status %q is not exposed as a service command yet", status)

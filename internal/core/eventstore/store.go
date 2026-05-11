@@ -12,12 +12,12 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
+	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
 // Store handles event storage and retrieval with validation
 type Store struct {
-	repo      *repository.EventRepository
+	repo      *Repository
 	validator *Validator
 }
 
@@ -27,13 +27,13 @@ func NewStore(db *sql.DB) (*Store, error) {
 }
 
 // NewStoreWithExecutor creates a store bound to a DB or transaction executor.
-func NewStoreWithExecutor(executor repository.DBTX) (*Store, error) {
+func NewStoreWithExecutor(executor dbcore.DBTX) (*Store, error) {
 	validator, err := NewValidator()
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodeInternal, "eventstore.new_validator", err)
 	}
 
-	repo := repository.NewEventRepository(executor)
+	repo := NewRepository(executor)
 
 	return &Store{
 		repo:      repo,

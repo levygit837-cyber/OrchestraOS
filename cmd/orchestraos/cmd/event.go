@@ -6,7 +6,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/event"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,7 @@ var eventListCmd = &cobra.Command{
 		runID, _ := cmd.Flags().GetString("run-id")
 		workUnitID, _ := cmd.Flags().GetString("workunit-id")
 
-		eventService := services.NewEventService(getDB())
+		eventService := eventmod.NewService(getDB())
 
 		var events []domain.EventEnvelope
 
@@ -80,7 +80,7 @@ var eventReplayCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID := args[0]
 
-		eventService := services.NewEventService(getDB())
+		eventService := eventmod.NewService(getDB())
 		events, err := eventService.ListByTask(cmd.Context(), taskID)
 		if err != nil {
 			return fmt.Errorf("failed to replay events: %w", err)

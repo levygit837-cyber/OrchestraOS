@@ -1,0 +1,31 @@
+// Package {{PACKAGE}} implements the {{MODULE_NAME}} domain.
+//
+// # Responsibility
+// {{RESPONSIBILITY}}
+//
+// # Key Types
+//   - Service: domain service for {{MODULE_NAME}} operations
+//   - CreateInput: input for creating a new {{MODULE_NAME}}
+//
+// # Dependencies
+//   - core/db: transaction helpers
+//   - core/orchestration: TransitionInput, OperationResult
+//   - core/validation: input validation
+//   - domain: shared types
+//
+// # Related Packages
+//   - Add related packages here
+//
+// CRITICAL RULES (violating these fails architecture tests):
+//   - Status transitions are atomic and emit exactly one domain event.
+//   - Terminal statuses cannot transition to any other status.
+//   - NEVER call another module's Service methods directly.
+//   - NEVER write SQL outside queries.go.
+//   - NEVER put business logic inside repository.go.
+//
+// For full contracts, invariants, state machine, and boundary rules:
+//   READ: README.md  → purpose, dependencies, file map
+//   READ: CONTRACTS.md → invariants, state machine, boundary rules
+//
+// Quick code reference: see ModuleContract in contract.go
+package {{PACKAGE}}

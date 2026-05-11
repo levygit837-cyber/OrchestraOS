@@ -3,15 +3,15 @@ package cmd
 import (
 	"testing"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 )
 
 func TestCheckpointTriggerForRuntimeEventIncludesDirectToolExecution(t *testing.T) {
-	tests := map[string]services.CheckpointTrigger{
-		"agent.tool_requested": services.CheckpointTriggerToolRequest,
-		"agent.tool_executed":  services.CheckpointTriggerToolExecuted,
-		"tool.completed":       services.CheckpointTriggerToolExecuted,
-		"agent.completed":      services.CheckpointTriggerBeforeCompletion,
+	tests := map[string]agentsessionmod.CheckpointTrigger{
+		"agent.tool_requested": agentsessionmod.CheckpointTriggerToolRequest,
+		"agent.tool_executed":  agentsessionmod.CheckpointTriggerToolExecuted,
+		"tool.completed":       agentsessionmod.CheckpointTriggerToolExecuted,
+		"agent.completed":      agentsessionmod.CheckpointTriggerBeforeCompletion,
 	}
 
 	for eventType, want := range tests {

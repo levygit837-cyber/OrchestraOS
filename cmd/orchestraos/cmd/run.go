@@ -8,11 +8,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/levygit837-cyber/OrchestraOS/internal/agent"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/repository"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/event"
+	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +35,7 @@ var runStartCmd = &cobra.Command{
 		runtimeType, _ := cmd.Flags().GetString("runtime")
 
 		// Get work unit to find task ID
-		wuRepo := repository.NewWorkUnitRepository(getDB())
+		wuRepo := workunitmod.NewRepository(getDB())
 		wu, err := wuRepo.GetByID(workUnitID)
 		if err != nil {
 			return fmt.Errorf("failed to get work unit: %w", err)
@@ -39,8 +44,8 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("work unit not found: %s", workUnitID)
 		}
 
-		runService := services.NewRunService(getDB())
-		runResult, err := runService.Create(cmd.Context(), services.CreateRunInput{
+		runService := bootstrap.RunService(getDB())
+		runResult, err := runService.Create(cmd.Context(), runmod.CreateRunInput{
 			TaskID:     wu.TaskID,
 			WorkUnitID: workUnitID,
 			Attempt:    1,
@@ -49,15 +54,15 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to create run: %w", err)
 		}
 		run := runResult.Value
-		if _, err := runService.Start(cmd.Context(), run.ID, services.TransitionInput{
+		if _, err := runService.Start(cmd.Context(), run.ID, orchestration.TransitionInput{
 			Runtime: runtimeType,
 		}); err != nil {
 			return fmt.Errorf("failed to start run: %w", err)
 		}
 
 		agentID := fmt.Sprintf("agent-%s", uuid.New().String()[:8])
-		sessionService := services.NewAgentSessionService(getDB())
-		sessionResult, err := sessionService.Create(cmd.Context(), services.CreateAgentSessionInput{
+		sessionService := bootstrap.AgentSessionService(getDB())
+		sessionResult, err := sessionService.Create(cmd.Context(), agentsessionmod.CreateAgentSessionInput{
 			AgentID: agentID,
 			RunID:   run.ID,
 		})
@@ -67,14 +72,14 @@ var runStartCmd = &cobra.Command{
 		}
 		session := sessionResult.Value
 		connectionID := fmt.Sprintf("conn-%s", uuid.New().String())
-		if _, err := sessionService.Connect(cmd.Context(), session.ID, connectionID, "", services.TransitionInput{
+		if _, err := sessionService.Connect(cmd.Context(), session.ID, connectionID, "", orchestration.TransitionInput{
 			Runtime: runtimeType,
 		}); err != nil {
 			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
 			return fmt.Errorf("failed to connect agent session: %w", err)
 		}
 
-		preparedPrompt, err := services.NewPromptService(getDB()).PrepareRunPrompt(cmd.Context(), services.PrepareRunPromptInput{
+		preparedPrompt, err := bootstrap.PromptService(getDB()).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
 			RunID:          run.ID,
 			AgentSessionID: session.ID,
 		})
@@ -128,7 +133,7 @@ var runStartCmd = &cobra.Command{
 					if err != nil {
 						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
 					}
-					if _, err := sessionService.Heartbeat(ctx, session.ID, services.HeartbeatInput{
+					if _, err := sessionService.Heartbeat(ctx, session.ID, agentsessionmod.HeartbeatInput{
 						EventID: event.ID,
 						Payload: payload,
 					}); err != nil {
@@ -139,7 +144,7 @@ var runStartCmd = &cobra.Command{
 						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist %s runtime checkpoint: %w", runtimeType, err))
 					}
 				default:
-					eventService := services.NewEventService(getDB())
+					eventService := eventmod.NewService(getDB())
 					if _, err := eventService.Append(ctx, event); err != nil {
 						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to append %s runtime event %q: %w", runtimeType, event.Type, err))
 					}
@@ -152,13 +157,13 @@ var runStartCmd = &cobra.Command{
 				}
 			}
 
-			if _, err := sessionService.Stop(context.Background(), session.ID, services.TransitionInput{
+			if _, err := sessionService.Stop(context.Background(), session.ID, orchestration.TransitionInput{
 				Runtime: runtimeType,
 			}); err != nil {
 				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to stop %s runtime session: %w", runtimeType, err))
 			}
 
-			if _, err := runService.Validate(context.Background(), run.ID, services.TransitionInput{
+			if _, err := runService.Validate(context.Background(), run.ID, orchestration.TransitionInput{
 				Runtime: runtimeType,
 			}); err != nil {
 				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to validate %s runtime run: %w", runtimeType, err))
@@ -166,7 +171,7 @@ var runStartCmd = &cobra.Command{
 
 			evidenceRef := fmt.Sprintf("%s-runtime:agent.completed", runtimeType)
 			justification := fmt.Sprintf("%s runtime completed with agent.completed event", runtimeType)
-			if _, err := runService.Complete(context.Background(), run.ID, services.TransitionInput{
+			if _, err := runService.Complete(context.Background(), run.ID, orchestration.TransitionInput{
 				Runtime:       runtimeType,
 				AgentID:       agentID,
 				EvidenceRefs:  []string{evidenceRef},
@@ -187,12 +192,12 @@ var runStartCmd = &cobra.Command{
 	},
 }
 
-func failStartedRun(ctx context.Context, runService *services.RunService, sessionService *services.AgentSessionService, runID, sessionID, runtimeType, agentID string, cause error) error {
+func failStartedRun(ctx context.Context, runService *runmod.RunService, sessionService *agentsessionmod.AgentSessionService, runID, sessionID, runtimeType, agentID string, cause error) error {
 	if cause == nil {
 		return nil
 	}
 
-	input := services.TransitionInput{
+	input := orchestration.TransitionInput{
 		Runtime:       runtimeType,
 		AgentID:       agentID,
 		FailureReason: cause.Error(),
@@ -247,7 +252,7 @@ var runListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID, _ := cmd.Flags().GetString("task-id")
 
-		repo := repository.NewRunRepository(getDB())
+		repo := runmod.NewRepository(getDB())
 
 		var runs []domain.Run
 		var err error
@@ -290,7 +295,7 @@ var runGetCmd = &cobra.Command{
 	Short: "Get run details",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := repository.NewRunRepository(getDB())
+		repo := runmod.NewRepository(getDB())
 		run, err := repo.GetByID(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to get run: %w", err)
@@ -344,7 +349,7 @@ func decodePayloadMap(event *domain.EventEnvelope) (map[string]interface{}, erro
 	return payload, nil
 }
 
-func maybeAutoCheckpointRuntimeEvent(ctx context.Context, sessionService *services.AgentSessionService, sessionID, runtimeType string, event *domain.EventEnvelope) error {
+func maybeAutoCheckpointRuntimeEvent(ctx context.Context, sessionService *agentsessionmod.AgentSessionService, sessionID, runtimeType string, event *domain.EventEnvelope) error {
 	trigger, ok := checkpointTriggerForRuntimeEvent(event.Type)
 	if !ok {
 		return nil
@@ -372,7 +377,7 @@ func maybeAutoCheckpointRuntimeEvent(ctx context.Context, sessionService *servic
 	if value, ok := payload["ledger"].(map[string]interface{}); ok {
 		ledger = value
 	}
-	_, _, err = sessionService.AutomaticCheckpoint(ctx, sessionID, services.AutoCheckpointInput{
+	_, _, err = sessionService.AutomaticCheckpoint(ctx, sessionID, agentsessionmod.AutoCheckpointInput{
 		EventID:        uuid.NewSHA1(uuid.NameSpaceURL, []byte("orchestraos:auto_checkpoint:"+sessionID+":"+event.ID+":"+string(trigger))).String(),
 		Trigger:        trigger,
 		CurrentGoal:    currentGoal,
@@ -389,14 +394,14 @@ func maybeAutoCheckpointRuntimeEvent(ctx context.Context, sessionService *servic
 	return err
 }
 
-func checkpointTriggerForRuntimeEvent(eventType string) (services.CheckpointTrigger, bool) {
+func checkpointTriggerForRuntimeEvent(eventType string) (agentsessionmod.CheckpointTrigger, bool) {
 	switch eventType {
 	case "agent.tool_requested":
-		return services.CheckpointTriggerToolRequest, true
+		return agentsessionmod.CheckpointTriggerToolRequest, true
 	case "agent.tool_executed", "tool.completed":
-		return services.CheckpointTriggerToolExecuted, true
+		return agentsessionmod.CheckpointTriggerToolExecuted, true
 	case "agent.completed":
-		return services.CheckpointTriggerBeforeCompletion, true
+		return agentsessionmod.CheckpointTriggerBeforeCompletion, true
 	default:
 		return "", false
 	}
