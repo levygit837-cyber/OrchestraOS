@@ -6,7 +6,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/event"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/spf13/cobra"
 )
 

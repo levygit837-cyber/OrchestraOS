@@ -3,7 +3,7 @@
 | Módulo | Path | Responsabilidade | Depende de |
 |--------|------|------------------|------------|
 | agent | `internal/modules/agent` | Runtimes de agente (Codex, Gemini, Fake) | core/apperrors |
-| event | `internal/modules/event` | Event sourcing, EventEnvelope | core/apperrors, core/eventstore, core/db |
+| event | `internal/core/event` | Event sourcing, EventEnvelope | core/apperrors, core/eventstore, core/db |
 | prompt | `internal/modules/prompt` | Prompt fragments, snapshots, toolsets | core/apperrors, core/db |
 | task | `internal/modules/task` | Ciclo de vida de tarefas | core/apperrors, core/db |
 | taskgraph | `internal/modules/taskgraph` | Decomposição e planejamento | core/apperrors, core/db |

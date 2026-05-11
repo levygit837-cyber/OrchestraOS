@@ -46,7 +46,7 @@ Forbidden:
 ## Error Rules
 
 - All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
+- No raw database errors leaked outside the package.
 - `CodeConflict` for idempotency violations (same ID, different content).
 - `CodeValidation` for schema or operational payload failures.
 
@@ -55,8 +55,8 @@ Forbidden:
 ## Persistence Rules
 
 - All persistence goes through `core/eventstore.Store`.
-- No SQL inside this module.
-- No business logic inside repositories (none owned by this module).
+- No SQL inside this package.
+- No business logic inside repositories (none owned by this package).
 
 ---
 
@@ -71,7 +71,7 @@ LLM executors MUST:
 5. Avoid speculative refactors.
 6. Avoid introducing new abstractions unless required.
 7. Keep implementations deterministic.
-8. Preserve module boundaries.
+8. Preserve package boundaries.
 
 ---
 

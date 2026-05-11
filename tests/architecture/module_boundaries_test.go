@@ -16,7 +16,7 @@ import (
 var allowedModuleImports = map[string]map[string]bool{
 	"task":         {"run": true, "workunit": true},
 	"run":          {"workunit": true},
-	"agentsession": {"run": true, "event": true},
+	"agentsession": {"run": true},
 	"taskgraph":    {"task": true, "workunit": true},
 	"prompt":       {"task": true, "workunit": true, "run": true, "agentsession": true},
 }
@@ -24,7 +24,6 @@ var allowedModuleImports = map[string]map[string]bool{
 // leafModules must not import any other module under internal/modules/.
 var leafModules = map[string]bool{
 	"agent": true,
-	"event": true,
 }
 
 func TestModuleBoundaries(t *testing.T) {

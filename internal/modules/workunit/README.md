@@ -57,7 +57,7 @@ created → planned → scheduled → blocked → running → validating → com
 
 - `internal/core/*` (db, orchestration, statemachine, validation, serialization, apperrors)
 - `internal/domain`
-- `internal/modules/event` (indirectly via orchestration)
+- `internal/core/event` (indirectly via orchestration)
 - DI interfaces only: `TaskReader` (from `task/`), `TaskGraphManager` (from `taskgraph/`)
 
 Forbidden:

@@ -56,7 +56,7 @@ created → running → validating → completed
 
 - `internal/core/*` (db, eventstore, orchestration, statemachine, validation, serialization, apperrors)
 - `internal/domain`
-- `internal/modules/event` (indirectly via orchestration)
+- `internal/core/event` (indirectly via orchestration)
 - `internal/modules/workunit` (for `EventTypeForStatus` and validation helpers)
 - DI interfaces only: `TaskReader` (from `task/`), `WorkUnitReader` (from `workunit/`)
 

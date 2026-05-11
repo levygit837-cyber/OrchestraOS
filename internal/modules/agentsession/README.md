@@ -58,7 +58,7 @@ starting → running → stopping → stopped
 
 - `internal/core/*` (db, orchestration, statemachine, validation, serialization, apperrors)
 - `internal/domain`
-- `internal/modules/event` (indirectly via orchestration)
+- `internal/core/event` (indirectly via orchestration)
 - `internal/modules/run` (repository only for Run pause on timeout)
 
 Forbidden:

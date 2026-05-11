@@ -12,7 +12,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/event"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	run "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 

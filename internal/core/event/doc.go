@@ -23,12 +23,9 @@
 //   - Event append is idempotent: same ID + same content = no-op, returning existing envelope.
 //   - Event ID collision with different content returns CodeConflict.
 //   - Every envelope passes JSON-Schema validation before storage.
-//   - NEVER import internal/modules/* (event is a leaf dependency).
 //   - NEVER write inline SQL — all persistence goes through core/eventstore.
 //
 // For full contracts, invariants, and boundary rules:
 //   READ: README.md  → purpose, dependencies, file map
 //   READ: CONTRACTS.md → invariants, execution rules, boundary rules
-//
-// Quick code reference: see ModuleContract in contract.go
 package event

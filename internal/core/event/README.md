@@ -1,13 +1,13 @@
-# Module: event
+# Package: event
 
 ## Purpose
 
-This module is responsible for:
+This package is responsible for:
 - Providing idempotent event appending with schema validation and deduplication.
-- Serving as the single entry-point for domain event persistence consumed by all other modules.
+- Serving as the single entry-point for domain event persistence consumed by all modules.
 - Enforcing event envelope integrity (type, version, payload, metadata).
 
-This module DOES NOT:
+This package DOES NOT:
 - Manage task, run, or work-unit lifecycle.
 - Execute business logic beyond validation and storage.
 - Compose prompts or manage agent sessions.
@@ -16,7 +16,7 @@ This module DOES NOT:
 
 ## Contract Summary
 
-This module is governed by CONTRACTS.md.
+This package is governed by CONTRACTS.md.
 You MUST read it before making any modification.
 
 Critical invariants:
@@ -49,8 +49,9 @@ Envelope → validation → schema check → idempotency check → persist → A
 - `internal/domain`
 
 Forbidden:
-- Imports of any module under `internal/modules/*` (event is a leaf dependency).
+- Imports of any module under `internal/modules/*`.
 - Business logic beyond validation and storage.
+- Inline SQL — all persistence goes through `core/eventstore`.
 
 ---
 
@@ -60,4 +61,4 @@ Forbidden:
 2. Modify only files related to the assigned task.
 3. Preserve all invariants listed above.
 4. Avoid architectural refactors.
-5. This module is a leaf in the dependency graph — do NOT add imports to other modules.
+5. This is a `core/` package — it must remain a leaf in the module dependency graph.

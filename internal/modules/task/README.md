@@ -56,7 +56,7 @@ created → triaged → planned → scheduled → sandbox_preparing → running
 
 - `internal/core/*` (db, orchestration, statemachine, validation, serialization, apperrors)
 - `internal/domain`
-- `internal/modules/event` (indirectly via orchestration)
+- `internal/core/event` (indirectly via orchestration)
 - `internal/modules/run` (repository only for cancellation cascade)
 - `internal/modules/workunit` (repository only for cancellation cascade)
 

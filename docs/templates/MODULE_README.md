@@ -52,7 +52,7 @@ State Flow:
 - `internal/core/statemachine`
 - `internal/core/validation`
 - `internal/domain`
-- `internal/modules/event`
+- `internal/core/event`
 - {{ALLOWED_MODULE}}
 
 Forbidden:

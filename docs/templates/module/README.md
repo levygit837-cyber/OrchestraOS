@@ -41,7 +41,7 @@ Critical invariants:
 
 - `internal/core/*`
 - `internal/domain`
-- `internal/modules/event` (indirectly via orchestration)
+- `internal/core/event` (indirectly via orchestration)
 - {{ALLOWED_MODULE}}
 
 Forbidden:

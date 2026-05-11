@@ -64,7 +64,7 @@ Revisar manualmente cada PR gerado por LLM não escala. O objetivo é autonomia 
 
 1. **Remover dependência `agent → event`**
    - Substituir `*event.Envelope` por `*domain.EventEnvelope` em `agent/runtime.go`, `agent/fake_runtime.go`, `agent/gemini_runtime.go`
-   - Remover import de `internal/modules/event` de todos os arquivos em `agent/`
+   - Remover import de `internal/core/event` de todos os arquivos em `agent/`
    - Ajustar `tests/integration/fake_runtime_test.go` e `tests/integration/interaction_test.go` se necessário
    - **Validação:** `go test ./...` passa; teste de arquitetura (da Fase 2) confirma que `agent` não importa nenhum `modules/*`
 
