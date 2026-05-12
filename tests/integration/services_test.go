@@ -72,8 +72,10 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	}
 
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID: "agent-service-test",
-		RunID:   runResult.Value.ID,
+		AgentID:    "agent-service-test",
+		RunID:      runResult.Value.ID,
+		TaskID:     runResult.Value.TaskID,
+		WorkUnitID: runResult.Value.WorkUnitID,
 	})
 	if err != nil {
 		t.Fatalf("create session: %v", err)
@@ -184,8 +186,10 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create run: %v", err)
 	}
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID: "agent-prompt-test",
-		RunID:   runResult.Value.ID,
+		AgentID:    "agent-prompt-test",
+		RunID:      runResult.Value.ID,
+		TaskID:     runResult.Value.TaskID,
+		WorkUnitID: runResult.Value.WorkUnitID,
 	})
 	if err != nil {
 		t.Fatalf("create session: %v", err)
@@ -289,8 +293,10 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create reviewer run: %v", err)
 	}
 	reviewerSession, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID: "agent-prompt-reviewer",
-		RunID:   reviewerRun.Value.ID,
+		AgentID:    "agent-prompt-reviewer",
+		RunID:      reviewerRun.Value.ID,
+		TaskID:     reviewerRun.Value.TaskID,
+		WorkUnitID: reviewerRun.Value.WorkUnitID,
 	})
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
@@ -858,8 +864,10 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 	}
 	agentID := "agent-replay-starting"
 	if _, err := bootstrap.AgentSessionService(db).Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID: agentID,
-		RunID:   runResult.Value.ID,
+		AgentID:    agentID,
+		RunID:      runResult.Value.ID,
+		TaskID:     runResult.Value.TaskID,
+		WorkUnitID: runResult.Value.WorkUnitID,
 	}); err != nil {
 		t.Fatalf("create agent session: %v", err)
 	}
@@ -909,8 +917,10 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 
 	sessionService := bootstrap.AgentSessionService(db)
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID: "agent-auto-checkpoint",
-		RunID:   runResult.Value.ID,
+		AgentID:    "agent-auto-checkpoint",
+		RunID:      runResult.Value.ID,
+		TaskID:     runResult.Value.TaskID,
+		WorkUnitID: runResult.Value.WorkUnitID,
 	})
 	if err != nil {
 		t.Fatalf("create session: %v", err)

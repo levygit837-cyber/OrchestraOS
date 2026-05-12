@@ -88,8 +88,10 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	// 4. Create and connect agent session
 	agentID := fmt.Sprintf("agent-e2e-%s", uuid.New().String()[:8])
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID: agentID,
-		RunID:   run.ID,
+		AgentID:    agentID,
+		RunID:      run.ID,
+		TaskID:     run.TaskID,
+		WorkUnitID: run.WorkUnitID,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create agent session: %v", err)
@@ -306,8 +308,10 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	// 4. Create and connect agent session
 	agentID := fmt.Sprintf("agent-gemini-e2e-%s", uuid.New().String()[:8])
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID: agentID,
-		RunID:   run.ID,
+		AgentID:    agentID,
+		RunID:      run.ID,
+		TaskID:     run.TaskID,
+		WorkUnitID: run.WorkUnitID,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create agent session: %v", err)

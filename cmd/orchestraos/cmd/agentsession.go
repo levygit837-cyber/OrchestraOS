@@ -9,6 +9,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	"github.com/spf13/cobra"
 )
 
@@ -27,9 +28,20 @@ var agentSessionCreateCmd = &cobra.Command{
 		connectionID, _ := cmd.Flags().GetString("connection-id")
 		sandboxID, _ := cmd.Flags().GetString("sandbox-id")
 
-		service := bootstrap.AgentSessionService(getDB())
+		db := getDB()
+		run, err := runmod.NewRepository(db).GetByID(runID)
+		if err != nil {
+			return fmt.Errorf("failed to get run: %w", err)
+		}
+		if run == nil {
+			return fmt.Errorf("run not found: %s", runID)
+		}
+
+		service := bootstrap.AgentSessionService(db)
 		result, err := service.Create(cmd.Context(), agentsessionmod.CreateAgentSessionInput{
 			RunID:        runID,
+			TaskID:       run.TaskID,
+			WorkUnitID:   run.WorkUnitID,
 			AgentID:      agentID,
 			ConnectionID: connectionID,
 			SandboxID:    sandboxID,

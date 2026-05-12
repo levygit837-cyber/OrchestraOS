@@ -10,9 +10,15 @@ O produto deve nascer local-first para desenvolvimento, mas com desenho pronto p
 
 ## Decisao Arquitetural
 
-A arquitetura inicial sera um **control plane central com agent workers isolados**.
+A arquitetura inicial sera um **control plane central hibrido com agent workers isolados**.
 
-O Orchestrator administra tasks, permissoes, mensagens, estado, auditoria e ciclo de vida dos agentes. Os agentes executam trabalho em sandboxes separados e reportam eventos estruturados ao Orchestrator.
+O OrchestraOS adota uma arquitetura de Orquestracao Hibrida com dois sistemas cooperativos:
+
+1. **Sistema de Orquestracao Inteligente (LLM)**: Um Agente Orquestrador Inteligente que atua como intermediador estrategico. Ele toma decisoes de alto nivel (decomposicao, diagnostico, selecao de perfis, aprovacoes de risco), mas nunca executa codigo nem acessa servicos diretamente.
+
+2. **Sistema de Orquestracao Deterministico (Go)**: O `OrchestratorService` como control plane central e gatekeeper. Ele valida e executa todas as operacoes, transiciona estados, gerencia sandboxes, controla o WebSocket e orquestra a comunicacao cross-module.
+
+Os agentes executores (`code_worker`, `docs_writer`, `reviewer`, etc.) executam trabalho em sandboxes separadas e reportam eventos estruturados ao Orchestrator. Toda comunicacao cross-module passa obrigatoriamente pelo `OrchestratorService`.
 
 Agentes podem solicitar informacoes de outros agentes, mas a comunicacao deve ser mediada pelo Orchestrator para manter auditoria, politicas e controle de contexto.
 
@@ -47,6 +53,10 @@ flowchart TD
     Orchestrator --> CLI
     Chat["Chat opcional futuro"] -.-> Intake
     Orchestrator -.-> Chat
+
+    %% Arquitetura Hibrida: Agente Orquestrador Inteligente
+    IntelligentAgent["Intelligent Orchestrator Agent (LLM)"] -->|"Observation API / Eventos"| Orchestrator
+    Orchestrator -->|"Respostas / Validacoes"| IntelligentAgent
 ```
 
 ## Principios
@@ -69,6 +79,10 @@ flowchart TD
 
 - [Stack inicial](stack.md)
 - [Orquestracao de agentes](orchestration.md)
+- [Agente Orquestrador Inteligente](intelligent-orchestrator-agent.md)
+- [Observation API](orchestrator-observation-api.md)
+- [Protocolo de Intervencao](orchestrator-intervention-protocol.md)
+- [Coordenacao Multi-Agente](multi-agent-coordination.md)
 - [Modelo de dominio](domain-model.md)
 - [Estrategia de interface](interface-strategy.md)
 - [Decomposicao de tasks](task-decomposition.md)
@@ -99,6 +113,7 @@ flowchart TD
 - [ADR 0014: Persistencia M0, CLI minima e testes](../adr/0014-m0-cli-persistence-and-integration-tests.md)
 - [ADR 0015: TUI como interface local primaria](../adr/0015-tui-as-primary-local-interface.md)
 - [ADR 0016: State Machine event-sourced](../adr/0016-event-sourced-state-machine.md)
+- [ADR 0023: Hybrid Intelligent Orchestrator Architecture](../adr/0023-hybrid-intelligent-orchestrator.md)
 
 ## Referencias Tecnicas
 

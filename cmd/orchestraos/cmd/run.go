@@ -64,8 +64,10 @@ var runStartCmd = &cobra.Command{
 		agentID := fmt.Sprintf("agent-%s", uuid.New().String()[:8])
 		sessionService := bootstrap.AgentSessionService(getDB())
 		sessionResult, err := sessionService.Create(cmd.Context(), agentsessionmod.CreateAgentSessionInput{
-			AgentID: agentID,
-			RunID:   run.ID,
+			AgentID:    agentID,
+			RunID:      run.ID,
+			TaskID:     run.TaskID,
+			WorkUnitID: run.WorkUnitID,
 		})
 		if err != nil {
 			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, "", runtimeType, agentID, err)

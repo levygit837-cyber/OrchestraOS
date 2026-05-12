@@ -202,9 +202,15 @@ UserMessage/CLI
 
 ### Fase 5: Orquestração Automatizada
 
-**ADR de referência:** ADR 0020 (Orchestrator Service), ADR 0021 (Agent Service)
+**ADR de referência:** ADR 0020 (Orchestrator Service), ADR 0021 (Agent Service), ADR 0023 (Hybrid Intelligent Orchestrator)
 
-**Objetivo:** Automatizar o fluxo manual da Fase 4 com um único comando.
+**Objetivo:** Automatizar o fluxo manual da Fase 4 com um único comando, estabelecendo a arquitetura híbrida de orquestração (Go determinístico + Agente Inteligente LLM).
+
+**Arquitetura desta fase:**
+- **OrchestratorService (Go)**: loop de orquestração deterministico que coordena serviços de domínio.
+- **Intelligent Orchestrator Agent (LLM)**: ativado sob demanda para decisões estratégicas (decomposição inteligente, seleção de perfis, diagnóstico).
+- **Observation API**: fronteira controlada entre o Agente Inteligente e o Go.
+- **Regra de ouro**: módulos nunca conversam diretamente; cross-module obrigatoriamente via OrchestratorService.
 
 **O que precisa ser feito:**
 
@@ -256,6 +262,9 @@ UserMessage/CLI
 - [ ] Work units são executadas na ordem topológica correta.
 - [ ] CLI `task run` funciona como ponto de entrada único.
 - [ ] Teste E2E com FakeRuntime valida todo o fluxo sem dependência externa.
+- [ ] Agente Inteligente pode ser ativado para decompor task em linguagem natural.
+- [ ] Observation API expõe resumos estruturados do estado do sistema.
+- [ ] Sugestões do Agente Inteligente são validadas pelo Go antes de aplicar.
 
 ---
 
