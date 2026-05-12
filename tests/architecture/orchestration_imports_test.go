@@ -13,7 +13,6 @@ import (
 // All other packages under internal/ must not import internal/modules/* directly.
 var allowedOrchestrationImporters = []string{
 	"internal/core/orchestration",
-	"internal/services",
 	"internal/bootstrap",
 	"cmd",
 }

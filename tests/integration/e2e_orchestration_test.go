@@ -13,7 +13,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
+
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
@@ -101,7 +101,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := services.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -319,7 +319,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := services.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
