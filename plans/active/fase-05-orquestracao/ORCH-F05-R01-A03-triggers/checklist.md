@@ -9,8 +9,8 @@
 
 ## Checklist de Execução
 
-- [ ] 1. Ler documentação obrigatória (README, AGENTS.md, run/CONTRACTS, agentsession/CONTRACTS, eventstore)
-- [ ] 2. Analisar código existente: eventstore/, run/service.go, agentsession/service.go, domain/types.go
+- [x] 1. Ler documentação obrigatória (README, AGENTS.md, run/CONTRACTS, agentsession/CONTRACTS, eventstore)
+- [x] 2. Analisar código existente: eventstore/, run/service.go, agentsession/service.go, domain/types.go
 - [ ] 3. Adicionar domain types em `internal/domain/types.go` (Trigger, TriggerType, TriggerStatus, AnomalyType, ResolutionAction)
 - [ ] 4. Criar migration `migrations/014_triggers.sql` (tabela triggers, constraints, índices)
 - [ ] 5. Criar `internal/modules/trigger/repository.go` + `queries.go` (CRUD, ListActive, ListByRun)

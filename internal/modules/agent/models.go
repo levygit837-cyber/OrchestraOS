@@ -1,5 +1,12 @@
 package agent
 
+import (
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+)
+
+// This file now primarily uses domain.Agent for persistence.
+// The local RuntimeType constants are kept for runtime interface compatibility.
+
 type RuntimeType string
 
 const (
@@ -9,12 +16,20 @@ const (
 	RuntimeTypeGemini   RuntimeType = "gemini"
 )
 
-type Agent struct {
-	ID                     string           `json:"id"`
-	Name                   string           `json:"name"`
-	Profile                string           `json:"profile"`
-	Capabilities           []string         `json:"capabilities"`
-	AllowedTools           []string         `json:"allowed_tools"`
-	DefaultPromptFragments []string         `json:"default_prompt_fragments"`
-	RuntimeType            RuntimeType      `json:"runtime_type"`
+// AgentStatus represents the status of an agent in the database
+type AgentStatus string
+
+const (
+	AgentStatusActive   AgentStatus = "active"
+	AgentStatusInactive AgentStatus = "inactive"
+)
+
+// ToDomainRuntimeType converts local RuntimeType to domain.AgentRuntimeType
+func ToDomainRuntimeType(rt RuntimeType) domain.AgentRuntimeType {
+	return domain.AgentRuntimeType(rt)
+}
+
+// FromDomainRuntimeType converts domain.AgentRuntimeType to local RuntimeType
+func FromDomainRuntimeType(rt domain.AgentRuntimeType) RuntimeType {
+	return RuntimeType(rt)
 }

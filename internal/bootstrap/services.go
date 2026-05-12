@@ -5,11 +5,12 @@ import (
 	"database/sql"
 
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
@@ -47,7 +48,14 @@ func WorkUnitService(db *sql.DB) *workunitmod.WorkUnitService {
 
 // AgentSessionService creates an AgentSessionService with standard dependencies.
 func AgentSessionService(db *sql.DB) *agentsessionmod.AgentSessionService {
-	return agentsessionmod.NewAgentSessionService(db)
+	return agentsessionmod.NewAgentSessionService(db,
+		func(tx *sql.Tx) agentsessionmod.AgentReader { return agentmod.NewRepository(tx) },
+	)
+}
+
+// AgentService creates an AgentService with standard dependencies.
+func AgentService(db *sql.DB) *agentmod.AgentService {
+	return agentmod.NewAgentService(db)
 }
 
 // TaskGraphService creates a TaskGraphService with standard repository factories.
