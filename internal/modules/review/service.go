@@ -98,6 +98,16 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 	}
 	defer dbcore.RollbackTx(tx)
 
+	if input.WorkUnitID != "" {
+		exists, err := NewRepository(tx).ExistsActiveByWorkUnitAndGate(input.WorkUnitID, input.GateType)
+		if err != nil {
+			return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.check_duplicate", err)
+		}
+		if exists {
+			return nil, apperrors.New(apperrors.CodeConflict, "review_service.create", "an active review already exists for this work unit and gate")
+		}
+	}
+
 	if err := NewRepository(tx).Create(review); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.create_projection", err)
 	}

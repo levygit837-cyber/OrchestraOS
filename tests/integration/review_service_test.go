@@ -350,3 +350,45 @@ func TestReviewServiceStartRequiresPending(t *testing.T) {
 		t.Fatalf("expected invalid transition error, got %v", err)
 	}
 }
+
+func TestReviewServiceRejectsDuplicateActiveReview(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+	ctx := context.Background()
+
+	taskID := createTestTask(t, db)
+	workUnitID := createTestWorkUnit(t, db, taskID)
+
+	reviewService := reviewmod.NewReviewService(db)
+	_, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
+		TaskID:     taskID,
+		WorkUnitID: workUnitID,
+		GateType:   domain.ValidationGateHard,
+	})
+	if err != nil {
+		t.Fatalf("create first review: %v", err)
+	}
+
+	_, err = reviewService.Create(ctx, reviewmod.CreateReviewInput{
+		TaskID:     taskID,
+		WorkUnitID: workUnitID,
+		GateType:   domain.ValidationGateHard,
+	})
+	if err == nil {
+		t.Fatal("expected duplicate active review to be rejected")
+	}
+	appErr, ok := err.(*apperrors.Error)
+	if !ok || appErr.Code != apperrors.CodeConflict {
+		t.Fatalf("expected conflict error, got %v", err)
+	}
+
+	// Different gate for same work unit should be allowed
+	_, err = reviewService.Create(ctx, reviewmod.CreateReviewInput{
+		TaskID:     taskID,
+		WorkUnitID: workUnitID,
+		GateType:   domain.ValidationGateSoft,
+	})
+	if err != nil {
+		t.Fatalf("create review with different gate: %v", err)
+	}
+}

@@ -105,6 +105,16 @@ func (r *Repository) ListPending() ([]*domain.Review, error) {
 	return reviews, rows.Err()
 }
 
+// ExistsActiveByWorkUnitAndGate checks if an active review exists for a work unit + gate
+func (r *Repository) ExistsActiveByWorkUnitAndGate(workUnitID string, gate domain.ValidationGate) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(QueryExistsActiveByWorkUnitAndGate, workUnitID, gate).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check active review existence: %w", err)
+	}
+	return exists, nil
+}
+
 // UpdateStatus updates the status and optional fields of a review
 func (r *Repository) UpdateStatus(review *domain.Review) error {
 	now := time.Now().UTC()

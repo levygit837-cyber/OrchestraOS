@@ -21,4 +21,11 @@ const (
 	QueryUpdateStatus = `
 		UPDATE reviews SET status = $2, updated_at = $3, completed_at = $4, verdict_reason = $5, evidence_refs = $6, criteria_checked = $7
 		WHERE id = $1`
+
+	QueryExistsActiveByWorkUnitAndGate = `
+		SELECT EXISTS(
+			SELECT 1 FROM reviews
+			WHERE work_unit_id = $1 AND gate_type = $2
+			AND status NOT IN ('approved', 'changes_requested', 'needs_discussion')
+		)`
 )
