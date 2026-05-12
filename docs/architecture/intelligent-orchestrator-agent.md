@@ -12,7 +12,41 @@ Ele transforma intencao humana em planejamento, diagnostica execucoes, sugere co
 2. **Zero acesso direto.** Sem DB, sem filesystem, sem chamadas diretas a servicos de dominio.
 3. **Observacao controlada.** So ve o que o `OrchestratorService` expoe via Observation API.
 4. **Comandos estruturados.** Toda acao e emitida como evento/JSON com schema rigido.
-5. **Ativacao sob demanda.** Nao fica rodando continuamente; e acionado por triggers.
+5. **Ativacao sob demanda.** Nao observa continuamente; e acionado por triggers do Go deterministico.
+6. **Nunca analisa chunks brutos de execucao.** O custo de ler tokens de outro agente em tempo real e proibitivo. Ele recebe resumos e decide.
+
+## Arquitetura em 3 Camadas
+
+A proatividade do Orquestrador e implementada em tres camadas de custo e frequencia:
+
+```
+Camada 1: GO DETERMINISTICO (Sempre Ativo, Custo Zero)
+   |
+   |-- Conta tokens, steps, heartbeats
+   |-- Detecta loops por padrao de ferramentas
+   |-- Detecta stalls por timeout
+   |-- Detecta violacoes de owned_paths
+   |-- Dispara triggers quando thresholds sao atingidos
+   +--> Trigger: "anomalia detectada"
+   |
+Camada 2: ORQUESTRADOR LLM (Sob Demanda, Custo Medio)
+   |
+   |-- Ativado APENAS quando Go detecta algo suspeito
+   |-- Recebe resumo da Observation API (500-1000 tokens)
+   |-- Decide: ignorar, hint, warning, pause, ou...
+   |-- ...solicitar Review-Session (Camada 3)
+   +--> Trigger: "review necessaria"
+   |
+Camada 3: REVIEW-SESSION (Programada, Custo Controlado)
+   |
+   |-- Sessao dedicada do agente reviewer
+   |-- Executa em worktree concluido ou checkpoint significativo
+   |-- Analisa diff, testes, sintaxe, criterios de aceite
+   |-- Emite veredicto estruturado (approved, changes_requested)
+   +--> Resultado vira memoria reutilizavel
+```
+
+**Regra de ouro:** O Orquestrador LLM nunca observa continuamente. O Go observa de graca; o LLM so e acionado quando ha evidencia de que vale a pena pagar por sua analise.
 
 ## Ciclo de Vida
 
@@ -22,24 +56,26 @@ Trigger (mensagem humana OU anomalia detectada pelo Go OU pending approval)
     v
 OrchestratorService (Go)
     |
-    |-- Cria AgentSession (perfil: orchestrator)
+    |-- Detecta anomalia via regras deterministicas (Camada 1)
+    |-- Cria AgentSession (perfil: orchestrator) se necessario
     |-- Cria Run (orchestrator run)
     |-- Prepara Prompt via PromptService
-    |   (contexto: estado do sistema, ADRs, politicas, observacoes)
+    |   (contexto: resumo do estado, ADRs, politicas, observacoes)
     |
     v
-GeminiRuntime.Start() (ou outro runtime LLM)
+GeminiRuntime.Start() (Camada 2)
     |
     v
 Loop de Decisao do Agente Inteligente
     |
-    |-- 1. Recebe Observation (resumo do estado atual)
+    |-- 1. Recebe Observation (resumo de 500-1000 tokens)
     |-- 2. Analisa com LLM
     |-- 3. Escolhe ferramenta de decisao
     |-- 4. Emite comando estruturado
     |-- 5. Aguarda resultado do OrchestratorService
     |-- 6. Se nova observacao necessaria, volta ao passo 1
-    |-- 7. Se nao ha mais decisoes, emite checkpoint e completa
+    |-- 7. Se Review-Session necessaria, solicita (Camada 3)
+    |-- 8. Se nao ha mais decisoes, emite checkpoint e completa
     |
     v
 Checkpoint + Run Complete
@@ -56,11 +92,13 @@ O Agente Inteligente e ativado em situacoes especificas, nao continuamente:
 |---------|--------|---------|
 | `human_message` | Usuario enviou mensagem em linguagem natural | "Crie uma API de autenticacao" |
 | `anomaly_detected` | Go detectou stall, loop ou comportamento anomalo | Agente sem progresso por 10 min |
+| `threshold_exceeded` | Go detectou que agente passou de tokens/steps sem concluir | 30k tokens, 20 steps, sem checkpoint |
 | `tool_pending_approval` | Ferramenta de risco medio/alto aguarda decisao | `shell.exec` com rede |
 | `work_unit_failed` | Work unit falhou e replanejamento e necessario | Testes falharam 3x |
 | `task_graph_ready` | Task criada e precisa de decomposicao inteligente | Criterios de aceite gerados |
 | `checkpoint_review` | Checkpoint indica bloqueio ou deriva de objetivo | Agente pediu escopo diferente |
 | `policy_violation` | Agente tentou acao fora da politica | Acesso a path bloqueado |
+| `validation_gate` | WU concluida e aguarda review antes de liberar dependente | WU-001 done, WU-002 blocked |
 
 ## Perfil e Prompt
 
@@ -265,6 +303,34 @@ Solicita injecao de memoria em um agente.
 }
 ```
 
+#### `request_review_session`
+Solicita uma Review-Session para validar o trabalho de uma work unit.
+
+**Input:**
+```json
+{
+  "work_unit_id": "wu_001",
+  "run_id": "run_456",
+  "review_type": "code_review",
+  "focus": ["syntax", "tests", "criteria_match", "pattern_consistency"],
+  "context": "Esta WU implementou o middleware JWT. Verificar se segue o padrao do projeto."
+}
+```
+
+**Output (via OrchestratorService):**
+```json
+{
+  "review_session_id": "rev_789",
+  "veredict": "changes_requested",
+  "rationale": "A funcao ValidateToken nao trata expiry. O projeto usa time.Now().After() em internal/auth/utils.go.",
+  "suggestions": [
+    "Reutilizar ParseToken do pacote existente",
+    "Adicionar teste para token expirado"
+  ],
+  "confidence": 0.88
+}
+```
+
 ### Ferramentas de Escalonamento
 
 #### `escalate_to_human`
@@ -353,6 +419,97 @@ O Agente Inteligente e um consumidor importante da Recursive Memory:
    |-- Escalona para humano: "Task pronta para review. Diffs em 4 arquivos."
 ```
 
+## Review-Session
+
+A **Review-Session** e uma sessao dedicada do agente `reviewer` que valida o trabalho de uma work unit. Ela e a **Camada 3** da arquitetura proativa e funciona como um gate de qualidade entre fases do Task Graph.
+
+### Quando e Acionada
+
+| Cenario | Acionador | Objetivo |
+|---------|-----------|----------|
+| WU concluida, proxima WU dependente aguarda | `validation_gate` no Task Graph | Garantir qualidade antes de liberar dependencia |
+| WU atingiu threshold de tokens sem concluir | Trigger do Go (Camada 1) | Diagnosticar se o approach esta correto |
+| Agente Inteligente suspeita de deriva ou anti-padrao | Decisao do LLM (Camada 2) | Validar se o codigo segue padroes do projeto |
+| WU de risco alto concluida | Politica do Task Graph | Revisao obrigatoria antes de merge |
+
+### Ciclo de Vida da Review-Session
+
+```text
+1. Trigger (validation_gate, threshold, ou decisao do Orquestrador)
+   |
+2. OrchestratorService prepara Review-Session:
+   |-- Coleta diff da work unit
+   |-- Coleta checkpoints e ledger
+   |-- Coleta criterios de aceite da WU
+   |-- Busca padroes do projeto (memoria, ADRs, codigo existente)
+   |-- Cria Run com perfil `reviewer`
+   |
+3. Agente `reviewer` executa:
+   |-- Le diff e arquivos relevantes
+   |-- Analisa sintaxe, logica, testes, padroes
+   |-- Compara com criterios de aceite
+   |-- Emite veredicto estruturado
+   |
+4. OrchestratorService processa resultado:
+   |-- Se `approved`: libera proximas WUs, marca gate como satisfeito
+   |-- Se `changes_requested`: marca WU para retry, notifica agente original
+   |-- Se `needs_discussion`: escalona para humano ou Orquestrador LLM
+   |-- Persiste review como evento auditavel
+   |-- Diff e veredicto viram memoria (padroes, erros comuns)
+```
+
+### Veredicto da Review-Session
+
+```go
+type ReviewVeredict struct {
+    ReviewSessionID string
+    WorkUnitID      string
+    RunID           string
+    Status          string   // approved, changes_requested, needs_discussion
+    Rationale       string
+    Suggestions     []string
+    IssuesFound     []ReviewIssue
+    Confidence      float64
+    ReviewedAt      time.Time
+}
+
+type ReviewIssue struct {
+    Severity    string   // minor, major, critical
+    Category    string   // syntax, logic, test, pattern, security, performance
+    FilePath    string
+    LineRange   *string
+    Description string
+    Suggestion  string
+}
+```
+
+### Configuracao de Validation Gate
+
+O Task Graph pode declarar gates de validacao entre fases:
+
+```json
+{
+  "gate": {
+    "id": "gate_001",
+    "type": "review_session",
+    "trigger": "after_work_unit_completion",
+    "required_veredict": "approved",
+    "review_focus": ["syntax", "tests", "pattern_consistency"],
+    "auto_retry_on_changes_requested": true,
+    "max_retries": 2
+  }
+}
+```
+
+### Custo e Controle
+
+- Cada Review-Session consome tokens proporcional ao tamanho do diff
+- Diff muito grande (>1000 linhas) pode ser particionado por arquivo
+- Review-Session e **opcional por default**; so e obrigatoria quando:
+  - Declarada explicitamente no Task Graph
+  - Triggerada por anomalia
+  - Configurada por politica de risco
+
 ## Dependencias
 
 - `OrchestratorService` (Go) funcionando
@@ -361,6 +518,7 @@ O Agente Inteligente e um consumidor importante da Recursive Memory:
 - `Event Store` para persistencia de decisoes
 - `Recursive Memory` (opcional no primeiro corte)
 - Runtime LLM (Gemini ou similar)
+- Agente `reviewer` com toolset de analise de codigo
 
 ## Referencias
 

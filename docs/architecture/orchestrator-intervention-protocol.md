@@ -157,6 +157,37 @@ Nivel 7: ESCALATE      (human)    → Human assume controle
 - Human pode: aprovar, negar, replanejar, ou assumir controle
 - Todo input humano vira evento auditavel
 
+### Intervencao de Qualidade: Review-Session
+
+**Uso**: Validar o trabalho de uma work unit antes de liberar dependencias ou permitir continuacao.
+
+**Comportamento**:
+- Run do agente executor pode continuar ou ser pausada (depende do gate)
+- Spawna sessao dedicada do agente `reviewer`
+- Reviewer analisa diff, testes, sintaxe, criterios de aceite
+- Emite veredicto: `approved`, `changes_requested`, `needs_discussion`
+- Se `approved`: libera proximos passos
+- Se `changes_requested`: WU vai para retry com feedback
+- Se `needs_discussion`: escalona para humano ou Orquestrador LLM
+
+**Exemplo**:
+```json
+{
+  "type": "orchestrator.review_requested",
+  "priority": "checkpoint",
+  "payload": {
+    "review_session_id": "rev_789",
+    "work_unit_id": "wu_001",
+    "run_id": "run_456",
+    "review_type": "code_review",
+    "focus": ["syntax", "tests", "pattern_consistency"],
+    "blocking": true
+  }
+}
+```
+
+**Nota**: A Review-Session nao substitui os niveis 1-7. Ela e um mecanismo complementar de qualidade que pode ser acionado por qualquer nivel (ex: apos PAUSE, antes de RESUME) ou por Validation Gate no Task Graph.
+
 ## Maquina de Estados da Intervencao
 
 ```

@@ -9,11 +9,12 @@ Em vez de expor o Event Store brut — que seria proibitivo em tokens, ruido e r
 ## Principios
 
 1. **Nunca expor eventos brut.** O consumidor recebe derivados, nao fonte.
-2. **Filtrar por relevancia.** Apenas informacoes pertinentes a decisao em questao.
-3. **Classificar por gravidade.** Alertas, anomalias e bloqueios devem ser destacados.
-4. **Respeitar escopo e permissao.** O consumidor so ve o que tem autorizacao para ver.
-5. **Sem segredos.** Tokens, chaves e credenciais nunca aparecem na observacao.
-6. **Eficiencia de tokens.** O output deve ser conciso o suficiente para consumo por LLM.
+2. **Nunca expor chunks de tokens de execucao.** O custo de transmitir e analisar tokens brutos de outro agente e proibitivo. A Observation API retorna **resumos estruturados**.
+3. **Filtrar por relevancia.** Apenas informacoes pertinentes a decisao em questao.
+4. **Classificar por gravidade.** Alertas, anomalias e bloqueios devem ser destacados.
+5. **Respeitar escopo e permissao.** O consumidor so ve o que tem autorizacao para ver.
+6. **Sem segredos.** Tokens, chaves e credenciais nunca aparecem na observacao.
+7. **Eficiencia de tokens.** O output deve ser conciso (500-1000 tokens) para consumo por LLM.
 
 ## Interface
 
@@ -362,13 +363,52 @@ O OrchestratorService notifica o Agente Inteligente quando anomalias criticas sa
 
 ```go
 type ObservationPush struct {
-    Trigger     string   // anomaly_detected, tool_pending, task_failed
+    Trigger     string   // anomaly_detected, threshold_exceeded, tool_pending, task_failed
     Urgency     string   // low, medium, high
     Snapshot    Observation
 }
 ```
 
-**Uso**: Ativacao automatica do Agente Inteligente sem polling.
+**Uso**: Ativacao automatica do Agente Inteligente quando o Go deterministico detecta condicao que exige decisao estrategica.
+
+## Triggers Configuraveis (Camada 1)
+
+O Go deterministico observa continuamente e dispara triggers para o Agente Inteligente quando thresholds sao atingidos.
+
+```go
+type TriggerConfig struct {
+    // Tokens e Steps
+    MaxTokensWithoutCheckpoint int64         // default: 20000
+    MaxStepsWithoutProgress    int           // default: 10
+    TokenBudgetPercent         float64       // default: 0.8 (80%)
+
+    // Tempo
+    StallThreshold             time.Duration // default: 10m
+    CheckpointTimeout          time.Duration // default: 5m
+    HeartbeatTimeoutMultiplier int           // default: 2
+
+    // Padroes
+    LoopToolRepetitions        int           // default: 3
+    LoopGoalRepetitions        int           // default: 2
+    DriftSimilarityThreshold   float64       // default: 0.6
+
+    // Politica
+    AutoEscalateOnRepeatedRejection int      // default: 3
+}
+```
+
+### Exemplos de Trigger
+
+| Trigger | Condicao no Go | Acao do Orquestrador LLM |
+|---------|----------------|--------------------------|
+| `threshold_exceeded_tokens` | Agente usou 20k tokens sem checkpoint | Analisar se ha loop ou deriva |
+| `threshold_exceeded_steps` | Agente executou 10+ steps sem progresso | Verificar padrao de ferramentas |
+| `stall_detected` | Sem evento relevante por 10 min | Decidir entre hint, pause ou review |
+| `loop_detected` | Mesma ferramenta 3x ou mesmo goal 2x | Enviar interrupt ou solicitar review |
+| `drift_detected` | Goal atual diverge do original | Enviar warning com contexto |
+| `policy_violation` | Acesso a path bloqueado | Warning ou pause |
+| `tool_pending` | Ferramenta de risco aguarda > 30s | Aprovar, negar ou condicionar |
+| `validation_gate` | WU concluida, gate de review ativo | Solicitar Review-Session |
 
 ## Seguranca e Privacidade
 

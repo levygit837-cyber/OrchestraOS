@@ -22,6 +22,7 @@ O OrchestraOS usa um modelo hibrido de coordenacao:
 |-----------|------|-----|
 | **Task Graph (DAG)** | Estatico / Declarativo | Define dependencias, ordem e ownership antes da execucao |
 | **Barrier Synchronization** | Dinamico / Temporal | Sincroniza fases de execucao entre agentes |
+| **Validation Gate** | Dinamico / Qualidade | Review-Session obrigatoria antes de liberar dependencias |
 | **Shared Information Board** | Dinamico / Semantico | Compartilha descobertas relevantes entre agentes |
 | **Contract Net** | Dinamico / Negociacao | Atribui work units a agentes com base em capacidade |
 | **Deadlock Detection** | Reativo / Protetivo | Detecta e resolve esperas circulares em runtime |
@@ -392,7 +393,94 @@ A decisao entre serializar ou replanejar pode ser:
 - Deterministica (Go): se conflito e simples e previsivel
 - Estrategica (LLM): se conflito exige analise semantica
 
-## 7. Coordenacao Temporal
+## 7. Validation Gate e Review-Session
+
+O **Validation Gate** e um mecanismo de coordenacao que insere uma **Review-Session** obrigatoria entre a conclusao de uma work unit e o inicio de suas dependentes.
+
+### Conceito
+
+Em vez de liberar uma WU automaticamente ao completar, o Orchestrator pode exigir que um agente `reviewer` valide o trabalho antes de permitir que WUs dependentes iniciem.
+
+```text
+WU-001 (Implementar schema) --completa--> [VALIDATION GATE] --approved--> WU-002 (Implementar repository)
+                                              |
+                                              |--changes_requested--> WU-001 (retry)
+```
+
+### Tipos de Gate
+
+#### Gate Obrigatorio (Hard Gate)
+
+WU dependente NUNCA inicia ate que a Review-Session emita `approved`.
+
+**Uso**: WUs de risco alto, contratos publicos, mudancas de API.
+
+#### Gate Flexivel (Soft Gate)
+
+WU dependente pode iniciar em paralelo com a Review-Session, mas nao pode concluir ate que o gate seja satisfeito.
+
+**Uso**: WUs independentes que podem comecar a ler/entender o codigo enquanto reviewer valida.
+
+#### Gate por Politica
+
+Gate ativado apenas se:
+- WU tem `risk_level >= medium`
+- WU modificou arquivos em `critical_paths`
+- Task tem `review_required: true`
+
+### Declaracao no Task Graph
+
+```json
+{
+  "nodes": [
+    {"id": "wu_001", "objective": "Criar schema SQL"},
+    {"id": "wu_002", "objective": "Implementar repository"}
+  ],
+  "edges": [
+    {"from": "wu_001", "to": "wu_002", "type": "blocks"}
+  ],
+  "gates": [
+    {
+      "id": "gate_001",
+      "after_node": "wu_001",
+      "type": "review_session",
+      "mode": "hard",
+      "required_veredict": "approved",
+      "review_focus": ["syntax", "tests", "pattern_consistency"],
+      "auto_retry_on_changes_requested": true,
+      "max_retries": 2
+    }
+  ]
+}
+```
+
+### Protocolo de Gate
+
+```text
+1. WU-001 emite evento work_unit.completed
+2. OrchestratorService detecta gate_001 associado
+3. OrchestratorService cria Review-Session:
+   a. Coleta diff de wu_001
+   b. Coleta criterios de aceite
+   c. Spawna agente reviewer com contexto
+4. Agente reviewer emite veredicto
+5. OrchestratorService processa:
+   - approved: marca gate como satisfeito, agenda wu_002
+   - changes_requested: marca wu_001 para retry, mantem wu_002 blocked
+   - needs_discussion: escalona para humano
+6. Toda decisao vira evento auditavel
+```
+
+### Review-Session como Coordenacao
+
+A Review-Session nao e apenas validacao; e um **ponto de sincronizacao semantico**:
+
+- **Qualidade**: Garante que codigo ruim nao propaga para WUs dependentes
+- **Conhecimento**: O review vira memoria (padroes, erros comuns, decisoes)
+- **Continuidade**: Se WU-001 e retry, WU-002 ja tem contexto do que mudou
+- **Gate humano**: Human pode substituir o reviewer em casos criticos
+
+## 8. Coordenacao Temporal
 
 ### Timeouts Global e Local
 
@@ -426,7 +514,7 @@ type TimeoutPolicy struct {
 }
 ```
 
-## 8. Rebalanceamento Dinamico
+## 9. Rebalanceamento Dinamico
 
 ### Split de Work Unit
 
@@ -457,7 +545,7 @@ Se duas WUs sao muito pequenas e uma ja terminou:
 4. OrchestratorService valida e aplica
 ```
 
-## 9. Métricas de Coordenacao
+## 10. Métricas de Coordenacao
 
 O Orchestrator deve coletar metricas para avaliar a eficiencia da coordenacao:
 

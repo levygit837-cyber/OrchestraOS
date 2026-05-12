@@ -210,6 +210,7 @@ UserMessage/CLI
 - **OrchestratorService (Go)**: loop de orquestração deterministico que coordena serviços de domínio.
 - **Intelligent Orchestrator Agent (LLM)**: ativado sob demanda para decisões estratégicas (decomposição inteligente, seleção de perfis, diagnóstico).
 - **Observation API**: fronteira controlada entre o Agente Inteligente e o Go.
+- **Review-Session**: sessão dedicada do agente `reviewer` para validar work units em gates de qualidade.
 - **Regra de ouro**: módulos nunca conversam diretamente; cross-module obrigatoriamente via OrchestratorService.
 
 **O que precisa ser feito:**
@@ -249,11 +250,27 @@ UserMessage/CLI
    - Delega diretamente a `OrchestratorService.RunTask()`
    - Exibe progresso das work units no terminal.
 
-5. **Testes de integração**
+5. **Review-Session e Validation Gate**
+   - Perfil `reviewer` no catálogo de prompts e toolset.
+   - `ValidationGate` declarável no Task Graph (hard, soft, por política).
+   - Review-Session spawnada automaticamente quando gate é ativado.
+   - Veredicto estruturado: `approved`, `changes_requested`, `needs_discussion`.
+   - Se `approved`: libera WUs dependentes.
+   - Se `changes_requested`: marca WU original para retry com feedback.
+   - Localização: `internal/modules/review/` ou integrado ao `OrchestratorService`.
+
+6. **Triggers Configuráveis (Camada 1)**
+   - Thresholds de tokens, steps, tempo, heartbeats no `OrchestratorService`.
+   - Detecção determinística de stall, loop, drift, violação de paths.
+   - Disparo automático de triggers para o Agente Inteligente.
+
+7. **Testes de integração**
    - `tests/integration/orchestrator_test.go`
    - Valida fluxo completo com FakeRuntime
    - Valida que work units são executadas na ordem topológica correta
    - Valida que agentes são registrados com perfil e runtime type
+   - Valida Review-Session como gate entre WUs dependentes
+   - Valida triggers de anomalia disparando ativação do Agente Inteligente
 
 **Critérios de Aceite:**
 - [ ] `OrchestratorService.RunTask()` executa fluxo completo de uma task com múltiplas work units.
@@ -265,6 +282,9 @@ UserMessage/CLI
 - [ ] Agente Inteligente pode ser ativado para decompor task em linguagem natural.
 - [ ] Observation API expõe resumos estruturados do estado do sistema.
 - [ ] Sugestões do Agente Inteligente são validadas pelo Go antes de aplicar.
+- [ ] Review-Session valida work unit e emite veredicto estruturado.
+- [ ] Validation Gate bloqueia/libera WUs dependentes conforme veredicto.
+- [ ] Triggers de anomalia (stall, loop, threshold) disparam ativação do Agente Inteligente.
 
 ---
 

@@ -83,16 +83,21 @@ Isso inclui:
 
 ### Intelligent Orchestrator Agent
 
-A camada de inteligencia estrategica. Operacao sob demanda, ativada por triggers especificos.
+A camada de inteligencia estrategica. Operacao sob demanda, ativada por triggers do Go deterministico. Segue uma arquitetura em **3 camadas**:
 
-**Responsabilidades:**
+1. **Camada 1 - Go Deterministico (sempre ativo)**: observa metricas, detecta anomalias, dispara triggers.
+2. **Camada 2 - Orquestrador LLM (sob demanda)**: ativado por trigger; recebe resumos da Observation API; decide strategicamente.
+3. **Camada 3 - Review-Session (programada)**: sessao dedicada do agente `reviewer` para validar work units em gates de qualidade.
+
+**Responsabilidades (Camada 2):**
 - Receber e interpretar mensagens em linguagem natural
 - Decompor tasks em work units com semantica e contexto
 - Selecionar perfis dinamicos de agente
-- Diagnosticar stalls, loops e anomalias
+- Diagnosticar stalls, loops e anomalias (com base em resumos do Go)
 - Decidir sobre replanejamento apos falha
 - Aprovar/negar ferramentas de risco medio e alto
 - Sugerir intervencoes em agentes (dicas, pausas, reinicios)
+- Solicitar Review-Session quando validacao de qualidade for necessaria
 - Escalonar para aprovacao humana
 
 **Documentacao detalhada:** `docs/architecture/intelligent-orchestrator-agent.md`
@@ -227,6 +232,7 @@ O Orchestrator coordena multiplos agentes paralelos atraves de:
 
 - **Task Graph (DAG)**: plano estatico de dependencias e ownership
 - **Barrier Synchronization**: sincronizacao de fases entre agentes
+- **Validation Gate**: Review-Session obrigatoria entre WUs dependentes para garantia de qualidade
 - **Shared Information Board**: compartilhamento controlado de descobertas
 - **Contract Net**: atribuicao dinamica de work units (futuro)
 - **Deadlock/Livelock Detection**: deteccao e resolucao de esperas circulares
