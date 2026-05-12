@@ -1,0 +1,53 @@
+{
+  "$id": "https://orchestraos.local/schemas/domain/trigger.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Trigger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "trigger_type",
+    "status",
+    "created_at"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": ["string", "null"] },
+    "task_id": { "type": ["string", "null"] },
+    "agent_session_id": { "type": ["string", "null"] },
+    "trigger_type": {
+      "type": "string",
+      "enum": ["threshold", "anomaly", "heartbeat_timeout", "policy"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "triggered", "resolved", "dismissed"]
+    },
+    "anomaly_type": {
+      "type": ["string", "null"],
+      "enum": ["stall", "loop", "drift", "path_violation", "token_exceeded", "steps_exceeded", "time_exceeded", null]
+    },
+    "threshold_value": {
+      "type": ["object", "null"]
+    },
+    "current_value": {
+      "type": ["object", "null"]
+    },
+    "triggered_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "resolution_action": {
+      "type": ["string", "null"],
+      "enum": ["pause", "cancel", "notify", "escalate", null]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
