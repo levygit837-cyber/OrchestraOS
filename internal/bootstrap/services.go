@@ -14,6 +14,7 @@ import (
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
@@ -82,6 +83,15 @@ func PlannerPrompt(task *domain.Task) (string, error) {
 // ValidateGraphPlan validates a graph plan.
 func ValidateGraphPlan(plan *taskgraphmod.GraphPlan) error {
 	return taskgraphmod.ValidateGraphPlan(plan)
+}
+
+// TriggerService creates a TriggerService with standard repository factories.
+func TriggerService(db *sql.DB) *triggermod.TriggerService {
+	return triggermod.NewTriggerService(db,
+		func(executor dbcore.DBTX) triggermod.RunReader { return runmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) triggermod.AgentSessionReader { return agentsessionmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) triggermod.WorkUnitReader { return workunitmod.NewRepository(executor) },
+	)
 }
 
 // RuntimeEventRelay creates a RuntimeEventRelay wired to domain services.
