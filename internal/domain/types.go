@@ -282,3 +282,46 @@ type EventEnvelope struct {
 	CreatedAt    time.Time       `json:"created_at"`
 	Payload      json.RawMessage `json:"payload"`
 }
+
+type ReviewStatus string
+
+const (
+	ReviewStatusPending          ReviewStatus = "pending"
+	ReviewStatusInProgress       ReviewStatus = "in_progress"
+	ReviewStatusApproved         ReviewStatus = "approved"
+	ReviewStatusChangesRequested ReviewStatus = "changes_requested"
+	ReviewStatusNeedsDiscussion  ReviewStatus = "needs_discussion"
+)
+
+type ReviewDecision = ReviewStatus
+
+type ValidationGate string
+
+const (
+	ValidationGateHard   ValidationGate = "hard"
+	ValidationGateSoft   ValidationGate = "soft"
+	ValidationGatePolicy ValidationGate = "policy"
+)
+
+type ReviewCriteriaChecked struct {
+	Criterion string `json:"criterion"`
+	Passed    bool   `json:"passed"`
+	Reason    string `json:"reason,omitempty"`
+}
+
+type Review struct {
+	ID               string                   `json:"id"`
+	RunID            *string                  `json:"run_id,omitempty"`
+	WorkUnitID       *string                  `json:"work_unit_id,omitempty"`
+	TaskID           *string                  `json:"task_id,omitempty"`
+	AgentSessionID   *string                  `json:"agent_session_id,omitempty"`
+	ReviewerAgentID  *string                  `json:"reviewer_agent_id,omitempty"`
+	GateType         ValidationGate           `json:"gate_type"`
+	Status           ReviewStatus             `json:"status"`
+	VerdictReason    string                   `json:"verdict_reason,omitempty"`
+	EvidenceRefs     []string                 `json:"evidence_refs,omitempty"`
+	CriteriaChecked  []ReviewCriteriaChecked  `json:"criteria_checked,omitempty"`
+	CreatedAt        time.Time                `json:"created_at"`
+	UpdatedAt        time.Time                `json:"updated_at"`
+	CompletedAt      *time.Time               `json:"completed_at,omitempty"`
+}

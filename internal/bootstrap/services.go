@@ -12,6 +12,7 @@ import (
 	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
+	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
@@ -70,6 +71,11 @@ func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
 // PromptService creates a PromptService with standard dependencies.
 func PromptService(db *sql.DB) *promptmod.PromptService {
 	return promptmod.NewPromptService(db)
+}
+
+// ReviewService creates a ReviewService with standard dependencies.
+func ReviewService(db *sql.DB) *reviewmod.ReviewService {
+	return reviewmod.NewReviewService(db)
 }
 
 // EventService creates an EventService with standard dependencies.

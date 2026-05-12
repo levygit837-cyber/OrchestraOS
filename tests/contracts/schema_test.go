@@ -427,5 +427,30 @@ func schemaCases() []schemaCase {
 				"payload": {}
 			}`,
 		},
+		{
+			name:           "Review",
+			path:           "schemas/domain/review.schema.json",
+			requiredField:  "gate_type",
+			enumField:      "status",
+			invalidEnumVal: "rejected",
+			valid: `{
+				"id": "review_001",
+				"run_id": "run_001",
+				"work_unit_id": "wu_001",
+				"task_id": "task_001",
+				"agent_session_id": "as_001",
+				"reviewer_agent_id": "agent_001",
+				"gate_type": "hard",
+				"status": "pending",
+				"verdict_reason": "all criteria passed",
+				"evidence_refs": ["test:1"],
+				"criteria_checked": [
+					{"criterion": "tests pass", "passed": true, "reason": "all green"}
+				],
+				"created_at": "2026-05-03T12:00:00Z",
+				"updated_at": "2026-05-03T12:00:00Z",
+				"completed_at": "2026-05-03T12:05:00Z"
+			}`,
+		},
 	}
 }
