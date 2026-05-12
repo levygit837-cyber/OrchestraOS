@@ -21,8 +21,14 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
+// AgentReader abstracts agent reads to avoid cyclic imports.
+type AgentReader interface {
+	GetByID(ctx context.Context, id string) (*domain.Agent, error)
+}
+
 type AgentSessionService struct {
-	db *sql.DB
+	db             *sql.DB
+	newAgentReader func(*sql.Tx) AgentReader
 }
 
 type CreateAgentSessionInput struct {
@@ -55,8 +61,8 @@ type CheckpointInput struct {
 	Extra          map[string]interface{}
 }
 
-func NewAgentSessionService(database *sql.DB) *AgentSessionService {
-	return &AgentSessionService{db: database}
+func NewAgentSessionService(database *sql.DB, newAgentReader func(*sql.Tx) AgentReader) *AgentSessionService {
+	return &AgentSessionService{db: database, newAgentReader: newAgentReader}
 }
 
 func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error) {
@@ -72,6 +78,12 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 		return nil, err
 	}
 	defer dbcore.RollbackTx(tx)
+
+	// Validate AgentID exists
+	_, err = s.requireAgentByID(ctx, tx, input.AgentID)
+	if err != nil {
+		return nil, err
+	}
 
 	session := &domain.AgentSession{
 		ID:               input.ID,
@@ -305,4 +317,16 @@ func validateCreateAgentSessionInput(input CreateAgentSessionInput) error {
 		return apperrors.New(apperrors.CodeValidation, op, "recoverable_state must be valid JSON")
 	}
 	return nil
+}
+
+func (s *AgentSessionService) requireAgentByID(ctx context.Context, tx *sql.Tx, id string) (*domain.Agent, error) {
+	op := "agent_session_service.require_agent"
+	agent, err := s.newAgentReader(tx).GetByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.Wrap(apperrors.CodePersistence, op, err)
+	}
+	if agent == nil {
+		return nil, apperrors.New(apperrors.CodeNotFound, op, "agent not found")
+	}
+	return agent, nil
 }
