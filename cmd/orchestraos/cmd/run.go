@@ -14,9 +14,9 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	"github.com/spf13/cobra"
 )
@@ -115,69 +115,30 @@ var runStartCmd = &cobra.Command{
 				Timeout:           300,
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
 			if err := runtime.Start(ctx, config); err != nil {
 				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to start %s runtime: %w", runtimeType, err))
 			}
 
-			for {
-				event, err := runtime.ReceiveEvent(ctx)
-				if err != nil {
-					return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to receive %s runtime event: %w", runtimeType, err))
-				}
-				switch event.Type {
-				case "agent.heartbeat":
-					payload, err := decodePayloadMap(event)
-					if err != nil {
-						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
-					}
-					if _, err := sessionService.Heartbeat(ctx, session.ID, agentsessionmod.HeartbeatInput{
-						EventID: event.ID,
-						Payload: payload,
-					}); err != nil {
-						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist %s runtime heartbeat: %w", runtimeType, err))
-					}
-				case "agent.checkpoint_reached":
-					if _, err := sessionService.CheckpointFromEvent(ctx, session.ID, event); err != nil {
-						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist %s runtime checkpoint: %w", runtimeType, err))
-					}
-				default:
-					eventService := eventmod.NewService(getDB())
-					if _, err := eventService.Append(ctx, event); err != nil {
-						return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to append %s runtime event %q: %w", runtimeType, event.Type, err))
-					}
-				}
-				if err := maybeAutoCheckpointRuntimeEvent(ctx, sessionService, session.ID, runtimeType, event); err != nil {
-					return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to persist automatic checkpoint for %q: %w", event.Type, err))
-				}
-				if event.Type == "agent.completed" {
-					break
-				}
+			relay := bootstrap.RuntimeEventRelay(getDB())
+			relayConfig := services.RelayConfig{
+				SessionID:   session.ID,
+				RunID:       run.ID,
+				RuntimeType: runtimeType,
+				AgentID:     agentID,
+				OnEvent: func(event *domain.EventEnvelope) {
+					fmt.Printf("[%s] %s\n", runtimeType, event.Type)
+				},
 			}
 
-			if _, err := sessionService.Stop(context.Background(), session.ID, orchestration.TransitionInput{
-				Runtime: runtimeType,
-			}); err != nil {
-				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to stop %s runtime session: %w", runtimeType, err))
+			finalStatus, err := relay.Run(ctx, runtime, relayConfig)
+			if err != nil {
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("runtime relay failed: %w", err))
 			}
-
-			if _, err := runService.Validate(context.Background(), run.ID, orchestration.TransitionInput{
-				Runtime: runtimeType,
-			}); err != nil {
-				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to validate %s runtime run: %w", runtimeType, err))
-			}
-
-			evidenceRef := fmt.Sprintf("%s-runtime:agent.completed", runtimeType)
-			justification := fmt.Sprintf("%s runtime completed with agent.completed event", runtimeType)
-			if _, err := runService.Complete(context.Background(), run.ID, orchestration.TransitionInput{
-				Runtime:       runtimeType,
-				AgentID:       agentID,
-				EvidenceRefs:  []string{evidenceRef},
-				Justification: justification,
-			}); err != nil {
-				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("failed to complete %s runtime run: %w", runtimeType, err))
+			if finalStatus != domain.RunStatusCompleted {
+				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("runtime finished with unexpected status: %s", finalStatus))
 			}
 		}
 
@@ -338,71 +299,4 @@ func init() {
 	runCmd.AddCommand(runGetCmd)
 }
 
-func decodePayloadMap(event *domain.EventEnvelope) (map[string]interface{}, error) {
-	var payload map[string]interface{}
-	if len(event.Payload) == 0 {
-		return map[string]interface{}{}, nil
-	}
-	if err := json.Unmarshal(event.Payload, &payload); err != nil {
-		return nil, fmt.Errorf("failed to decode event payload %s: %w", event.ID, err)
-	}
-	return payload, nil
-}
 
-func maybeAutoCheckpointRuntimeEvent(ctx context.Context, sessionService *agentsessionmod.AgentSessionService, sessionID, runtimeType string, event *domain.EventEnvelope) error {
-	trigger, ok := checkpointTriggerForRuntimeEvent(event.Type)
-	if !ok {
-		return nil
-	}
-	payload, err := decodePayloadMap(event)
-	if err != nil {
-		return err
-	}
-	currentGoal := event.Type
-	if value, ok := payload["current_goal"].(string); ok && value != "" {
-		currentGoal = value
-	}
-	summary := fmt.Sprintf("automatic checkpoint for runtime event %s", event.Type)
-	if value, ok := payload["summary"].(string); ok && value != "" {
-		summary = value
-	} else if value, ok := payload["reason"].(string); ok && value != "" {
-		summary = value
-	}
-	ledger := map[string]interface{}{
-		"runtime_event_type": event.Type,
-		"runtime_event_id":   event.ID,
-		"runtime_payload":    payload,
-		"pending_todos":      []interface{}{},
-	}
-	if value, ok := payload["ledger"].(map[string]interface{}); ok {
-		ledger = value
-	}
-	_, _, err = sessionService.AutomaticCheckpoint(ctx, sessionID, agentsessionmod.AutoCheckpointInput{
-		EventID:        uuid.NewSHA1(uuid.NameSpaceURL, []byte("orchestraos:auto_checkpoint:"+sessionID+":"+event.ID+":"+string(trigger))).String(),
-		Trigger:        trigger,
-		CurrentGoal:    currentGoal,
-		MinimalSummary: summary,
-		Ledger:         ledger,
-		EvidenceRefs:   []string{"event:" + event.ID},
-		OccurredAt:     event.CreatedAt,
-		SourceEventID:  event.ID,
-		Runtime:        runtimeType,
-		Extra: map[string]interface{}{
-			"runtime_event_type": event.Type,
-		},
-	})
-	return err
-}
-
-func checkpointTriggerForRuntimeEvent(eventType string) (agentsessionmod.CheckpointTrigger, bool) {
-	switch eventType {
-	case "agent.tool_requested":
-		return agentsessionmod.CheckpointTriggerToolRequest, true
-	case "agent.tool_executed", "tool.completed":
-		return agentsessionmod.CheckpointTriggerToolExecuted, true
-	case "agent.completed":
-		return agentsessionmod.CheckpointTriggerBeforeCompletion, true
-	default:
-		return "", false
-	}
-}

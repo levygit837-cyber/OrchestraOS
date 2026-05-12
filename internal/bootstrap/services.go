@@ -5,6 +5,7 @@ import (
 
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
@@ -68,4 +69,13 @@ func PlannerPrompt(task *domain.Task) (string, error) {
 // ValidateGraphPlan validates a graph plan.
 func ValidateGraphPlan(plan *taskgraphmod.GraphPlan) error {
 	return taskgraphmod.ValidateGraphPlan(plan)
+}
+
+// RuntimeEventRelay creates a RuntimeEventRelay wired to domain services.
+func RuntimeEventRelay(db *sql.DB) *services.RuntimeEventRelay {
+	return services.NewRuntimeEventRelay(
+		db,
+		AgentSessionService(db),
+		RunService(db),
+	)
 }

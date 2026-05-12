@@ -89,4 +89,8 @@ Um sistema operacional de projeto onde agentes entendem contexto, propõem próx
 
 ## Próxima Fronteira
 
-Construir o primeiro MVP: um fluxo local em que uma mensagem entra pela CLI ou GitHub, vira task, e decomposta em work units, recebe prompts montados pelo Orchestrator, cria worktree/sandbox, executa agente Codex/CLI, registra traces e ledger, e retorna com status, diff, validações, evidências e decisão de merge via GitHub/CLI.
+**Foco imediato (Fase 4):** Integrar os componentes existentes em um fluxo end-to-end funcional. O sistema já possui Event Store, Task Graph, Prompt Composer e Runtimes isolados, mas eles não se comunicam. A próxima fronteira é fazer o caminho Task → Graph → Run → AgentSession → Runtime → Complete funcionar de forma automatizada, com relay de eventos, testes E2E e depreciação do Commander legado.
+
+**Depois disso (Fases 5-12):** Orquestração automatizada (OrchestratorService), sandbox com worktree, policy engine, comunicação em tempo real (WebSocket), runtime real (Codex/CLI), review/merge gate, GitHub integration, memória recursiva e, por fim, migração para a arquitetura de módulos verticais (ADR 0022) pós-MVP.
+
+O MVP completo será validado quando uma task puder ser criada pela CLI, decomposta em work units, executada em sandbox com agente, revisada e mergeada, tudo com trilha de auditoria persistida.

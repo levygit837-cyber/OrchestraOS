@@ -1,15 +1,14 @@
-// Package orchestration provides cross-domain state-transition commands.
-//
-// # Responsibility
-// Orchestrates atomic status transitions across aggregates (Task, WorkUnit,
-// Run, AgentSession) while enforcing state-machine rules and appending
-// transition events. Also provides shared transition helpers used by all
+// Package orchestration provides shared transition helpers used by all
 // domain modules.
 //
+// # Responsibility
+// Provides common types, payload builders, and atomic update helpers for
+// status transitions across aggregates (Task, WorkUnit, Run, AgentSession).
+// Domain services in internal/modules/* use these primitives to implement
+// their own transition logic.
+//
 // # Key Types
-//   - Commander: executes cross-domain transitions
-//   - TransitionOptions: common options for any transition
-//   - TransitionInput: payload builder input
+//   - TransitionInput: payload builder input for domain-service transitions
 //   - OperationResult[T]: generic result wrapper (value + event + duplicate flag)
 //   - UpdateRunProjection: exported helper for updating run projections
 //   - AppendServiceEvent, TransitionPayload, TransitionContext: shared helpers
