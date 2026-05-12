@@ -12,9 +12,11 @@ import (
 	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
+	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
@@ -72,6 +74,11 @@ func PromptService(db *sql.DB) *promptmod.PromptService {
 	return promptmod.NewPromptService(db)
 }
 
+// ReviewService creates a ReviewService with standard dependencies.
+func ReviewService(db *sql.DB) *reviewmod.ReviewService {
+	return reviewmod.NewReviewService(db)
+}
+
 // EventService creates an EventService with standard dependencies.
 func EventService(executor dbcore.DBTX) *eventmod.Service {
 	return eventmod.NewService(executor)
@@ -90,6 +97,15 @@ func PlannerPrompt(task *domain.Task) (string, error) {
 // ValidateGraphPlan validates a graph plan.
 func ValidateGraphPlan(plan *taskgraphmod.GraphPlan) error {
 	return taskgraphmod.ValidateGraphPlan(plan)
+}
+
+// TriggerService creates a TriggerService with standard repository factories.
+func TriggerService(db *sql.DB) *triggermod.TriggerService {
+	return triggermod.NewTriggerService(db,
+		func(executor dbcore.DBTX) triggermod.RunReader { return runmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) triggermod.AgentSessionReader { return agentsessionmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) triggermod.WorkUnitReader { return workunitmod.NewRepository(executor) },
+	)
 }
 
 // RuntimeEventRelay creates a RuntimeEventRelay wired to domain services.
