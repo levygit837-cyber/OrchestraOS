@@ -34,6 +34,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	taskService := bootstrap.TaskService(db)
 	taskGraphService := bootstrap.TaskGraphService(db)
 	runService := bootstrap.RunService(db)
+	agentService := bootstrap.AgentService(db)
 	sessionService := bootstrap.AgentSessionService(db)
 	promptService := bootstrap.PromptService(db)
 	relay := bootstrap.RuntimeEventRelay(db)
@@ -85,8 +86,18 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 		t.Fatalf("Failed to start run: %v", err)
 	}
 
-	// 4. Create and connect agent session
-	agentID := fmt.Sprintf("agent-e2e-%s", uuid.New().String()[:8])
+	// 4. Create agent
+	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
+		Name:        "E2E Test Agent",
+		Profile:     "default",
+		RuntimeType: domain.AgentRuntimeTypeFake,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create agent: %v", err)
+	}
+	agentID := agentResult.Value.ID
+
+	// 5. Create and connect agent session
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID:    agentID,
 		RunID:      run.ID,
@@ -255,6 +266,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	taskService := bootstrap.TaskService(db)
 	taskGraphService := bootstrap.TaskGraphService(db)
 	runService := bootstrap.RunService(db)
+	agentService := bootstrap.AgentService(db)
 	sessionService := bootstrap.AgentSessionService(db)
 	promptService := bootstrap.PromptService(db)
 	relay := bootstrap.RuntimeEventRelay(db)
@@ -305,8 +317,18 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 		t.Fatalf("Failed to start run: %v", err)
 	}
 
-	// 4. Create and connect agent session
-	agentID := fmt.Sprintf("agent-gemini-e2e-%s", uuid.New().String()[:8])
+	// 4. Create agent
+	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
+		Name:        "E2E Gemini Test Agent",
+		Profile:     "default",
+		RuntimeType: domain.AgentRuntimeTypeGemini,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create agent: %v", err)
+	}
+	agentID := agentResult.Value.ID
+
+	// 5. Create and connect agent session
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID:    agentID,
 		RunID:      run.ID,

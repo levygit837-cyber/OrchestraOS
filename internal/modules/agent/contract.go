@@ -1,6 +1,11 @@
 package agent
 
-import _ "embed"
+import (
+	"context"
+	_ "embed"
+
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+)
 
 // CRITICAL RULES — read these before editing ANY file in this package:
 //   1. Every runtime must implement the Runtime interface completely.
@@ -25,4 +30,9 @@ var ModuleContract = struct {
 }{
 	Name:    "agent",
 	Purpose: "Define agent runtime interfaces and implementations (fake, gemini, codex-cli, external)",
+}
+
+// AgentReader abstracts agent reads to avoid cyclic imports.
+type AgentReader interface {
+	GetByID(ctx context.Context, id string) (*domain.Agent, error)
 }
