@@ -14,17 +14,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 type TaskService struct {
-	db *sql.DB
+	db       *sql.DB
+	onCancel func(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error
 }
 
 type CreateTaskInput struct {
@@ -38,11 +37,11 @@ type CreateTaskInput struct {
 	AcceptanceCriteria   []string
 }
 
-func NewTaskService(database *sql.DB) *TaskService {
-	return &TaskService{db: database}
+func NewTaskService(database *sql.DB, onCancel func(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error) *TaskService {
+	return &TaskService{db: database, onCancel: onCancel}
 }
 
-func (s *TaskService) Create(ctx context.Context, input CreateTaskInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Create(ctx context.Context, input CreateTaskInput) (*transition.OperationResult[*domain.Task], error) {
 	if input.Priority == "" {
 		input.Priority = domain.PriorityP2
 	}
@@ -93,10 +92,10 @@ func (s *TaskService) Create(ctx context.Context, input CreateTaskInput) (*orche
 	if err != nil {
 		return nil, err
 	}
-	appendResult, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+	appendResult, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 		ID:          input.EventID,
 		Type:        "task.created",
-		Version:     orchestration.EventVersionV1,
+		Version:     transition.EventVersionV1,
 		TaskID:      task.ID,
 		Priority:    domain.EventPriorityNotification,
 		RequiresAck: false,
@@ -110,55 +109,55 @@ func (s *TaskService) Create(ctx context.Context, input CreateTaskInput) (*orche
 		return nil, err
 	}
 
-	return &orchestration.OperationResult[*domain.Task]{Value: task, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*domain.Task]{Value: task, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *TaskService) Triage(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Triage(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusTriaged, input)
 }
 
-func (s *TaskService) Plan(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Plan(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusPlanned, input)
 }
 
-func (s *TaskService) Schedule(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Schedule(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusScheduled, input)
 }
 
-func (s *TaskService) Pause(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Pause(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusPaused, input)
 }
 
-func (s *TaskService) Resume(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Resume(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusRunning, input)
 }
 
-func (s *TaskService) Start(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Start(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusRunning, input)
 }
 
-func (s *TaskService) Validate(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Validate(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusValidating, input)
 }
 
-func (s *TaskService) Complete(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusCompleted, input)
 }
 
-func (s *TaskService) Fail(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusFailed, input)
 }
 
-func (s *TaskService) Cancel(ctx context.Context, taskID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) Cancel(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return s.transition(ctx, taskID, domain.TaskStatusCancelled, input)
 }
 
-func (s *TaskService) transition(ctx context.Context, taskID string, target domain.TaskStatus, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Task], error) {
+func (s *TaskService) transition(ctx context.Context, taskID string, target domain.TaskStatus, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	op := "task_service.transition"
 	if err := validation.RequiredUUID(taskID, "task_id", op); err != nil {
 		return nil, err
 	}
-	if err := orchestration.RequireFinalAudit(string(target), input, op); err != nil {
+	if err := transition.RequireFinalAudit(string(target), input, op); err != nil {
 		return nil, err
 	}
 
@@ -172,16 +171,18 @@ func (s *TaskService) transition(ctx context.Context, taskID string, target doma
 	if err != nil {
 		return nil, err
 	}
-	if err := statemachine.CanTransition(statemachine.AggregateTask, string(task.Status), string(target), orchestration.TransitionContext(input)); err != nil {
+	if err := statemachine.CanTransition(statemachine.AggregateTask, string(task.Status), string(target), transition.TransitionContext(input)); err != nil {
 		return nil, err
 	}
 	if target == domain.TaskStatusCancelled {
-		if err := cancelTaskDependents(ctx, tx, task.ID, input); err != nil {
-			return nil, err
+		if s.onCancel != nil {
+			if err := s.onCancel(ctx, tx, task.ID, input); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	event, duplicate, err := orchestration.AppendTransition(ctx, tx, input.EventID, EventTypeForStatus(target), task.ID, "", "", input.AgentID, orchestration.TransitionPayload(task.Status, target, input))
+	event, duplicate, err := transition.AppendTransition(ctx, tx, input.EventID, EventTypeForStatus(target), task.ID, "", "", input.AgentID, transition.TransitionPayload(task.Status, target, input))
 	if err != nil {
 		return nil, err
 	}
@@ -205,54 +206,7 @@ func (s *TaskService) transition(ctx context.Context, taskID string, target doma
 	if err := dbcore.CommitTx(tx, "task_service.commit_transition"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.Task]{Value: task, Event: event, Duplicate: duplicate}, nil
-}
-
-func cancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input orchestration.TransitionInput) error {
-	runRepo := runmod.NewRepository(tx)
-	runs, err := runRepo.ListByTask(taskID)
-	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "task_service.list_runs_for_cancel", err)
-	}
-	for _, run := range runs {
-		if orchestration.IsFinalStatus(string(run.Status)) {
-			continue
-		}
-		if err := statemachine.CanTransition(statemachine.AggregateRun, string(run.Status), string(domain.RunStatusCancelled), orchestration.TransitionContext(input)); err != nil {
-			return err
-		}
-		if _, _, err := orchestration.AppendTransition(ctx, tx, "", "run.cancelled", taskID, run.ID, run.WorkUnitID, input.AgentID, orchestration.TransitionPayload(run.Status, domain.RunStatusCancelled, input)); err != nil {
-			return err
-		}
-		if err := orchestration.UpdateRunProjection(ctx, tx, run.ID, domain.RunStatusCancelled, runmod.ResultForStatus(domain.RunStatusCancelled), nil); err != nil {
-			return err
-		}
-	}
-
-	wuRepo := workunitmod.NewRepository(tx)
-	workUnits, err := wuRepo.ListByTask(taskID)
-	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "task_service.list_work_units_for_cancel", err)
-	}
-	for _, wu := range workUnits {
-		if orchestration.IsFinalStatus(string(wu.Status)) {
-			continue
-		}
-		if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(domain.WorkUnitStatusCancelled), orchestration.TransitionContext(input)); err != nil {
-			return err
-		}
-		if _, _, err := orchestration.AppendTransition(ctx, tx, "", "work_unit.cancelled", taskID, "", wu.ID, input.AgentID, orchestration.TransitionPayload(wu.Status, domain.WorkUnitStatusCancelled, input)); err != nil {
-			return err
-		}
-		res, err := tx.ExecContext(ctx, workunitmod.QueryUpdateStatus, wu.ID, domain.WorkUnitStatusCancelled, time.Now().UTC())
-		if err != nil {
-			return apperrors.Wrap(apperrors.CodePersistence, "task_service.cancel_work_unit_projection", err)
-		}
-		if err := dbcore.EnsureRowsAffected(res, "work unit", "task_service.cancel_work_unit_projection"); err != nil {
-			return err
-		}
-	}
-	return nil
+	return &transition.OperationResult[*domain.Task]{Value: task, Event: event, Duplicate: duplicate}, nil
 }
 
 func ValidateCreateTaskInput(input CreateTaskInput) error {

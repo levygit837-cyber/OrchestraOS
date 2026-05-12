@@ -1,7 +1,7 @@
 # OrchestraOS Makefile
 # Standard targets for development, testing, and module creation.
 
-.PHONY: all build test vet lint arch contracts check install-tools clean new-module help
+.PHONY: all build test vet lint arch contracts check check-imports install-tools clean new-module help
 
 all: vet test arch contracts lint build
 
@@ -24,6 +24,13 @@ lint:
 ## arch: run architecture boundary tests
 arch:
 	go test ./tests/architecture/... -v -count=1
+
+## check-imports: verify no cross-module imports exist
+check-imports:
+	go test ./tests/architecture/... -run TestModuleBoundaries -v
+	go test ./tests/architecture/... -run TestModulesDoNotImportOrchestration -v
+	go test ./tests/architecture/... -run TestTransitionPackageIsLeaf -v
+	go test ./tests/architecture/... -run TestOnlyOrchestrationImportsModules -v
 
 ## contracts: verify CONTRACTS.md sync with code
 contracts:

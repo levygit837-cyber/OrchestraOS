@@ -174,6 +174,8 @@ type AgentSession struct {
 	ID               string             `json:"id"`
 	AgentID          string             `json:"agent_id"`
 	RunID            string             `json:"run_id"`
+	TaskID           string             `json:"task_id"`
+	WorkUnitID       string             `json:"work_unit_id"`
 	SandboxID        string             `json:"sandbox_id"`
 	ConnectionID     string             `json:"connection_id"`
 	Status           AgentSessionStatus `json:"status"`

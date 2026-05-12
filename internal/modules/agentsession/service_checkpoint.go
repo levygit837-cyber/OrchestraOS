@@ -11,14 +11,13 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	run "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
-func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, input CheckpointInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, input CheckpointInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	op := "agent_session_service.checkpoint"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err
@@ -52,10 +51,6 @@ func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, 
 	if session.Status != domain.AgentSessionStatusRunning && session.Status != domain.AgentSessionStatusWaitingApproval && session.Status != domain.AgentSessionStatusPaused {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "checkpoint requires an active session")
 	}
-	run, err := run.RequireByID(ctx, tx, session.RunID)
-	if err != nil {
-		return nil, err
-	}
 	occurredAt := input.OccurredAt
 	if occurredAt.IsZero() {
 		occurredAt = time.Now().UTC()
@@ -83,13 +78,13 @@ func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, 
 	if err != nil {
 		return nil, err
 	}
-	appendResult, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+	appendResult, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 		ID:          input.EventID,
 		Type:        "agent.checkpoint_reached",
-		Version:     orchestration.EventVersionV1,
-		TaskID:      run.TaskID,
-		RunID:       run.ID,
-		WorkUnitID:  run.WorkUnitID,
+		Version:     transition.EventVersionV1,
+		TaskID:      session.TaskID,
+		RunID:       session.RunID,
+		WorkUnitID:  session.WorkUnitID,
 		AgentID:     session.AgentID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
@@ -106,8 +101,8 @@ func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, 
 		recoverableState, err := serialization.MarshalPayload("agent_session_service.recoverable_checkpoint_state", map[string]interface{}{
 			"agent_session_id":         session.ID,
 			"agent_id":                 session.AgentID,
-			"run_id":                   run.ID,
-			"work_unit_id":             run.WorkUnitID,
+			"run_id":                   session.RunID,
+			"work_unit_id":             session.WorkUnitID,
 			"last_checkpoint_event_id": appendResult.Event.ID,
 			"checkpoint":               payload,
 			"recoverable_at":           appendResult.Event.CreatedAt.Format(time.RFC3339Nano),
@@ -126,5 +121,5 @@ func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, 
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_checkpoint"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }

@@ -13,12 +13,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUnitInput) ([]*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUnitInput) ([]*transition.OperationResult[*domain.WorkUnit], error) {
 	op := "work_unit_service.validate_create_many"
 	if len(inputs) == 0 {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "at least one work unit is required")
@@ -93,7 +93,7 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	}
 
 	repo := NewRepository(tx)
-	results := make([]*orchestration.OperationResult[*domain.WorkUnit], 0, len(inputs))
+	results := make([]*transition.OperationResult[*domain.WorkUnit], 0, len(inputs))
 	for _, input := range inputs {
 		wu := &domain.WorkUnit{
 			ID:                   input.ID,
@@ -133,10 +133,10 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		if len(inputs) > 1 {
 			eventID = ""
 		}
-		appendResult, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+		appendResult, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 			ID:          eventID,
 			Type:        "work_unit.created",
-			Version:     orchestration.EventVersionV1,
+			Version:     transition.EventVersionV1,
 			TaskID:      wu.TaskID,
 			WorkUnitID:  wu.ID,
 			Priority:    domain.EventPriorityNotification,
@@ -146,7 +146,7 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		if err != nil {
 			return nil, err
 		}
-		results = append(results, &orchestration.OperationResult[*domain.WorkUnit]{Value: wu, Event: &appendResult.Event, Duplicate: appendResult.Duplicate})
+		results = append(results, &transition.OperationResult[*domain.WorkUnit]{Value: wu, Event: &appendResult.Event, Duplicate: appendResult.Duplicate})
 	}
 
 	if err := dbcore.CommitTx(tx, "work_unit_service.commit_create_many"); err != nil {

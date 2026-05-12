@@ -14,13 +14,13 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-func (s *RunService) Retry(ctx context.Context, runID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.Run], error) {
+func (s *RunService) Retry(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
 	op := "run_service.retry"
 	if err := validation.RequiredUUID(runID, "run_id", op); err != nil {
 		return nil, err
@@ -98,10 +98,10 @@ func (s *RunService) Retry(ctx context.Context, runID string, input orchestratio
 	if err != nil {
 		return nil, err
 	}
-	appendResult, err := orchestration.AppendServiceEvent(attemptCtx, tx, &domain.EventEnvelope{
+	appendResult, err := transition.AppendServiceEvent(attemptCtx, tx, &domain.EventEnvelope{
 		ID:          input.EventID,
 		Type:        "run.created",
-		Version:     orchestration.EventVersionV1,
+		Version:     transition.EventVersionV1,
 		TaskID:      next.TaskID,
 		RunID:       next.ID,
 		WorkUnitID:  next.WorkUnitID,
@@ -115,10 +115,10 @@ func (s *RunService) Retry(ctx context.Context, runID string, input orchestratio
 	if err := dbcore.CommitTx(tx, "run_service.commit_retry"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.Run]{Value: next, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*domain.Run]{Value: next, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func existingRetryResult(ctx context.Context, tx *sql.Tx, eventID, previousRunID string) (*orchestration.OperationResult[*domain.Run], bool, error) {
+func existingRetryResult(ctx context.Context, tx *sql.Tx, eventID, previousRunID string) (*transition.OperationResult[*domain.Run], bool, error) {
 	_ = ctx
 	store, err := eventstore.NewStoreWithExecutor(tx)
 	if err != nil {
@@ -145,5 +145,5 @@ func existingRetryResult(ctx context.Context, tx *sql.Tx, eventID, previousRunID
 	if err != nil {
 		return nil, false, err
 	}
-	return &orchestration.OperationResult[*domain.Run]{Value: run, Event: existing, Duplicate: true}, true, nil
+	return &transition.OperationResult[*domain.Run]{Value: run, Event: existing, Duplicate: true}, true, nil
 }

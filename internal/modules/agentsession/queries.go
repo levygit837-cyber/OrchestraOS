@@ -2,16 +2,16 @@ package agentsession
 
 const (
 	QueryInsert = `
-		INSERT INTO agent_sessions (id, agent_id, run_id, sandbox_id, connection_id, status, last_heartbeat_at, last_checkpoint_at, last_seen_event_id, recoverable_state, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO agent_sessions (id, agent_id, run_id, task_id, work_unit_id, sandbox_id, connection_id, status, last_heartbeat_at, last_checkpoint_at, last_seen_event_id, recoverable_state, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id`
 
 	QueryGetByID = `
-		SELECT id, agent_id, run_id, sandbox_id, connection_id, status, last_heartbeat_at, last_checkpoint_at, last_seen_event_id, recoverable_state, created_at, updated_at
+		SELECT id, agent_id, run_id, task_id, work_unit_id, sandbox_id, connection_id, status, last_heartbeat_at, last_checkpoint_at, last_seen_event_id, recoverable_state, created_at, updated_at
 		FROM agent_sessions WHERE id = $1`
 
 	QueryGetByRunID = `
-		SELECT id, agent_id, run_id, sandbox_id, connection_id, status, last_heartbeat_at, last_checkpoint_at, last_seen_event_id, recoverable_state, created_at, updated_at
+		SELECT id, agent_id, run_id, task_id, work_unit_id, sandbox_id, connection_id, status, last_heartbeat_at, last_checkpoint_at, last_seen_event_id, recoverable_state, created_at, updated_at
 		FROM agent_sessions WHERE run_id = $1 ORDER BY created_at DESC LIMIT 1`
 
 	QueryUpdateStatus = `
