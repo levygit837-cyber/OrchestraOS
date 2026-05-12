@@ -14,14 +14,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	task "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	workunit "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
-	run "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	agentsession "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 )
 
 type PromptService struct {
@@ -35,6 +30,17 @@ type PrepareRunPromptInput struct {
 	ToolsetSnapshotID      string
 	PromptSnapshotEventID  string
 	ToolsetSnapshotEventID string
+}
+
+type PrepareAndPersistInput struct {
+	Run                     *domain.Run
+	WorkUnit                *domain.WorkUnit
+	Task                    *domain.Task
+	Session                 *domain.AgentSession
+	PromptSnapshotID        string
+	ToolsetSnapshotID       string
+	PromptSnapshotEventID   string
+	ToolsetSnapshotEventID  string
 }
 
 type PreparedRunPrompt struct {
@@ -51,55 +57,12 @@ func NewPromptService(database *sql.DB) *PromptService {
 	return &PromptService{db: database}
 }
 
-func (s *PromptService) PrepareRunPrompt(ctx context.Context, input PrepareRunPromptInput) (*PreparedRunPrompt, error) {
-	const op = "prompt_service.prepare_run_prompt"
-	if err := validation.RequiredUUID(input.RunID, "run_id", op); err != nil {
-		return nil, err
-	}
-	if err := validation.RequiredUUID(input.AgentSessionID, "agent_session_id", op); err != nil {
-		return nil, err
-	}
-	if err := validation.OptionalUUID(input.PromptSnapshotID, "prompt_snapshot_id", op); err != nil {
-		return nil, err
-	}
-	if err := validation.OptionalUUID(input.ToolsetSnapshotID, "toolset_snapshot_id", op); err != nil {
-		return nil, err
-	}
-	if err := validation.OptionalUUID(input.PromptSnapshotEventID, "prompt_snapshot_event_id", op); err != nil {
-		return nil, err
-	}
-	if err := validation.OptionalUUID(input.ToolsetSnapshotEventID, "toolset_snapshot_event_id", op); err != nil {
-		return nil, err
-	}
-
-	tx, err := dbcore.BeginTx(ctx, s.db, "prompt_service.begin_prepare")
-	if err != nil {
-		return nil, err
-	}
-	defer dbcore.RollbackTx(tx)
-
-	run, err := run.RequireByID(ctx, tx, input.RunID)
-	if err != nil {
-		return nil, err
-	}
-	wu, err := workunit.RequireByID(ctx, tx, run.WorkUnitID)
-	if err != nil {
-		return nil, err
-	}
-	task, err := task.RequireByID(ctx, tx, run.TaskID)
-	if err != nil {
-		return nil, err
-	}
-	session, err := agentsession.RequireByID(ctx, tx, input.AgentSessionID)
-	if err != nil {
-		return nil, err
-	}
-	if session.RunID != run.ID {
-		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "agent_session_id does not belong to run_id")
-	}
-	if wu.TaskID != task.ID {
-		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "work_unit_id does not belong to task_id")
-	}
+func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx, input PrepareAndPersistInput) (*PreparedRunPrompt, error) {
+	const op = "prompt_service.prepare_and_persist"
+	run := input.Run
+	wu := input.WorkUnit
+	task := input.Task
+	session := input.Session
 
 	toolset, err := SelectToolset(wu.AssignedAgentProfile)
 	if err != nil {
@@ -192,10 +155,10 @@ func (s *PromptService) PrepareRunPrompt(ctx context.Context, input PrepareRunPr
 	if err != nil {
 		return nil, err
 	}
-	if _, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+	if _, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 		ID:          input.PromptSnapshotEventID,
 		Type:        "prompt.snapshot_created",
-		Version:     orchestration.EventVersionV1,
+		Version:     transition.EventVersionV1,
 		TaskID:      task.ID,
 		RunID:       run.ID,
 		WorkUnitID:  wu.ID,
@@ -216,10 +179,10 @@ func (s *PromptService) PrepareRunPrompt(ctx context.Context, input PrepareRunPr
 	if err != nil {
 		return nil, err
 	}
-	if _, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+	if _, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 		ID:          input.ToolsetSnapshotEventID,
 		Type:        "toolset.snapshot_created",
-		Version:     orchestration.EventVersionV1,
+		Version:     transition.EventVersionV1,
 		TaskID:      task.ID,
 		RunID:       run.ID,
 		WorkUnitID:  wu.ID,

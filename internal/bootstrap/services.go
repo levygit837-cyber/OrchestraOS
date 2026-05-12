@@ -1,11 +1,13 @@
 package bootstrap
 
 import (
+	"context"
 	"database/sql"
 
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
@@ -17,7 +19,11 @@ import (
 
 // TaskService creates a TaskService with standard dependencies.
 func TaskService(db *sql.DB) *taskmod.TaskService {
-	return taskmod.NewTaskService(db)
+	return taskmod.NewTaskService(db,
+		func(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error {
+			return orchestration.CancelTaskDependents(ctx, tx, taskID, input)
+		},
+	)
 }
 
 // RunService creates a RunService with standard repository factories.
@@ -25,6 +31,9 @@ func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
 		func(tx *sql.Tx) runmod.TaskReader { return taskmod.NewRepository(tx) },
 		func(tx *sql.Tx) runmod.WorkUnitReader { return workunitmod.NewRepository(tx) },
+		func(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error {
+			return orchestration.TransitionRunWithWorkUnit(ctx, tx, run, target, input)
+		},
 	)
 }
 
@@ -41,9 +50,13 @@ func AgentSessionService(db *sql.DB) *agentsessionmod.AgentSessionService {
 	return agentsessionmod.NewAgentSessionService(db)
 }
 
-// TaskGraphService creates a TaskGraphService with standard dependencies.
+// TaskGraphService creates a TaskGraphService with standard repository factories.
 func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
-	return taskgraphmod.NewTaskGraphService(db)
+	return taskgraphmod.NewTaskGraphService(db,
+		func(executor dbcore.DBTX) taskgraphmod.TaskReader { return taskmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) taskgraphmod.WorkUnitCreator { return workunitmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) taskgraphmod.WorkUnitLister { return workunitmod.NewRepository(executor) },
+	)
 }
 
 // PromptService creates a PromptService with standard dependencies.
@@ -72,8 +85,8 @@ func ValidateGraphPlan(plan *taskgraphmod.GraphPlan) error {
 }
 
 // RuntimeEventRelay creates a RuntimeEventRelay wired to domain services.
-func RuntimeEventRelay(db *sql.DB) *services.RuntimeEventRelay {
-	return services.NewRuntimeEventRelay(
+func RuntimeEventRelay(db *sql.DB) *orchestration.RuntimeEventRelay {
+	return orchestration.NewRuntimeEventRelay(
 		db,
 		AgentSessionService(db),
 		RunService(db),

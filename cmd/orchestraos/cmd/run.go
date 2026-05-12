@@ -11,6 +11,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
@@ -54,7 +55,7 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to create run: %w", err)
 		}
 		run := runResult.Value
-		if _, err := runService.Start(cmd.Context(), run.ID, orchestration.TransitionInput{
+		if _, err := runService.Start(cmd.Context(), run.ID, transition.TransitionInput{
 			Runtime: runtimeType,
 		}); err != nil {
 			return fmt.Errorf("failed to start run: %w", err)
@@ -72,14 +73,14 @@ var runStartCmd = &cobra.Command{
 		}
 		session := sessionResult.Value
 		connectionID := fmt.Sprintf("conn-%s", uuid.New().String())
-		if _, err := sessionService.Connect(cmd.Context(), session.ID, connectionID, "", orchestration.TransitionInput{
+		if _, err := sessionService.Connect(cmd.Context(), session.ID, connectionID, "", transition.TransitionInput{
 			Runtime: runtimeType,
 		}); err != nil {
 			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
 			return fmt.Errorf("failed to connect agent session: %w", err)
 		}
 
-		preparedPrompt, err := bootstrap.PromptService(getDB()).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
+		preparedPrompt, err := services.NewPromptOrchestrator(getDB(), bootstrap.PromptService(getDB())).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
 			RunID:          run.ID,
 			AgentSessionID: session.ID,
 		})
@@ -123,7 +124,7 @@ var runStartCmd = &cobra.Command{
 			}
 
 			relay := bootstrap.RuntimeEventRelay(getDB())
-			relayConfig := services.RelayConfig{
+			relayConfig := orchestration.RelayConfig{
 				SessionID:   session.ID,
 				RunID:       run.ID,
 				RuntimeType: runtimeType,
@@ -158,7 +159,7 @@ func failStartedRun(ctx context.Context, runService *runmod.RunService, sessionS
 		return nil
 	}
 
-	input := orchestration.TransitionInput{
+	input := transition.TransitionInput{
 		Runtime:       runtimeType,
 		AgentID:       agentID,
 		FailureReason: cause.Error(),

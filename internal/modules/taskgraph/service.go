@@ -16,18 +16,34 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 const localHeuristicPlanner = "local_heuristic_v1"
 
+// TaskReader abstracts task reads to avoid importing the task module.
+type TaskReader interface {
+	GetByID(id string) (*domain.Task, error)
+}
+
+// WorkUnitCreator abstracts work-unit writes to avoid importing the workunit module.
+type WorkUnitCreator interface {
+	Create(wu *domain.WorkUnit) error
+}
+
+// WorkUnitLister abstracts work-unit reads to avoid importing the workunit module.
+type WorkUnitLister interface {
+	ListByTaskGraph(graphID string) ([]domain.WorkUnit, error)
+}
+
 type TaskGraphService struct {
-	db *sql.DB
+	db                *sql.DB
+	newTaskReader     func(dbcore.DBTX) TaskReader
+	newWorkUnitCreator func(dbcore.DBTX) WorkUnitCreator
+	newWorkUnitLister func(dbcore.DBTX) WorkUnitLister
 }
 
 type DecomposeTaskGraphInput struct {
@@ -45,8 +61,18 @@ type TaskGraphDecomposeResult struct {
 	Duplicate bool
 }
 
-func NewTaskGraphService(database *sql.DB) *TaskGraphService {
-	return &TaskGraphService{db: database}
+func NewTaskGraphService(
+	database *sql.DB,
+	newTaskReader func(dbcore.DBTX) TaskReader,
+	newWorkUnitCreator func(dbcore.DBTX) WorkUnitCreator,
+	newWorkUnitLister func(dbcore.DBTX) WorkUnitLister,
+) *TaskGraphService {
+	return &TaskGraphService{
+		db:                database,
+		newTaskReader:     newTaskReader,
+		newWorkUnitCreator: newWorkUnitCreator,
+		newWorkUnitLister: newWorkUnitLister,
+	}
 }
 
 func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGraphInput) (*TaskGraphDecomposeResult, error) {
@@ -71,7 +97,7 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 		}
 	}
 
-	task, err := taskmod.NewRepository(s.db).GetByID(input.TaskID)
+	task, err := s.newTaskReader(s.db).GetByID(input.TaskID)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "task_graph_service.get_task", err)
 	}
@@ -101,7 +127,7 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 		}
 	}
 
-	task, err = taskmod.NewRepository(tx).GetByID(input.TaskID)
+	task, err = s.newTaskReader(tx).GetByID(input.TaskID)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "taskgraph.get_task", err)
 	}
@@ -157,10 +183,10 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 	if err != nil {
 		return nil, err
 	}
-	graphAppend, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+	graphAppend, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 		ID:          input.EventID,
 		Type:        "task.graph_created",
-		Version:     orchestration.EventVersionV1,
+		Version:     transition.EventVersionV1,
 		TaskID:      task.ID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
@@ -173,10 +199,10 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 		return nil, apperrors.New(apperrors.CodeConflict, "task_graph_service.idempotency", "event_id became duplicate during graph creation")
 	}
 
-	workUnitRepo := workunitmod.NewRepository(tx)
+	workUnitCreator := s.newWorkUnitCreator(tx)
 	for i := range plan.WorkUnits {
 		wu := plan.WorkUnits[i]
-		if err := workUnitRepo.Create(&wu); err != nil {
+		if err := workUnitCreator.Create(&wu); err != nil {
 			return nil, apperrors.Wrap(apperrors.CodePersistence, "task_graph_service.persistence", err)
 		}
 		wuPayload, err := serialization.MarshalPayload("task_graph_service.work_unit_payload", map[string]interface{}{
@@ -196,9 +222,9 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 		if err != nil {
 			return nil, err
 		}
-		if _, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+		if _, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 			Type:        "work_unit.created",
-			Version:     orchestration.EventVersionV1,
+			Version:     transition.EventVersionV1,
 			TaskID:      wu.TaskID,
 			WorkUnitID:  wu.ID,
 			Priority:    domain.EventPriorityNotification,
@@ -342,7 +368,7 @@ func (s *TaskGraphService) duplicateResultWithExecutor(ctx context.Context, exec
 	if graph == nil {
 		return nil, false, apperrors.New(apperrors.CodePersistence, "task_graph_service.get_existing_graph", "existing graph event has no graph projection")
 	}
-	workUnits, err := workunitmod.NewRepository(executor).ListByTaskGraph(graph.ID)
+	workUnits, err := s.newWorkUnitLister(executor).ListByTaskGraph(graph.ID)
 	if err != nil {
 		return nil, false, apperrors.Wrap(apperrors.CodePersistence, "task_graph_service.list_existing_work_units", err)
 	}

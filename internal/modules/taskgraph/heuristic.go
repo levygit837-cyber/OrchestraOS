@@ -15,7 +15,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 const (
@@ -106,23 +105,14 @@ func buildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 		}
 	}
 
-	inputs := make([]workunitmod.CreateWorkUnitInput, 0, len(workUnits))
+	inputs := make([]graphWorkUnitInput, 0, len(workUnits))
 	for _, wu := range workUnits {
-		inputs = append(inputs, workunitmod.CreateWorkUnitInput{
-			ID:                   wu.ID,
-			TaskID:               wu.TaskID,
-			TaskGraphID:          wu.TaskGraphID,
-			Title:                wu.Title,
-			Objective:            wu.Objective,
-			AssignedAgentProfile: wu.AssignedAgentProfile,
-			OwnedPaths:           wu.OwnedPaths,
-			ReadPaths:            wu.ReadPaths,
-			AcceptanceCriteria:   wu.AcceptanceCriteria,
-			ValidationPlan:       wu.ValidationPlan,
-			DependsOn:            wu.DependsOn,
+		inputs = append(inputs, graphWorkUnitInput{
+			ID:         wu.ID,
+			DependsOn:  wu.DependsOn,
 		})
 	}
-	if err := workunitmod.ValidateWorkUnitDependencies(inputs, nil); err != nil {
+	if err := validateWorkUnitDependencies(inputs); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodeValidation, "task_graph_service.cycle_detected", err)
 	}
 
@@ -310,4 +300,54 @@ func criterionTexts(criteria []criterionPlan) []string {
 
 func workUnitObjective(criteria []criterionPlan) string {
 	return "Atender criterios de aceite: " + strings.Join(criterionTexts(criteria), "; ")
+}
+
+type graphWorkUnitInput struct {
+	ID        string
+	DependsOn []string
+}
+
+func validateWorkUnitDependencies(inputs []graphWorkUnitInput) error {
+	op := "taskgraph.validate_dependencies"
+	known := map[string]bool{}
+	graph := map[string][]string{}
+	for _, wu := range inputs {
+		known[wu.ID] = true
+		graph[wu.ID] = append([]string{}, wu.DependsOn...)
+	}
+	for _, wu := range inputs {
+		for _, dep := range wu.DependsOn {
+			if !known[dep] {
+				return apperrors.New(apperrors.CodeInvalidInput, op, "dependency does not exist in task graph")
+			}
+		}
+	}
+	visiting := map[string]bool{}
+	visited := map[string]bool{}
+	var visit func(string) error
+	visit = func(id string) error {
+		if visited[id] {
+			return nil
+		}
+		if visiting[id] {
+			return apperrors.New(apperrors.CodeInvalidInput, op, "work unit dependencies must be acyclic")
+		}
+		visiting[id] = true
+		for _, dep := range graph[id] {
+			if _, ok := graph[dep]; ok {
+				if err := visit(dep); err != nil {
+					return err
+				}
+			}
+		}
+		visiting[id] = false
+		visited[id] = true
+		return nil
+	}
+	for id := range graph {
+		if err := visit(id); err != nil {
+			return err
+		}
+	}
+	return nil
 }

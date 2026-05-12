@@ -10,8 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
@@ -65,7 +66,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Start(ctx, runResult.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Start(ctx, runResult.Value.ID, transition.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("start run: %v", err)
 	}
 
@@ -76,7 +77,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create session: %v", err)
 	}
-	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-service-test", "sandbox-service-test", orchestration.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-service-test", "sandbox-service-test", transition.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("connect session: %v", err)
 	}
 	if _, err := sessionService.Heartbeat(ctx, sessionResult.Value.ID, agentsessionmod.HeartbeatInput{
@@ -96,10 +97,10 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 		t.Fatalf("checkpoint: %v", err)
 	}
 
-	if _, err := runService.Validate(ctx, runResult.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Validate(ctx, runResult.Value.ID, transition.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("validate run: %v", err)
 	}
-	if _, err := runService.Complete(ctx, runResult.Value.ID, orchestration.TransitionInput{
+	if _, err := runService.Complete(ctx, runResult.Value.ID, transition.TransitionInput{
 		Runtime:       "fake",
 		EvidenceRefs:  []string{"validation:service-test"},
 		Justification: "service lifecycle validated",
@@ -189,7 +190,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 
-	prepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	prepared, err := services.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -233,7 +234,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if storedToolset == nil || len(storedToolset.Tools) == 0 {
 		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
 	}
-	referenced, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	referenced, err := services.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -293,7 +294,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
 	}
-	reviewerPrepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	reviewerPrepared, err := services.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          reviewerRun.Value.ID,
 		AgentSessionID: reviewerSession.Value.ID,
 	})
@@ -370,11 +371,11 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Complete(ctx, runResult.Value.ID, orchestration.TransitionInput{EvidenceRefs: []string{"validation:test"}}); err == nil {
+	if _, err := runService.Complete(ctx, runResult.Value.ID, transition.TransitionInput{EvidenceRefs: []string{"validation:test"}}); err == nil {
 		t.Fatal("expected run completion from created state to be rejected")
 	}
 
-	if _, err := taskService.Cancel(ctx, taskResult.Value.ID, orchestration.TransitionInput{Justification: "test cascade cancel"}); err != nil {
+	if _, err := taskService.Cancel(ctx, taskResult.Value.ID, transition.TransitionInput{Justification: "test cascade cancel"}); err != nil {
 		t.Fatalf("cancel task: %v", err)
 	}
 	run, err := runmod.NewRepository(db).GetByID(runResult.Value.ID)
@@ -703,7 +704,7 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 		wg.Add(1)
 		go func(id string) {
 			defer wg.Done()
-			_, err := runService.Start(ctx, id, orchestration.TransitionInput{Runtime: "fake"})
+			_, err := runService.Start(ctx, id, transition.TransitionInput{Runtime: "fake"})
 			errs <- err
 		}(runID)
 	}
@@ -743,10 +744,10 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create run B: %v", err)
 	}
-	if _, err := runService.Start(ctx, runA.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Start(ctx, runA.Value.ID, transition.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("start run A: %v", err)
 	}
-	if _, err := runService.Start(ctx, runB.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err == nil {
+	if _, err := runService.Start(ctx, runB.Value.ID, transition.TransitionInput{Runtime: "fake"}); err == nil {
 		t.Fatal("expected owned path conflict")
 	} else if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeConflict {
 		t.Fatalf("expected conflict error, got %v", err)
@@ -799,7 +800,7 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 		runID := runID
 		go func() {
 			<-start
-			_, err := runService.Start(ctx, runID, orchestration.TransitionInput{Runtime: "fake"})
+			_, err := runService.Start(ctx, runID, transition.TransitionInput{Runtime: "fake"})
 			errs <- err
 		}()
 	}
@@ -901,7 +902,7 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Start(ctx, runResult.Value.ID, orchestration.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := runService.Start(ctx, runResult.Value.ID, transition.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("start run: %v", err)
 	}
 
@@ -913,7 +914,7 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create session: %v", err)
 	}
-	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-auto-checkpoint", "sandbox-auto-checkpoint", orchestration.TransitionInput{Runtime: "fake"}); err != nil {
+	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-auto-checkpoint", "sandbox-auto-checkpoint", transition.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("connect session: %v", err)
 	}
 
@@ -1018,20 +1019,20 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := runService.Fail(ctx, runResult.Value.ID, orchestration.TransitionInput{
+	if _, err := runService.Fail(ctx, runResult.Value.ID, transition.TransitionInput{
 		FailureReason: "transient runtime failure",
 		Justification: "prepare retry test",
 	}); err != nil {
 		t.Fatalf("fail run: %v", err)
 	}
-	if _, err := runService.Retry(ctx, runResult.Value.ID, orchestration.TransitionInput{
+	if _, err := runService.Retry(ctx, runResult.Value.ID, transition.TransitionInput{
 		Justification: "missing idempotency key",
 	}); err == nil {
 		t.Fatal("expected retry without event_id to be rejected")
 	}
 
 	retryEventID := uuid.New().String()
-	retryInput := orchestration.TransitionInput{
+	retryInput := transition.TransitionInput{
 		EventID:       retryEventID,
 		FailureReason: "transient runtime failure",
 		Justification: "retry transient runtime failure",

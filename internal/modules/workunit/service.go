@@ -12,8 +12,8 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
@@ -56,7 +56,7 @@ func NewWorkUnitService(database *sql.DB, newTaskReader func(*sql.Tx) TaskReader
 	return &WorkUnitService{db: database, newTaskReader: newTaskReader, newTaskGraphManager: newTaskGraphManager}
 }
 
-func (s *WorkUnitService) Create(ctx context.Context, input CreateWorkUnitInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Create(ctx context.Context, input CreateWorkUnitInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	result, err := s.createMany(ctx, []CreateWorkUnitInput{input})
 	if err != nil {
 		return nil, err
@@ -64,11 +64,11 @@ func (s *WorkUnitService) Create(ctx context.Context, input CreateWorkUnitInput)
 	return result[0], nil
 }
 
-func (s *WorkUnitService) CreateMany(ctx context.Context, inputs []CreateWorkUnitInput) ([]*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) CreateMany(ctx context.Context, inputs []CreateWorkUnitInput) ([]*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.createMany(ctx, inputs)
 }
 
-func (s *WorkUnitService) Assign(ctx context.Context, workUnitID, agentProfile string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Assign(ctx context.Context, workUnitID, agentProfile string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	op := "work_unit_service.assign"
 	if err := validation.RequiredUUID(workUnitID, "work_unit_id", op); err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *WorkUnitService) Assign(ctx context.Context, workUnitID, agentProfile s
 	if err != nil {
 		return nil, err
 	}
-	event, duplicate, err := orchestration.AppendTransition(ctx, tx, input.EventID, "work_unit.assigned", wu.TaskID, "", wu.ID, input.AgentID, map[string]interface{}{
+	event, duplicate, err := transition.AppendTransition(ctx, tx, input.EventID, "work_unit.assigned", wu.TaskID, "", wu.ID, input.AgentID, map[string]interface{}{
 		"from_agent_profile": wu.AssignedAgentProfile,
 		"to_agent_profile":   agentProfile,
 		"justification":      input.Justification,
@@ -107,43 +107,43 @@ func (s *WorkUnitService) Assign(ctx context.Context, workUnitID, agentProfile s
 	if err := dbcore.CommitTx(tx, "work_unit_service.commit_assign"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.WorkUnit]{Value: wu, Event: event, Duplicate: duplicate}, nil
+	return &transition.OperationResult[*domain.WorkUnit]{Value: wu, Event: event, Duplicate: duplicate}, nil
 }
 
-func (s *WorkUnitService) Block(ctx context.Context, workUnitID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Block(ctx context.Context, workUnitID string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.transition(ctx, workUnitID, domain.WorkUnitStatusBlocked, input)
 }
 
-func (s *WorkUnitService) Schedule(ctx context.Context, workUnitID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Schedule(ctx context.Context, workUnitID string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.transition(ctx, workUnitID, domain.WorkUnitStatusScheduled, input)
 }
 
-func (s *WorkUnitService) Start(ctx context.Context, workUnitID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Start(ctx context.Context, workUnitID string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.transition(ctx, workUnitID, domain.WorkUnitStatusRunning, input)
 }
 
-func (s *WorkUnitService) Validate(ctx context.Context, workUnitID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Validate(ctx context.Context, workUnitID string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.transition(ctx, workUnitID, domain.WorkUnitStatusValidating, input)
 }
 
-func (s *WorkUnitService) Complete(ctx context.Context, workUnitID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Complete(ctx context.Context, workUnitID string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.transition(ctx, workUnitID, domain.WorkUnitStatusCompleted, input)
 }
 
-func (s *WorkUnitService) Fail(ctx context.Context, workUnitID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Fail(ctx context.Context, workUnitID string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.transition(ctx, workUnitID, domain.WorkUnitStatusFailed, input)
 }
 
-func (s *WorkUnitService) Cancel(ctx context.Context, workUnitID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) Cancel(ctx context.Context, workUnitID string, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	return s.transition(ctx, workUnitID, domain.WorkUnitStatusCancelled, input)
 }
 
-func (s *WorkUnitService) transition(ctx context.Context, workUnitID string, target domain.WorkUnitStatus, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) transition(ctx context.Context, workUnitID string, target domain.WorkUnitStatus, input transition.TransitionInput) (*transition.OperationResult[*domain.WorkUnit], error) {
 	op := "work_unit_service.transition"
 	if err := validation.RequiredUUID(workUnitID, "work_unit_id", op); err != nil {
 		return nil, err
 	}
-	if err := orchestration.RequireFinalAudit(string(target), input, op); err != nil {
+	if err := transition.RequireFinalAudit(string(target), input, op); err != nil {
 		return nil, err
 	}
 
@@ -171,11 +171,11 @@ func (s *WorkUnitService) transition(ctx context.Context, workUnitID string, tar
 	if target == domain.WorkUnitStatusCompleted && len(wu.AcceptanceCriteria) == 0 && input.Justification == "" {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "work unit completion requires acceptance criteria or explicit justification")
 	}
-	if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(target), orchestration.TransitionContext(input)); err != nil {
+	if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(target), transition.TransitionContext(input)); err != nil {
 		return nil, err
 	}
 
-	event, duplicate, err := orchestration.AppendTransition(ctx, tx, input.EventID, EventTypeForStatus(target), wu.TaskID, "", wu.ID, input.AgentID, orchestration.TransitionPayload(wu.Status, target, input))
+	event, duplicate, err := transition.AppendTransition(ctx, tx, input.EventID, EventTypeForStatus(target), wu.TaskID, "", wu.ID, input.AgentID, transition.TransitionPayload(wu.Status, target, input))
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (s *WorkUnitService) transition(ctx context.Context, workUnitID string, tar
 	if err := dbcore.CommitTx(tx, "work_unit_service.commit_transition"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.WorkUnit]{Value: wu, Event: event, Duplicate: duplicate}, nil
+	return &transition.OperationResult[*domain.WorkUnit]{Value: wu, Event: event, Duplicate: duplicate}, nil
 }
 
 func (s *WorkUnitService) requireTaskByID(tx *sql.Tx, id string) (*domain.Task, error) {

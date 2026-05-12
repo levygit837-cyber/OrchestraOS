@@ -39,6 +39,8 @@ func (r *Repository) Create(session *domain.AgentSession) error {
 		session.ID,
 		session.AgentID,
 		session.RunID,
+		session.TaskID,
+		session.WorkUnitID,
 		session.SandboxID,
 		session.ConnectionID,
 		session.Status,
@@ -177,10 +179,13 @@ func (r *Repository) scanAgentSession(scanner interface {
 	var recoverableState []byte
 	var createdAt, updatedAt time.Time
 
+	var taskID, workUnitID sql.NullString
 	err := scanner.Scan(
 		&session.ID,
 		&session.AgentID,
 		&session.RunID,
+		&taskID,
+		&workUnitID,
 		&sandboxID,
 		&connectionID,
 		&session.Status,
@@ -198,6 +203,12 @@ func (r *Repository) scanAgentSession(scanner interface {
 		return nil, fmt.Errorf("failed to scan agent session: %w", err)
 	}
 
+	if taskID.Valid {
+		session.TaskID = taskID.String
+	}
+	if workUnitID.Valid {
+		session.WorkUnitID = workUnitID.String
+	}
 	if sandboxID.Valid {
 		session.SandboxID = sandboxID.String
 	}

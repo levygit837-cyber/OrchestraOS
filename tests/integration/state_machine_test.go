@@ -6,7 +6,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
@@ -25,7 +25,7 @@ func TestRunServiceStateMachine(t *testing.T) {
 	runRepo := runmod.NewRepository(db)
 
 	t.Run("invalid completed transition does not update projection", func(t *testing.T) {
-		_, err := runService.Complete(context.Background(), runID, orchestration.TransitionInput{
+		_, err := runService.Complete(context.Background(), runID, transition.TransitionInput{
 			Runtime:       "fake",
 			AgentID:       "test-agent",
 			EvidenceRefs:  []string{"validation.completed:test"},
@@ -45,7 +45,7 @@ func TestRunServiceStateMachine(t *testing.T) {
 	})
 
 	t.Run("valid lifecycle persists events and projection", func(t *testing.T) {
-		if _, err := runService.Start(context.Background(), runID, orchestration.TransitionInput{
+		if _, err := runService.Start(context.Background(), runID, transition.TransitionInput{
 			Runtime: "fake",
 			AgentID: "test-agent",
 		}); err != nil {
@@ -57,7 +57,7 @@ func TestRunServiceStateMachine(t *testing.T) {
 			t.Fatalf("failed to create event store: %v", err)
 		}
 
-		if _, err := runService.Validate(context.Background(), runID, orchestration.TransitionInput{
+		if _, err := runService.Validate(context.Background(), runID, transition.TransitionInput{
 			Runtime:       "fake",
 			AgentID:       "test-agent",
 			Justification: "validation passed",
@@ -65,7 +65,7 @@ func TestRunServiceStateMachine(t *testing.T) {
 			t.Fatalf("failed to validate run: %v", err)
 		}
 
-		if _, err := runService.Complete(context.Background(), runID, orchestration.TransitionInput{
+		if _, err := runService.Complete(context.Background(), runID, transition.TransitionInput{
 			Runtime:       "fake",
 			AgentID:       "test-agent",
 			EvidenceRefs:  []string{"validation.completed:test"},

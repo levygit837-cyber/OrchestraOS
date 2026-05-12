@@ -11,6 +11,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/services"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -80,7 +81,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 		t.Fatalf("Failed to create run: %v", err)
 	}
 	run := runResult.Value
-	if _, err := runService.Start(ctx, run.ID, orchestration.TransitionInput{Runtime: runtimeType}); err != nil {
+	if _, err := runService.Start(ctx, run.ID, transition.TransitionInput{Runtime: runtimeType}); err != nil {
 		t.Fatalf("Failed to start run: %v", err)
 	}
 
@@ -95,12 +96,12 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 	session := sessionResult.Value
 	connectionID := fmt.Sprintf("conn-e2e-%s", uuid.New().String()[:8])
-	if _, err := sessionService.Connect(ctx, session.ID, connectionID, "", orchestration.TransitionInput{Runtime: runtimeType}); err != nil {
+	if _, err := sessionService.Connect(ctx, session.ID, connectionID, "", transition.TransitionInput{Runtime: runtimeType}); err != nil {
 		t.Fatalf("Failed to connect agent session: %v", err)
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := promptService.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := services.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -134,7 +135,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := services.RelayConfig{
+	relayConfig := orchestration.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,
@@ -298,7 +299,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 		t.Fatalf("Failed to create run: %v", err)
 	}
 	run := runResult.Value
-	if _, err := runService.Start(ctx, run.ID, orchestration.TransitionInput{Runtime: runtimeType}); err != nil {
+	if _, err := runService.Start(ctx, run.ID, transition.TransitionInput{Runtime: runtimeType}); err != nil {
 		t.Fatalf("Failed to start run: %v", err)
 	}
 
@@ -313,12 +314,12 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 	session := sessionResult.Value
 	connectionID := fmt.Sprintf("conn-gemini-e2e-%s", uuid.New().String()[:8])
-	if _, err := sessionService.Connect(ctx, session.ID, connectionID, "", orchestration.TransitionInput{Runtime: runtimeType}); err != nil {
+	if _, err := sessionService.Connect(ctx, session.ID, connectionID, "", transition.TransitionInput{Runtime: runtimeType}); err != nil {
 		t.Fatalf("Failed to connect agent session: %v", err)
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := promptService.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := services.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -353,7 +354,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := services.RelayConfig{
+	relayConfig := orchestration.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,

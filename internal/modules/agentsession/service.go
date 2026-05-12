@@ -14,12 +14,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	run "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
 type AgentSessionService struct {
@@ -31,6 +30,8 @@ type CreateAgentSessionInput struct {
 	EventID          string
 	AgentID          string
 	RunID            string
+	TaskID           string
+	WorkUnitID       string
 	SandboxID        string
 	ConnectionID     string
 	LastSeenEventID  string
@@ -58,7 +59,7 @@ func NewAgentSessionService(database *sql.DB) *AgentSessionService {
 	return &AgentSessionService{db: database}
 }
 
-func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessionInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	if input.ID == "" {
 		input.ID = uuid.New().String()
 	}
@@ -72,17 +73,12 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 	}
 	defer dbcore.RollbackTx(tx)
 
-	run, err := run.RequireByID(ctx, tx, input.RunID)
-	if err != nil {
-		return nil, err
-	}
-	if run.Status == domain.RunStatusCompleted || run.Status == domain.RunStatusFailed || run.Status == domain.RunStatusCancelled {
-		return nil, apperrors.New(apperrors.CodeInvalidTransition, "agent_session_service.create", "cannot create session for terminal run")
-	}
 	session := &domain.AgentSession{
 		ID:               input.ID,
 		AgentID:          input.AgentID,
-		RunID:            run.ID,
+		RunID:            input.RunID,
+		TaskID:           input.TaskID,
+		WorkUnitID:       input.WorkUnitID,
 		SandboxID:        input.SandboxID,
 		ConnectionID:     input.ConnectionID,
 		Status:           domain.AgentSessionStatusStarting,
@@ -103,13 +99,13 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 	if err != nil {
 		return nil, err
 	}
-	appendResult, err := orchestration.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
+	appendResult, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 		ID:          input.EventID,
 		Type:        "agent.session_starting",
-		Version:     orchestration.EventVersionV1,
-		TaskID:      run.TaskID,
-		RunID:       run.ID,
-		WorkUnitID:  run.WorkUnitID,
+		Version:     transition.EventVersionV1,
+		TaskID:      session.TaskID,
+		RunID:       session.RunID,
+		WorkUnitID:  session.WorkUnitID,
 		AgentID:     session.AgentID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
@@ -121,10 +117,10 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_create"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	if input.Extra == nil {
 		input.Extra = map[string]interface{}{}
 	}
@@ -152,15 +148,15 @@ func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connection
 	})
 }
 
-func (s *AgentSessionService) Disconnect(ctx context.Context, sessionID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Disconnect(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	return s.transition(ctx, sessionID, domain.AgentSessionStatusDisconnected, input, nil)
 }
 
-func (s *AgentSessionService) Resume(ctx context.Context, sessionID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Resume(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	return s.transition(ctx, sessionID, domain.AgentSessionStatusRunning, input, nil)
 }
 
-func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	op := "agent_session_service.stop"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err
@@ -178,16 +174,12 @@ func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input 
 	if err != nil {
 		return nil, err
 	}
-	run, err := run.RequireByID(ctx, tx, session.RunID)
-	if err != nil {
-		return nil, err
-	}
 	var lastEvent *domain.EventEnvelope
 	var duplicate bool
 	if session.Status != domain.AgentSessionStatusStopping {
 		stoppingInput := input
 		stoppingInput.EventID = ""
-		event, dup, err := transitionAgentSessionInTx(ctx, tx, session, run, domain.AgentSessionStatusStopping, stoppingInput)
+		event, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, domain.AgentSessionStatusStopping, stoppingInput)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +187,7 @@ func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input 
 		duplicate = dup
 		session.Status = domain.AgentSessionStatusStopping
 	}
-	event, dup, err := transitionAgentSessionInTx(ctx, tx, session, run, domain.AgentSessionStatusStopped, input)
+	event, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, domain.AgentSessionStatusStopped, input)
 	if err != nil {
 		return nil, err
 	}
@@ -206,10 +198,10 @@ func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input 
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_stop"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.AgentSession]{Value: session, Event: lastEvent, Duplicate: duplicate}, nil
+	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: lastEvent, Duplicate: duplicate}, nil
 }
 
-func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	if input.Justification == "" {
 		input.Justification = "session heartbeat timeout reached"
 	}
@@ -225,35 +217,20 @@ func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, rec
 			}
 			session.RecoverableState = recoverableState
 		}
-		run, err := run.RequireByID(ctx, tx, session.RunID)
-		if err != nil {
-			return err
-		}
-		if run.Status == domain.RunStatusRunning || run.Status == domain.RunStatusWaitingApproval {
-			if err := statemachine.CanTransition(statemachine.AggregateRun, string(run.Status), string(domain.RunStatusPaused), orchestration.TransitionContext(input)); err != nil {
-				return err
-			}
-			if _, _, err := orchestration.AppendTransition(ctx, tx, "", "run.paused", run.TaskID, run.ID, run.WorkUnitID, session.AgentID, orchestration.TransitionPayload(run.Status, domain.RunStatusPaused, input)); err != nil {
-				return err
-			}
-			if err := orchestration.UpdateRunProjection(ctx, tx, run.ID, domain.RunStatusPaused, nil, nil); err != nil {
-				return err
-			}
-		}
 		return nil
 	})
 }
 
-func (s *AgentSessionService) Fail(ctx context.Context, sessionID string, input orchestration.TransitionInput) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	return s.transition(ctx, sessionID, domain.AgentSessionStatusFailed, input, nil)
 }
 
-func (s *AgentSessionService) transition(ctx context.Context, sessionID string, target domain.AgentSessionStatus, input orchestration.TransitionInput, after func(context.Context, *sql.Tx, *domain.AgentSession) error) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) transition(ctx context.Context, sessionID string, target domain.AgentSessionStatus, input transition.TransitionInput, after func(context.Context, *sql.Tx, *domain.AgentSession) error) (*transition.OperationResult[*domain.AgentSession], error) {
 	op := "agent_session_service.transition"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err
 	}
-	if err := orchestration.RequireFinalAudit(string(target), input, op); err != nil {
+	if err := transition.RequireFinalAudit(string(target), input, op); err != nil {
 		return nil, err
 	}
 	tx, err := dbcore.BeginTx(ctx, s.db, "agent_session_service.begin_transition")
@@ -266,11 +243,7 @@ func (s *AgentSessionService) transition(ctx context.Context, sessionID string, 
 	if err != nil {
 		return nil, err
 	}
-	run, err := run.RequireByID(ctx, tx, session.RunID)
-	if err != nil {
-		return nil, err
-	}
-	event, duplicate, err := transitionAgentSessionInTx(ctx, tx, session, run, target, input)
+	event, duplicate, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, target, input)
 	if err != nil {
 		return nil, err
 	}
@@ -283,14 +256,14 @@ func (s *AgentSessionService) transition(ctx context.Context, sessionID string, 
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_transition"); err != nil {
 		return nil, err
 	}
-	return &orchestration.OperationResult[*domain.AgentSession]{Value: session, Event: event, Duplicate: duplicate}, nil
+	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: event, Duplicate: duplicate}, nil
 }
 
-func transitionAgentSessionInTx(ctx context.Context, tx *sql.Tx, session *domain.AgentSession, run *domain.Run, target domain.AgentSessionStatus, input orchestration.TransitionInput) (*domain.EventEnvelope, bool, error) {
-	if err := statemachine.CanTransition(statemachine.AggregateAgentSession, string(session.Status), string(target), orchestration.TransitionContext(input)); err != nil {
+func transitionAgentSessionInTx(ctx context.Context, tx *sql.Tx, session *domain.AgentSession, taskID, workUnitID string, target domain.AgentSessionStatus, input transition.TransitionInput) (*domain.EventEnvelope, bool, error) {
+	if err := statemachine.CanTransition(statemachine.AggregateAgentSession, string(session.Status), string(target), transition.TransitionContext(input)); err != nil {
 		return nil, false, err
 	}
-	event, duplicate, err := orchestration.AppendTransition(ctx, tx, input.EventID, EventTypeForStatus(target), run.TaskID, run.ID, run.WorkUnitID, session.AgentID, orchestration.TransitionPayload(session.Status, target, input))
+	event, duplicate, err := transition.AppendTransition(ctx, tx, input.EventID, EventTypeForStatus(target), taskID, session.RunID, workUnitID, session.AgentID, transition.TransitionPayload(session.Status, target, input))
 	if err != nil {
 		return nil, false, err
 	}

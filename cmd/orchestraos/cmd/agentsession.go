@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	"github.com/spf13/cobra"
@@ -157,16 +157,16 @@ func init() {
 func updateAgentSessionStatus(ctx context.Context, service *agentsessionmod.AgentSessionService, sessionID string, status domain.AgentSessionStatus) error {
 	switch status {
 	case domain.AgentSessionStatusRunning:
-		_, err := service.Resume(ctx, sessionID, orchestration.TransitionInput{})
+		_, err := service.Resume(ctx, sessionID, transition.TransitionInput{})
 		return err
 	case domain.AgentSessionStatusDisconnected:
-		_, err := service.Disconnect(ctx, sessionID, orchestration.TransitionInput{Justification: "manual status update"})
+		_, err := service.Disconnect(ctx, sessionID, transition.TransitionInput{Justification: "manual status update"})
 		return err
 	case domain.AgentSessionStatusStopped:
-		_, err := service.Stop(ctx, sessionID, orchestration.TransitionInput{Justification: "manual status update"})
+		_, err := service.Stop(ctx, sessionID, transition.TransitionInput{Justification: "manual status update"})
 		return err
 	case domain.AgentSessionStatusFailed:
-		_, err := service.Fail(ctx, sessionID, orchestration.TransitionInput{FailureReason: "manual status update"})
+		_, err := service.Fail(ctx, sessionID, transition.TransitionInput{FailureReason: "manual status update"})
 		return err
 	case domain.AgentSessionStatusPaused, domain.AgentSessionStatusWaitingApproval, domain.AgentSessionStatusStopping:
 		return fmt.Errorf("manual status %q is not exposed as a service command yet", status)

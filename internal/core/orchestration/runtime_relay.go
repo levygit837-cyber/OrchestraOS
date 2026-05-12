@@ -1,4 +1,4 @@
-package services
+package orchestration
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
@@ -105,7 +105,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, conf
 	}
 
 	// Ensure session is stopped and run is validated+completed.
-	if _, err := r.sessionService.Stop(ctx, config.SessionID, orchestration.TransitionInput{
+	if _, err := r.sessionService.Stop(ctx, config.SessionID, transition.TransitionInput{
 		Runtime: config.RuntimeType,
 		AgentID: config.AgentID,
 	}); err != nil {
@@ -115,7 +115,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, conf
 		}
 	}
 
-	if _, err := r.runService.Validate(ctx, config.RunID, orchestration.TransitionInput{
+	if _, err := r.runService.Validate(ctx, config.RunID, transition.TransitionInput{
 		Runtime: config.RuntimeType,
 		AgentID: config.AgentID,
 	}); err != nil {
@@ -127,7 +127,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, conf
 
 	evidenceRef := fmt.Sprintf("%s-runtime:agent.completed", config.RuntimeType)
 	justification := fmt.Sprintf("%s runtime completed with agent.completed event", config.RuntimeType)
-	if _, err := r.runService.Complete(ctx, config.RunID, orchestration.TransitionInput{
+	if _, err := r.runService.Complete(ctx, config.RunID, transition.TransitionInput{
 		Runtime:       config.RuntimeType,
 		AgentID:       config.AgentID,
 		EvidenceRefs:  []string{evidenceRef},
@@ -183,7 +183,7 @@ func (r *RuntimeEventRelay) handleFailed(ctx context.Context, config RelayConfig
 		failureReason = r
 	}
 
-	if _, err := r.sessionService.Fail(ctx, config.SessionID, orchestration.TransitionInput{
+	if _, err := r.sessionService.Fail(ctx, config.SessionID, transition.TransitionInput{
 		Runtime:       config.RuntimeType,
 		AgentID:       config.AgentID,
 		FailureReason: failureReason,
@@ -195,7 +195,7 @@ func (r *RuntimeEventRelay) handleFailed(ctx context.Context, config RelayConfig
 		}
 	}
 
-	if _, err := r.runService.Fail(ctx, config.RunID, orchestration.TransitionInput{
+	if _, err := r.runService.Fail(ctx, config.RunID, transition.TransitionInput{
 		Runtime:       config.RuntimeType,
 		AgentID:       config.AgentID,
 		FailureReason: failureReason,
@@ -224,7 +224,7 @@ func (r *RuntimeEventRelay) handleTimeout(ctx context.Context, config RelayConfi
 		"timed_out_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
-	if _, err := r.sessionService.Timeout(ctx, config.SessionID, recoverableState, orchestration.TransitionInput{
+	if _, err := r.sessionService.Timeout(ctx, config.SessionID, recoverableState, transition.TransitionInput{
 		Runtime:       config.RuntimeType,
 		AgentID:       config.AgentID,
 		FailureReason: "runtime timed out",
@@ -236,7 +236,7 @@ func (r *RuntimeEventRelay) handleTimeout(ctx context.Context, config RelayConfi
 		}
 	}
 
-	if _, err := r.runService.Timeout(ctx, config.RunID, orchestration.TransitionInput{
+	if _, err := r.runService.Timeout(ctx, config.RunID, transition.TransitionInput{
 		Runtime:       config.RuntimeType,
 		AgentID:       config.AgentID,
 		FailureReason: "runtime timed out",
@@ -252,7 +252,7 @@ func (r *RuntimeEventRelay) handleTimeout(ctx context.Context, config RelayConfi
 }
 
 func (r *RuntimeEventRelay) handleRuntimeError(ctx context.Context, config RelayConfig, cause error) error {
-	input := orchestration.TransitionInput{
+	input := transition.TransitionInput{
 		Runtime:       config.RuntimeType,
 		AgentID:       config.AgentID,
 		FailureReason: cause.Error(),

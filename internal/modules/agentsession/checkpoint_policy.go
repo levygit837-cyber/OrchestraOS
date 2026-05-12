@@ -9,11 +9,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
-	run "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
 type CheckpointTrigger string
@@ -112,7 +111,7 @@ func (s *AgentSessionService) SuggestCheckpoint(ctx context.Context, sessionID s
 	}, nil
 }
 
-func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID string, input AutoCheckpointInput) (*orchestration.OperationResult[*domain.AgentSession], *CheckpointSuggestion, error) {
+func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID string, input AutoCheckpointInput) (*transition.OperationResult[*domain.AgentSession], *CheckpointSuggestion, error) {
 	suggestion, err := s.SuggestCheckpoint(ctx, sessionID, input)
 	if err != nil {
 		return nil, nil, err
@@ -127,7 +126,7 @@ func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID
 	return result, suggestion, nil
 }
 
-func (s *AgentSessionService) CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*orchestration.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*transition.OperationResult[*domain.AgentSession], error) {
 	op := "agent_session_service.checkpoint_from_event"
 	if event == nil {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "event envelope is required")
@@ -157,11 +156,7 @@ func (s *AgentSessionService) ListCheckpoints(ctx context.Context, sessionID str
 	if err != nil {
 		return nil, err
 	}
-	run, err := run.RequireByID(ctx, tx, session.RunID)
-	if err != nil {
-		return nil, err
-	}
-	events, err := eventmod.NewService(tx).ListByRun(ctx, run.ID)
+	events, err := eventmod.NewService(tx).ListByRun(ctx, session.RunID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,11 +199,7 @@ func (s *AgentSessionService) RecoverableCheckpoint(ctx context.Context, session
 	if err != nil {
 		return nil, err
 	}
-	run, err := run.RequireByID(ctx, tx, session.RunID)
-	if err != nil {
-		return nil, err
-	}
-	events, err := eventmod.NewService(tx).ListByRun(ctx, run.ID)
+	events, err := eventmod.NewService(tx).ListByRun(ctx, session.RunID)
 	if err != nil {
 		return nil, err
 	}
