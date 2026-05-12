@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/google/uuid"
@@ -52,6 +53,12 @@ func TestTaskGraphService_Decompose_Heuristic_Default(t *testing.T) {
 }
 
 func TestTaskGraphService_Decompose_LLM_FallbackToHeuristic(t *testing.T) {
+	// Ensure no API key is available so the LLM planner fails and triggers fallback.
+	t.Setenv("GEMINI_API_KEY", "")
+	t.Setenv("GOOGLE_API_KEY", "")
+	os.Unsetenv("GEMINI_API_KEY")
+	os.Unsetenv("GOOGLE_API_KEY")
+
 	db := getTestDB(t)
 	defer db.Close()
 	ctx := context.Background()

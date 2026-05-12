@@ -417,20 +417,28 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	requiredTypes := map[string]bool{
 		"run.started":              false,
 		"agent.session_starting":   false,
-		"agent.heartbeat":          false,
 		"agent.checkpoint_reached": false,
 		"agent.completed":          false,
 		"run.completed":            false,
 	}
+	// Heartbeat is best-effort: if the runtime completes faster than the
+	// 5s heartbeat interval, no heartbeat event is emitted.
+	hasHeartbeat := false
 	for _, e := range events {
 		if _, exists := requiredTypes[e.Type]; exists {
 			requiredTypes[e.Type] = true
+		}
+		if e.Type == "agent.heartbeat" {
+			hasHeartbeat = true
 		}
 	}
 	for eventType, found := range requiredTypes {
 		if !found {
 			t.Errorf("Expected event type %s was not found", eventType)
 		}
+	}
+	if !hasHeartbeat {
+		t.Logf("No heartbeat event found (runtime completed faster than heartbeat interval)")
 	}
 
 	replayState, err := eventStore.ReplayRunState(run.ID)
