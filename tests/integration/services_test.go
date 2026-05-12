@@ -9,19 +9,20 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
+	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
-	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 func TestDomainServicesFullLifecycle(t *testing.T) {
@@ -32,6 +33,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	taskService := bootstrap.TaskService(db)
 	workUnitService := bootstrap.WorkUnitService(db)
 	runService := bootstrap.RunService(db)
+	agentService := bootstrap.AgentService(db)
 	sessionService := bootstrap.AgentSessionService(db)
 	eventService := eventmod.NewService(db)
 
@@ -71,8 +73,18 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 		t.Fatalf("start run: %v", err)
 	}
 
+	// Create agent before session
+	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
+		Name:        "Service Test Agent",
+		Profile:     "default",
+		RuntimeType: domain.AgentRuntimeTypeFake,
+	})
+	if err != nil {
+		t.Fatalf("create agent: %v", err)
+	}
+
 	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
-		AgentID:    "agent-service-test",
+		AgentID:    agentResult.Value.ID,
 		RunID:      runResult.Value.ID,
 		TaskID:     runResult.Value.TaskID,
 		WorkUnitID: runResult.Value.WorkUnitID,
@@ -1071,5 +1083,259 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	}
 	if duplicate.Event == nil || duplicate.Event.ID != retryEventID {
 		t.Fatalf("expected duplicate retry event %s, got %+v", retryEventID, duplicate.Event)
+	}
+}
+
+func TestAgentServiceCreateAndGet(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+	ctx := context.Background()
+
+	agentService := bootstrap.AgentService(db)
+
+	// Test 1: Create agent with valid input
+	agentResult, err := agentService.Create(ctx, agentmod.CreateAgentInput{
+		Name:        "Test Agent",
+		Profile:     "code_worker",
+		RuntimeType: domain.AgentRuntimeTypeFake,
+	})
+	if err != nil {
+		t.Fatalf("create agent: %v", err)
+	}
+	if agentResult.Value == nil {
+		t.Fatal("expected agent value, got nil")
+	}
+	if agentResult.Value.Name != "Test Agent" {
+		t.Fatalf("expected name 'Test Agent', got '%s'", agentResult.Value.Name)
+	}
+	if agentResult.Value.Profile != "code_worker" {
+		t.Fatalf("expected profile 'code_worker', got '%s'", agentResult.Value.Profile)
+	}
+	if agentResult.Value.RuntimeType != domain.AgentRuntimeTypeFake {
+		t.Fatalf("expected runtime type 'fake', got '%s'", agentResult.Value.RuntimeType)
+	}
+	if agentResult.Event == nil {
+		t.Fatal("expected event to be emitted, got nil")
+	}
+	if agentResult.Event.Type != "agent.created" {
+		t.Fatalf("expected event type 'agent.created', got '%s'", agentResult.Event.Type)
+	}
+
+	// Test 2: GetByID returns the same agent
+	retrievedAgent, err := agentService.GetByID(ctx, agentResult.Value.ID)
+	if err != nil {
+		t.Fatalf("get by id: %v", err)
+	}
+	if retrievedAgent.ID != agentResult.Value.ID {
+		t.Fatalf("expected ID %s, got %s", agentResult.Value.ID, retrievedAgent.ID)
+	}
+
+	// Test 3: GetByID with invalid UUID should fail
+	_, err = agentService.GetByID(ctx, "not-a-uuid")
+	if err == nil {
+		t.Fatal("expected error for invalid UUID, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeValidation {
+		t.Fatalf("expected CodeValidation error, got %v", err)
+	}
+
+	// Test 4: GetByID with non-existent agent should fail
+	_, err = agentService.GetByID(ctx, uuid.New().String())
+	if err == nil {
+		t.Fatal("expected error for non-existent agent, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeNotFound {
+		t.Fatalf("expected CodeNotFound error, got %v", err)
+	}
+}
+
+func TestAgentServiceValidation(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+	ctx := context.Background()
+
+	agentService := bootstrap.AgentService(db)
+
+	// Test 1: Create with invalid profile should fail
+	_, err := agentService.Create(ctx, agentmod.CreateAgentInput{
+		Name:        "Test Agent",
+		Profile:     "invalid_profile",
+		RuntimeType: domain.AgentRuntimeTypeFake,
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid profile, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeValidation {
+		t.Fatalf("expected CodeValidation error, got %v", err)
+	}
+
+	// Test 2: Create with invalid runtime type should fail
+	_, err = agentService.Create(ctx, agentmod.CreateAgentInput{
+		Name:        "Test Agent",
+		Profile:     "code_worker",
+		RuntimeType: "invalid_runtime",
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid runtime type, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeValidation {
+		t.Fatalf("expected CodeValidation error, got %v", err)
+	}
+
+	// Test 3: Create with empty name should fail
+	_, err = agentService.Create(ctx, agentmod.CreateAgentInput{
+		Name:        "",
+		Profile:     "code_worker",
+		RuntimeType: domain.AgentRuntimeTypeFake,
+	})
+	if err == nil {
+		t.Fatal("expected error for empty name, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeValidation {
+		t.Fatalf("expected CodeValidation error, got %v", err)
+	}
+}
+
+func TestAgentServiceFindOrCreate(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+	ctx := context.Background()
+
+	agentService := bootstrap.AgentService(db)
+
+	// Test 1: FindOrCreate with no existing agent should create new
+	agent1, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeFake)
+	if err != nil {
+		t.Fatalf("find or create (first call): %v", err)
+	}
+	if agent1 == nil {
+		t.Fatal("expected agent to be created, got nil")
+	}
+
+	// Test 2: FindOrCreate with same profile and runtime should return existing
+	agent2, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeFake)
+	if err != nil {
+		t.Fatalf("find or create (second call): %v", err)
+	}
+	if agent2 == nil {
+		t.Fatal("expected agent to be found, got nil")
+	}
+	if agent2.ID != agent1.ID {
+		t.Fatalf("expected same agent ID, got %s vs %s", agent1.ID, agent2.ID)
+	}
+
+	// Test 3: FindOrCreate with different profile should create new
+	agent3, err := agentService.FindOrCreate(ctx, "docs_writer", domain.AgentRuntimeTypeFake)
+	if err != nil {
+		t.Fatalf("find or create (different profile): %v", err)
+	}
+	if agent3 == nil {
+		t.Fatal("expected new agent to be created, got nil")
+	}
+	if agent3.ID == agent1.ID {
+		t.Fatal("expected different agent ID, got same")
+	}
+
+	// Test 4: FindOrCreate with different runtime should create new
+	agent4, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeGemini)
+	if err != nil {
+		t.Fatalf("find or create (different runtime): %v", err)
+	}
+	if agent4 == nil {
+		t.Fatal("expected new agent to be created, got nil")
+	}
+	if agent4.ID == agent1.ID {
+		t.Fatal("expected different agent ID, got same")
+	}
+
+	// Test 5: FindOrCreate with invalid profile should fail
+	_, err = agentService.FindOrCreate(ctx, "invalid_profile", domain.AgentRuntimeTypeFake)
+	if err == nil {
+		t.Fatal("expected error for invalid profile, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeValidation {
+		t.Fatalf("expected CodeValidation error, got %v", err)
+	}
+}
+
+func TestAgentSessionServiceAgentIDValidation(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+	ctx := context.Background()
+
+	sessionService := bootstrap.AgentSessionService(db)
+
+	// Create a run first
+	taskService := bootstrap.TaskService(db)
+	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
+		Title:              "Test Task",
+		Description:        "Test agent ID validation",
+		Priority:           domain.PriorityP1,
+		RiskLevel:          domain.RiskLevelLow,
+		AcceptanceCriteria: []string{"agent ID is validated"},
+	})
+	if err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	runService := bootstrap.RunService(db)
+	runResult, err := runService.Create(ctx, runmod.CreateRunInput{
+		TaskID:     taskResult.Value.ID,
+		WorkUnitID: "test-wu-id", // fake work unit ID for this test
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	// Test 1: Create session with non-existent agent ID should fail
+	_, err = sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
+		AgentID:    uuid.New().String(), // random non-existent agent ID
+		RunID:      runResult.Value.ID,
+		TaskID:     runResult.Value.TaskID,
+		WorkUnitID: runResult.Value.WorkUnitID,
+	})
+	if err == nil {
+		t.Fatal("expected error for non-existent agent ID, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeNotFound {
+		t.Fatalf("expected CodeNotFound error, got %v", err)
+	}
+
+	// Test 2: Create session with invalid UUID should fail
+	_, err = sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
+		AgentID:    "not-a-uuid",
+		RunID:      runResult.Value.ID,
+		TaskID:     runResult.Value.TaskID,
+		WorkUnitID: runResult.Value.WorkUnitID,
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid UUID, got nil")
+	}
+	if appErr, ok := err.(*apperrors.Error); !ok || appErr.Code != apperrors.CodeValidation {
+		t.Fatalf("expected CodeValidation error, got %v", err)
+	}
+
+	// Test 3: Create session with valid agent ID should succeed
+	agentService := bootstrap.AgentService(db)
+	agentResult, err := agentService.Create(ctx, agentmod.CreateAgentInput{
+		Name:        "Validation Test Agent",
+		Profile:     "default",
+		RuntimeType: domain.AgentRuntimeTypeFake,
+	})
+	if err != nil {
+		t.Fatalf("create agent: %v", err)
+	}
+
+	sessionResult, err := sessionService.Create(ctx, agentsessionmod.CreateAgentSessionInput{
+		AgentID:    agentResult.Value.ID,
+		RunID:      runResult.Value.ID,
+		TaskID:     runResult.Value.TaskID,
+		WorkUnitID: runResult.Value.WorkUnitID,
+	})
+	if err != nil {
+		t.Fatalf("create session with valid agent ID: %v", err)
+	}
+	if sessionResult.Value.AgentID != agentResult.Value.ID {
+		t.Fatalf("expected agent ID %s, got %s", agentResult.Value.ID, sessionResult.Value.AgentID)
 	}
 }
