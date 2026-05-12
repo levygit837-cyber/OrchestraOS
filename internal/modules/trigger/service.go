@@ -396,10 +396,11 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 		return nil, err
 	}
 
-	if trigger.Status == domain.TriggerStatusResolved || trigger.Status == domain.TriggerStatusDismissed {
+	fromStatus := trigger.Status
+	if fromStatus == domain.TriggerStatusResolved || fromStatus == domain.TriggerStatusDismissed {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "cannot transition from terminal status")
 	}
-	if target == trigger.Status {
+	if target == fromStatus {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "target status equals current status")
 	}
 
@@ -424,7 +425,7 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 
 	payload, err := serialization.MarshalPayload("trigger_service.transition_payload", map[string]interface{}{
 		"trigger_id": trigger.ID,
-		"from_status": string(trigger.Status),
+		"from_status": string(fromStatus),
 		"to_status":   string(target),
 		"reason":      reason,
 		"action":      string(action),
