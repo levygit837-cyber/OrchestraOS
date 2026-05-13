@@ -95,12 +95,12 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if _, err := sessionService.Connect(ctx, sessionResult.Value.ID, "conn-service-test", "sandbox-service-test", transition.TransitionInput{Runtime: "fake"}); err != nil {
 		t.Fatalf("connect session: %v", err)
 	}
-	if _, err := sessionService.Heartbeat(ctx, sessionResult.Value.ID, agentsessionmod.HeartbeatInput{
+	if _, err := sessionService.Heartbeat(ctx, sessionResult.Value.ID, domain.HeartbeatInput{
 		Payload: map[string]interface{}{"source": "test"},
 	}); err != nil {
 		t.Fatalf("heartbeat: %v", err)
 	}
-	if _, err := sessionService.Checkpoint(ctx, sessionResult.Value.ID, agentsessionmod.CheckpointInput{
+	if _, err := sessionService.Checkpoint(ctx, sessionResult.Value.ID, domain.CheckpointInput{
 		CheckpointID:   "checkpoint-service-test",
 		CurrentGoal:    "validate lifecycle",
 		MinimalSummary: "checkpoint persisted",
@@ -941,8 +941,8 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 		t.Fatalf("connect session: %v", err)
 	}
 
-	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, agentsessionmod.AutoCheckpointInput{
-		Trigger:        agentsessionmod.CheckpointTriggerGoalCompleted,
+	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, domain.AutoCheckpointInput{
+		Trigger:        domain.CheckpointTriggerGoalCompleted,
 		CurrentGoal:    "analysis",
 		MinimalSummary: "analysis completed",
 		PendingTodos:   []string{"implementation"},
@@ -954,8 +954,8 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 		t.Fatalf("expected first automatic checkpoint to persist, result=%+v suggestion=%+v", result, suggestion)
 	}
 
-	second, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, agentsessionmod.AutoCheckpointInput{
-		Trigger:        agentsessionmod.CheckpointTriggerDiffProduced,
+	second, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, domain.AutoCheckpointInput{
+		Trigger:        domain.CheckpointTriggerDiffProduced,
 		CurrentGoal:    "implementation",
 		MinimalSummary: "diff produced and ready for validation",
 		CompletedGoals: []string{"analysis"},
@@ -971,8 +971,8 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 		t.Fatalf("expected second automatic checkpoint to persist, result=%+v suggestion=%+v", second, suggestion)
 	}
 
-	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, agentsessionmod.AutoCheckpointInput{
-		Trigger: agentsessionmod.CheckpointTriggerHeartbeat,
+	if result, suggestion, err := sessionService.AutomaticCheckpoint(ctx, sessionResult.Value.ID, domain.AutoCheckpointInput{
+		Trigger: domain.CheckpointTriggerHeartbeat,
 	}); err != nil {
 		t.Fatalf("heartbeat checkpoint suggestion: %v", err)
 	} else if result != nil || suggestion == nil || suggestion.ShouldCheckpoint {

@@ -8,15 +8,20 @@
 // # Key Types
 //   - AgentSessionService: domain service for session operations
 //   - CreateAgentSessionInput: input for creating a session
-//   - HeartbeatInput: heartbeat payload
-//   - CheckpointInput: checkpoint payload with ledger and evidence
+//
+// Shared types (defined in internal/domain for cross-package use):
+//   - domain.HeartbeatInput: heartbeat payload
+//   - domain.CheckpointInput: checkpoint payload with ledger and evidence
+//   - domain.AutoCheckpointInput: parameters for automatic checkpoints
+//   - domain.CheckpointTrigger: trigger reason enumeration
+//   - domain.CheckpointSuggestion: result of checkpoint evaluation
 //
 // # Dependencies
 //   - core/db: transaction helpers
 //   - core/orchestration: TransitionInput, OperationResult
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
-//   - domain: AgentSession, AgentSessionStatus
+//   - domain: AgentSession, AgentSessionStatus, HeartbeatInput, CheckpointInput, etc.
 //
 // # Related Packages
 //   - run/: sessions are bound to runs

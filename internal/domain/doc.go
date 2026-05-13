@@ -13,6 +13,9 @@
 //   - TaskGraph, TaskGraphStatus
 //   - EventEnvelope, EventPayload
 //   - PromptSnapshot, ToolsetSnapshot
+//   - CheckpointTrigger, HeartbeatInput, CheckpointInput, AutoCheckpointInput,
+//     CheckpointSuggestion: shared checkpoint/heartbeat types used by agentsession
+//       and orchestration packages
 //
 // # Dependencies
 //   - None (this is the innermost layer)

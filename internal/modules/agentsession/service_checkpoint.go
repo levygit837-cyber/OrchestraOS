@@ -17,7 +17,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, input CheckpointInput) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, input domain.CheckpointInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	op := "agent_session_service.checkpoint"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err

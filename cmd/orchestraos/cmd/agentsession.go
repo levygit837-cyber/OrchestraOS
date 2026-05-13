@@ -112,7 +112,7 @@ var agentSessionHeartbeatCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		service := bootstrap.AgentSessionService(getDB())
-		if _, err := service.Heartbeat(cmd.Context(), args[0], agentsessionmod.HeartbeatInput{
+		if _, err := service.Heartbeat(cmd.Context(), args[0], domain.HeartbeatInput{
 			Payload: map[string]interface{}{"source": "cli"},
 		}); err != nil {
 			return fmt.Errorf("failed to update heartbeat: %w", err)
@@ -129,7 +129,7 @@ var agentSessionCheckpointCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		service := bootstrap.AgentSessionService(getDB())
-		if _, err := service.Checkpoint(cmd.Context(), args[0], agentsessionmod.CheckpointInput{
+		if _, err := service.Checkpoint(cmd.Context(), args[0], domain.CheckpointInput{
 			CheckpointID:   "cli-debug-" + uuid.New().String(),
 			CurrentGoal:    "debug/manual checkpoint",
 			MinimalSummary: "manual debug checkpoint recorded from CLI",

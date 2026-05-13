@@ -7,6 +7,8 @@
 - Reviews must be created with a valid `gate_type` (`hard`, `soft`, `policy`).
 - Every status change emits exactly one domain event.
 - `criteria_checked` JSONB must be valid before persistence.
+- Duplicate active reviews are prevented for the same `(work_unit_id, gate_type)`, `(run_id, gate_type)`, and `(task_id, gate_type)`.
+- All read operations (`GetByID`, `ListByTask`, `ListPending`) accept and propagate `context.Context`.
 
 Violating invariants is considered a **CRITICAL FAILURE**.
 
@@ -35,6 +37,8 @@ Invalid transitions:
 - Verdict submission requires the review to be `pending` or `in_progress`.
 - Verdict submission updates `completed_at` timestamp.
 - Idempotency: duplicate event append returns the existing envelope without error.
+- `Create` must check for existing active reviews across work_unit_id, run_id, and task_id before inserting.
+- `derefString` (formerly `sqlString`) converts `*string` to `string`; empty string is stored as NULL by the event store.
 
 ---
 
@@ -42,7 +46,7 @@ Invalid transitions:
 
 Allowed:
 - Read and mutate the `reviews` table via `repository.go`.
-- Append events via `core/orchestration` helpers.
+- Append events via `core/transition` helpers.
 - Read other aggregates via their repositories (not services) for validation context.
 
 Forbidden:
@@ -63,6 +67,7 @@ Cross-module orchestration belongs ONLY to:
 - `CodeValidation` for invalid gate types or verdicts.
 - `CodeInvalidTransition` for illegal status changes.
 - `CodeNotFound` for missing reviews.
+- `CodeConflict` for duplicate active reviews.
 
 ---
 
@@ -72,6 +77,7 @@ Cross-module orchestration belongs ONLY to:
 - SQL belongs only in `queries.go`.
 - No business logic inside repositories — pure CRUD + row-scanning.
 - Use `core/db.BeginTx` / `CommitTx` / `RollbackTx` for transactions.
+- All query methods accept `context.Context` and use `QueryContext` / `QueryRowContext`.
 
 ---
 

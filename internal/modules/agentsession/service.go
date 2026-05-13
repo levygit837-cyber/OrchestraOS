@@ -44,22 +44,7 @@ type CreateAgentSessionInput struct {
 	RecoverableState json.RawMessage
 }
 
-type HeartbeatInput struct {
-	EventID string
-	Payload map[string]interface{}
-}
 
-type CheckpointInput struct {
-	EventID        string
-	CheckpointID   string
-	CurrentGoal    string
-	MinimalSummary string
-	Ledger         map[string]interface{}
-	EvidenceRefs   []string
-	OccurredAt     time.Time
-	Source         string
-	Extra          map[string]interface{}
-}
 
 func NewAgentSessionService(database *sql.DB, newAgentReader func(*sql.Tx) AgentReader) *AgentSessionService {
 	return &AgentSessionService{db: database, newAgentReader: newAgentReader}

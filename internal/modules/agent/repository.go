@@ -51,7 +51,7 @@ func (r *Repository) Create(agent *domain.Agent) error {
 
 // GetByID retrieves an agent by ID
 func (r *Repository) GetByID(ctx context.Context, id string) (*domain.Agent, error) {
-	row := r.db.QueryRow(QueryGetByID, id)
+	row := r.db.QueryRowContext(ctx, QueryGetByID, id)
 	return r.scanAgent(row)
 }
 
@@ -116,8 +116,5 @@ func (r *Repository) scanAgent(scanner interface {
 }
 
 func textArray(arr []string) interface{} {
-	if len(arr) == 0 {
-		return nil
-	}
 	return arr
 }

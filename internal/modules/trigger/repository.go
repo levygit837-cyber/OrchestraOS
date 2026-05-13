@@ -6,6 +6,7 @@
 package trigger
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -64,8 +65,8 @@ func (r *Repository) GetByID(id string) (*domain.Trigger, error) {
 }
 
 // ListActive retrieves all active or triggered triggers
-func (r *Repository) ListActive() ([]*domain.Trigger, error) {
-	rows, err := r.db.Query(QueryListActive)
+func (r *Repository) ListActive(ctx context.Context) ([]*domain.Trigger, error) {
+	rows, err := r.db.QueryContext(ctx, QueryListActive)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list active triggers: %w", err)
 	}
@@ -83,8 +84,8 @@ func (r *Repository) ListActive() ([]*domain.Trigger, error) {
 }
 
 // ListByRun retrieves all triggers for a run
-func (r *Repository) ListByRun(runID string) ([]*domain.Trigger, error) {
-	rows, err := r.db.Query(QueryListByRun, runID)
+func (r *Repository) ListByRun(ctx context.Context, runID string) ([]*domain.Trigger, error) {
+	rows, err := r.db.QueryContext(ctx, QueryListByRun, runID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list triggers by run: %w", err)
 	}
@@ -99,6 +100,27 @@ func (r *Repository) ListByRun(runID string) ([]*domain.Trigger, error) {
 		triggers = append(triggers, trigger)
 	}
 	return triggers, rows.Err()
+}
+
+// ExistsActiveSimilar checks if an active/triggered trigger already exists with the same
+// trigger type, run/session and anomaly type.
+func (r *Repository) ExistsActiveSimilar(triggerType domain.TriggerType, runID, agentSessionID, anomalyType *string) (bool, error) {
+	var runVal, sessionVal, anomalyVal string
+	if runID != nil {
+		runVal = *runID
+	}
+	if agentSessionID != nil {
+		sessionVal = *agentSessionID
+	}
+	if anomalyType != nil {
+		anomalyVal = *anomalyType
+	}
+	var exists bool
+	err := r.db.QueryRow(QueryExistsActiveSimilar, triggerType, runVal, sessionVal, anomalyVal).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check similar trigger existence: %w", err)
+	}
+	return exists, nil
 }
 
 // UpdateStatus updates trigger status and related timestamps

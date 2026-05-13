@@ -53,13 +53,6 @@ type AutoCheckpointInput struct {
 	Extra          map[string]interface{}
 }
 
-type CheckpointSuggestion struct {
-	ShouldCheckpoint bool
-	Reason           string
-	Trigger          CheckpointTrigger
-	Input            CheckpointInput
-}
-
 type CheckpointRecord struct {
 	Event          domain.EventEnvelope
 	AgentSessionID string
@@ -78,7 +71,7 @@ type RecoverableCheckpointState struct {
 	RecoverableState json.RawMessage
 }
 
-func (s *AgentSessionService) SuggestCheckpoint(ctx context.Context, sessionID string, input AutoCheckpointInput) (*CheckpointSuggestion, error) {
+func (s *AgentSessionService) SuggestCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*domain.CheckpointSuggestion, error) {
 	op := "agent_session_service.suggest_checkpoint"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err
@@ -103,7 +96,7 @@ func (s *AgentSessionService) SuggestCheckpoint(ctx context.Context, sessionID s
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_suggest_checkpoint"); err != nil {
 		return nil, err
 	}
-	return &CheckpointSuggestion{
+	return &domain.CheckpointSuggestion{
 		ShouldCheckpoint: should,
 		Reason:           reason,
 		Trigger:          input.Trigger,
@@ -111,7 +104,7 @@ func (s *AgentSessionService) SuggestCheckpoint(ctx context.Context, sessionID s
 	}, nil
 }
 
-func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID string, input AutoCheckpointInput) (*transition.OperationResult[*domain.AgentSession], *CheckpointSuggestion, error) {
+func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*transition.OperationResult[*domain.AgentSession], *domain.CheckpointSuggestion, error) {
 	suggestion, err := s.SuggestCheckpoint(ctx, sessionID, input)
 	if err != nil {
 		return nil, nil, err
@@ -232,56 +225,56 @@ func (s *AgentSessionService) RecoverableCheckpoint(ctx context.Context, session
 	}, nil
 }
 
-func validateCheckpointTrigger(trigger CheckpointTrigger, op string) error {
+func validateCheckpointTrigger(trigger domain.CheckpointTrigger, op string) error {
 	switch trigger {
-	case CheckpointTriggerRuntimeCheckpoint,
-		CheckpointTriggerGoalCompleted,
-		CheckpointTriggerFocusChange,
-		CheckpointTriggerBeforeValidation,
-		CheckpointTriggerDiffProduced,
-		CheckpointTriggerBeforeCompletion,
-		CheckpointTriggerToolRequest,
-		CheckpointTriggerToolExecuted,
-		CheckpointTriggerTimeout,
-		CheckpointTriggerHeartbeat,
-		CheckpointTriggerManualDebug:
+	case domain.CheckpointTriggerRuntimeCheckpoint,
+		domain.CheckpointTriggerGoalCompleted,
+		domain.CheckpointTriggerFocusChange,
+		domain.CheckpointTriggerBeforeValidation,
+		domain.CheckpointTriggerDiffProduced,
+		domain.CheckpointTriggerBeforeCompletion,
+		domain.CheckpointTriggerToolRequest,
+		domain.CheckpointTriggerToolExecuted,
+		domain.CheckpointTriggerTimeout,
+		domain.CheckpointTriggerHeartbeat,
+		domain.CheckpointTriggerManualDebug:
 		return nil
 	default:
 		return apperrors.New(apperrors.CodeInvalidInput, op, fmt.Sprintf("invalid checkpoint trigger %q", trigger))
 	}
 }
 
-func shouldCheckpoint(input AutoCheckpointInput) (bool, string) {
+func shouldCheckpoint(input domain.AutoCheckpointInput) (bool, string) {
 	if input.Force {
 		return true, "forced checkpoint"
 	}
 	switch input.Trigger {
-	case CheckpointTriggerRuntimeCheckpoint:
+	case domain.CheckpointTriggerRuntimeCheckpoint:
 		return true, "runtime emitted checkpoint event"
-	case CheckpointTriggerGoalCompleted:
+	case domain.CheckpointTriggerGoalCompleted:
 		return true, "goal completed"
-	case CheckpointTriggerFocusChange:
+	case domain.CheckpointTriggerFocusChange:
 		return true, "agent is changing focus"
-	case CheckpointTriggerBeforeValidation:
+	case domain.CheckpointTriggerBeforeValidation:
 		return true, "validation is about to start"
-	case CheckpointTriggerDiffProduced:
+	case domain.CheckpointTriggerDiffProduced:
 		return true, "relevant diff was produced"
-	case CheckpointTriggerBeforeCompletion:
+	case domain.CheckpointTriggerBeforeCompletion:
 		return true, "work unit is about to complete"
-	case CheckpointTriggerToolRequest:
+	case domain.CheckpointTriggerToolRequest:
 		return true, "tool request is a safe recovery boundary"
-	case CheckpointTriggerToolExecuted:
+	case domain.CheckpointTriggerToolExecuted:
 		return true, "tool execution is a safe recovery boundary"
-	case CheckpointTriggerTimeout:
+	case domain.CheckpointTriggerTimeout:
 		return true, "timeout requires recoverable state"
-	case CheckpointTriggerManualDebug:
+	case domain.CheckpointTriggerManualDebug:
 		return true, "manual debug checkpoint requested"
 	default:
 		return false, "trigger does not require checkpoint"
 	}
 }
 
-func buildCheckpointInput(sessionID string, input AutoCheckpointInput, required bool) (CheckpointInput, error) {
+func buildCheckpointInput(sessionID string, input domain.AutoCheckpointInput, required bool) (domain.CheckpointInput, error) {
 	ledger := copyMap(input.Ledger)
 	if ledger == nil {
 		ledger = map[string]interface{}{}
@@ -304,14 +297,14 @@ func buildCheckpointInput(sessionID string, input AutoCheckpointInput, required 
 		}
 	}
 	if required && currentGoal == "" {
-		return CheckpointInput{}, apperrors.New(apperrors.CodeInvalidInput, "agent_session_service.build_checkpoint", "current_goal is required for automatic checkpoint")
+		return domain.CheckpointInput{}, apperrors.New(apperrors.CodeInvalidInput, "agent_session_service.build_checkpoint", "current_goal is required for automatic checkpoint")
 	}
 	minimalSummary := input.MinimalSummary
 	if minimalSummary == "" {
 		minimalSummary = fmt.Sprintf("automatic checkpoint for %s", input.Trigger)
 	}
 	if required && len(ledger) == 0 {
-		return CheckpointInput{}, apperrors.New(apperrors.CodeInvalidInput, "agent_session_service.build_checkpoint", "ledger is required for automatic checkpoint")
+		return domain.CheckpointInput{}, apperrors.New(apperrors.CodeInvalidInput, "agent_session_service.build_checkpoint", "ledger is required for automatic checkpoint")
 	}
 
 	extra := copyMap(input.Extra)
@@ -339,7 +332,7 @@ func buildCheckpointInput(sessionID string, input AutoCheckpointInput, required 
 		checkpointID = uuid.NewSHA1(uuid.NameSpaceURL, []byte("orchestraos:checkpoint:"+sessionID+":"+input.SourceEventID+":"+string(input.Trigger))).String()
 	}
 
-	return CheckpointInput{
+	return domain.CheckpointInput{
 		EventID:        eventID,
 		CheckpointID:   checkpointID,
 		CurrentGoal:    currentGoal,
@@ -352,10 +345,10 @@ func buildCheckpointInput(sessionID string, input AutoCheckpointInput, required 
 	}, nil
 }
 
-func checkpointInputFromEvent(event *domain.EventEnvelope) (CheckpointInput, error) {
+func checkpointInputFromEvent(event *domain.EventEnvelope) (domain.CheckpointInput, error) {
 	record, err := checkpointRecordFromEvent(*event)
 	if err != nil {
-		return CheckpointInput{}, err
+		return domain.CheckpointInput{}, err
 	}
 	extra := map[string]interface{}{
 		"source_event_id": event.ID,
@@ -363,7 +356,7 @@ func checkpointInputFromEvent(event *domain.EventEnvelope) (CheckpointInput, err
 	var payload map[string]interface{}
 	if len(event.Payload) > 0 {
 		if err := json.Unmarshal(event.Payload, &payload); err != nil {
-			return CheckpointInput{}, apperrors.Wrap(apperrors.CodeValidation, "agent_session_service.checkpoint_event_payload", err)
+			return domain.CheckpointInput{}, apperrors.Wrap(apperrors.CodeValidation, "agent_session_service.checkpoint_event_payload", err)
 		}
 		for key, value := range payload {
 			switch key {
@@ -374,7 +367,7 @@ func checkpointInputFromEvent(event *domain.EventEnvelope) (CheckpointInput, err
 			}
 		}
 	}
-	return CheckpointInput{
+	return domain.CheckpointInput{
 		EventID:        event.ID,
 		CheckpointID:   record.CheckpointID,
 		CurrentGoal:    record.CurrentGoal,

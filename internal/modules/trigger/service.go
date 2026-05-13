@@ -366,8 +366,7 @@ func (s *TriggerService) Dismiss(ctx context.Context, triggerID string, reason s
 
 // ListActive returns all active or triggered triggers.
 func (s *TriggerService) ListActive(ctx context.Context) ([]*domain.Trigger, error) {
-	_ = ctx
-	return NewRepository(s.db).ListActive()
+	return NewRepository(s.db).ListActive(ctx)
 }
 
 // ListByRun returns all triggers for a run.
@@ -375,8 +374,7 @@ func (s *TriggerService) ListByRun(ctx context.Context, runID string) ([]*domain
 	if err := validation.RequiredUUID(runID, "run_id", "trigger_service.list_by_run"); err != nil {
 		return nil, err
 	}
-	_ = ctx
-	return NewRepository(s.db).ListByRun(runID)
+	return NewRepository(s.db).ListByRun(ctx, runID)
 }
 
 func (s *TriggerService) transition(ctx context.Context, triggerID string, target domain.TriggerStatus, action domain.ResolutionAction, reason string) (*transition.OperationResult[*domain.Trigger], error) {
@@ -458,6 +456,15 @@ func (s *TriggerService) persistDetectedTrigger(ctx context.Context, tx *sql.Tx,
 	trigger.CreatedAt = s.clock()
 	if trigger.Status == "" {
 		trigger.Status = domain.TriggerStatusTriggered
+	}
+
+	// Deduplication: skip if a similar active/triggered trigger already exists
+	exists, err := NewRepository(tx).ExistsActiveSimilar(trigger.TriggerType, trigger.RunID, trigger.AgentSessionID, ptrValueStringToPtr(trigger.AnomalyType))
+	if err != nil {
+		return nil, apperrors.Wrap(apperrors.CodePersistence, "trigger_service.check_duplicate", err)
+	}
+	if exists {
+		return trigger, nil
 	}
 
 	if err := NewRepository(tx).Create(trigger); err != nil {
@@ -641,4 +648,12 @@ func ptrValueString(a *domain.AnomalyType) string {
 		return ""
 	}
 	return string(*a)
+}
+
+func ptrValueStringToPtr(a *domain.AnomalyType) *string {
+	if a == nil {
+		return nil
+	}
+	s := string(*a)
+	return &s
 }
