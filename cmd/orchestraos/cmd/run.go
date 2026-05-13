@@ -61,7 +61,20 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to start run: %w", err)
 		}
 
-		agentID := fmt.Sprintf("agent-%s", uuid.New().String()[:8])
+		// Resolve agent profile from work unit (default: code_worker)
+		agentProfile := wu.AssignedAgentProfile
+		if agentProfile == "" {
+			agentProfile = "code_worker"
+		}
+
+		agentService := bootstrap.AgentService(getDB())
+		agentEntity, err := agentService.FindOrCreate(cmd.Context(), agentProfile, domain.AgentRuntimeType(runtimeType))
+		if err != nil {
+			_ = failStartedRun(context.Background(), runService, nil, run.ID, "", runtimeType, "", err)
+			return fmt.Errorf("failed to find or create agent: %w", err)
+		}
+		agentID := agentEntity.ID
+
 		sessionService := bootstrap.AgentSessionService(getDB())
 		sessionResult, err := sessionService.Create(cmd.Context(), agentsessionmod.CreateAgentSessionInput{
 			AgentID:    agentID,

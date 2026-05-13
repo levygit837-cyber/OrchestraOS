@@ -32,7 +32,7 @@ func TestOrchestratorService_RunTask_SequentialExecution(t *testing.T) {
 
 	// Create a task
 	taskID := uuid.New().String()
-	task, err := taskService.Create(context.Background(), taskmod.CreateTaskInput{
+	_, err := taskService.Create(context.Background(), taskmod.CreateTaskInput{
 		ID:          taskID,
 		Title:       "Test Task",
 		Description: "Test task for orchestrator",
@@ -123,7 +123,7 @@ func TestOrchestratorService_TopologicalSort(t *testing.T) {
 	}
 
 	// Decompose task
-	decomposeResult, err := taskGraphService.Decompose(context.Background(), taskgraphmod.DecomposeTaskGraphInput{
+	_, err = taskGraphService.Decompose(context.Background(), taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskID,
 		PlannerStrategy: "local_heuristic_v1",
 		CreatedBy:       "test",
@@ -248,7 +248,7 @@ func TestOrchestratorService_RunStateTransitions(t *testing.T) {
 	}
 
 	// Decompose task
-	decomposeResult, err := taskGraphService.Decompose(context.Background(), taskgraphmod.DecomposeTaskGraphInput{
+	_, err = taskGraphService.Decompose(context.Background(), taskgraphmod.DecomposeTaskGraphInput{
 		TaskID:          taskID,
 		PlannerStrategy: "local_heuristic_v1",
 		CreatedBy:       "test",
@@ -342,7 +342,7 @@ func TestOrchestratorService_TaskCompletion(t *testing.T) {
 	}
 
 	// Run the task
-	result, err := orchestrator.RunTask(context.Background(), taskID, orchestratormod.RunTaskOptions{
+	_, err = orchestrator.RunTask(context.Background(), taskID, orchestratormod.RunTaskOptions{
 		RuntimeType:     "fake",
 		PlannerStrategy: "local_heuristic_v1",
 		MaxSteps:        10,

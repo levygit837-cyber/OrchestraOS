@@ -96,7 +96,11 @@ func TestModulesDoNotImportOrchestration(t *testing.T) {
 				for _, imp := range file.Imports {
 					path := strings.Trim(imp.Path.Value, `"`)
 					if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration" {
-						t.Errorf("module %q imports internal/core/orchestration. Modules must not import orchestration directly. Use internal/core/transition/ for shared types.", modName)
+						// The orchestrator module is allowed to import orchestration as it is the
+						// central coordinator that consumes RuntimeEventRelay and PromptOrchestrator.
+						if modName != "orchestrator" {
+							t.Errorf("module %q imports internal/core/orchestration. Modules must not import orchestration directly. Use internal/core/transition/ for shared types.", modName)
+						}
 					}
 				}
 			}

@@ -75,7 +75,16 @@ func ValidatePlannerStrategy(strategy string) error {
 
 // ValidateAgentProfile validates an agent profile string.
 func ValidateAgentProfile(profile string) error {
-	return validation.Profile(profile, "orchestrator.validate_agent_profile")
+	op := "orchestrator.validate_agent_profile"
+	if err := validation.RequiredText(profile, "profile", op); err != nil {
+		return err
+	}
+	switch profile {
+	case "code_worker", "docs_writer", "reviewer", "debugger", "default":
+		return nil
+	default:
+		return apperrors.New(apperrors.CodeInvalidInput, op, "invalid agent profile")
+	}
 }
 
 // ValidateTaskID validates a task ID.
