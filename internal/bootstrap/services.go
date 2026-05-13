@@ -11,6 +11,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	orchestratormod "github.com/levygit837-cyber/OrchestraOS/internal/modules/orchestrator"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
@@ -115,4 +116,10 @@ func RuntimeEventRelay(db *sql.DB) *orchestration.RuntimeEventRelay {
 		AgentSessionService(db),
 		RunService(db),
 	)
+}
+
+// OrchestratorService creates an OrchestratorService.
+// TODO(ORCH-F05-R02-A01): Replace stub with full implementation when merged.
+func OrchestratorService(db *sql.DB) *orchestratormod.Service {
+	return orchestratormod.NewService(db)
 }
