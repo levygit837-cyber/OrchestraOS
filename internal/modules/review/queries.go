@@ -28,4 +28,18 @@ const (
 			WHERE work_unit_id = $1 AND gate_type = $2
 			AND status NOT IN ('approved', 'changes_requested', 'needs_discussion')
 		)`
+
+	QueryExistsActiveByRunAndGate = `
+		SELECT EXISTS(
+			SELECT 1 FROM reviews
+			WHERE run_id = $1 AND gate_type = $2
+			AND status NOT IN ('approved', 'changes_requested', 'needs_discussion')
+		)`
+
+	QueryExistsActiveByTaskAndGate = `
+		SELECT EXISTS(
+			SELECT 1 FROM reviews
+			WHERE task_id = $1 AND gate_type = $2
+			AND status NOT IN ('approved', 'changes_requested', 'needs_discussion')
+		)`
 )

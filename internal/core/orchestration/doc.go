@@ -12,6 +12,8 @@
 //   - OperationResult[T]: generic result wrapper (value + event + duplicate flag)
 //   - UpdateRunProjection: exported helper for updating run projections
 //   - AppendServiceEvent, TransitionPayload, TransitionContext: shared helpers
+//   - EventSource: minimal runtime abstraction consumed by RuntimeEventRelay
+//   - SessionService, RunService: interfaces that RuntimeEventRelay depends on
 //
 // # Dependencies
 //   - core/apperrors: error typing

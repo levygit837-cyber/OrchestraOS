@@ -9,17 +9,20 @@ import (
 func TestValidateProfile(t *testing.T) {
 	op := "test"
 
-	// Valid profiles
-	validProfiles := []string{"code_worker", "docs_writer", "reviewer", "debugger", "default"}
+	// Valid profiles (snake_case)
+	validProfiles := []string{"code_worker", "docs_writer", "reviewer", "debugger", "default", "new_profile"}
 	for _, profile := range validProfiles {
 		if err := ValidateProfile(profile, op); err != nil {
 			t.Fatalf("expected valid profile %s to pass validation, got error: %v", profile, err)
 		}
 	}
 
-	// Invalid profile
-	if err := ValidateProfile("invalid_profile", op); err == nil {
-		t.Fatal("expected invalid profile to be rejected")
+	// Invalid profiles
+	invalidProfiles := []string{"Invalid-Profile", "123profile", "profile with spaces", "UPPER_CASE"}
+	for _, profile := range invalidProfiles {
+		if err := ValidateProfile(profile, op); err == nil {
+			t.Fatalf("expected invalid profile %s to be rejected", profile)
+		}
 	}
 
 	// Empty profile

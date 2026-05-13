@@ -7,6 +7,8 @@
 - Detectors have no side effects; they only analyze and return triggers.
 - `TriggerService` is the only component that persists triggers and emits events.
 - Terminal statuses (`resolved`, `dismissed`) cannot transition to any other status.
+- Duplicate active/triggered triggers are suppressed: `persistDetectedTrigger` checks for an existing similar trigger (same type, run/session, anomaly) before inserting.
+- All read operations (`ListActive`, `ListByRun`) accept and propagate `context.Context`.
 
 ## State Machine
 
@@ -28,6 +30,7 @@ Invalid transitions:
 - Never update a trigger without emitting a domain event.
 - State transitions must be atomic (single transaction).
 - Detectors must be pure functions (no I/O, no mutation, no randomness).
+- `persistDetectedTrigger` must deduplicate against existing active/triggered triggers before creating a new one.
 
 ## Boundary Rules
 
@@ -55,6 +58,7 @@ Forbidden:
 - SQL belongs only in `queries.go`.
 - No business logic inside repositories — pure CRUD + row-scanning.
 - Use `core/db.BeginTx` / `CommitTx` / `RollbackTx` for transactions.
+- All query methods accept `context.Context` and use `QueryContext`.
 
 ## LLM Execution Rules
 

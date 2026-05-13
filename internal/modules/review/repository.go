@@ -1,6 +1,7 @@
 package review
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -60,14 +61,14 @@ func (r *Repository) Create(review *domain.Review) error {
 }
 
 // GetByID retrieves a review by ID
-func (r *Repository) GetByID(id string) (*domain.Review, error) {
-	row := r.db.QueryRow(QueryGetByID, id)
+func (r *Repository) GetByID(ctx context.Context, id string) (*domain.Review, error) {
+	row := r.db.QueryRowContext(ctx, QueryGetByID, id)
 	return r.scanReview(row)
 }
 
 // ListByTask retrieves all reviews for a task
-func (r *Repository) ListByTask(taskID string) ([]*domain.Review, error) {
-	rows, err := r.db.Query(QueryListByTask, taskID)
+func (r *Repository) ListByTask(ctx context.Context, taskID string) ([]*domain.Review, error) {
+	rows, err := r.db.QueryContext(ctx, QueryListByTask, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list reviews by task: %w", err)
 	}
@@ -86,8 +87,8 @@ func (r *Repository) ListByTask(taskID string) ([]*domain.Review, error) {
 }
 
 // ListPending retrieves all pending or in_progress reviews
-func (r *Repository) ListPending() ([]*domain.Review, error) {
-	rows, err := r.db.Query(QueryListPending)
+func (r *Repository) ListPending(ctx context.Context) ([]*domain.Review, error) {
+	rows, err := r.db.QueryContext(ctx, QueryListPending)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pending reviews: %w", err)
 	}
@@ -111,6 +112,26 @@ func (r *Repository) ExistsActiveByWorkUnitAndGate(workUnitID string, gate domai
 	err := r.db.QueryRow(QueryExistsActiveByWorkUnitAndGate, workUnitID, gate).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check active review existence: %w", err)
+	}
+	return exists, nil
+}
+
+// ExistsActiveByRunAndGate checks if an active review exists for a run + gate
+func (r *Repository) ExistsActiveByRunAndGate(runID string, gate domain.ValidationGate) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(QueryExistsActiveByRunAndGate, runID, gate).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check active review existence by run: %w", err)
+	}
+	return exists, nil
+}
+
+// ExistsActiveByTaskAndGate checks if an active review exists for a task + gate
+func (r *Repository) ExistsActiveByTaskAndGate(taskID string, gate domain.ValidationGate) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(QueryExistsActiveByTaskAndGate, taskID, gate).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check active review existence by task: %w", err)
 	}
 	return exists, nil
 }

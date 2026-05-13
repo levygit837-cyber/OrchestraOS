@@ -76,3 +76,14 @@ Forbidden:
 5. State transitions MUST use `core/statemachine.CanTransition`.
 6. Every mutation MUST emit an event.
 7. SQL belongs only in `queries.go`.
+
+## Important Note on Shared Types
+
+The following types were moved to `internal/domain` so they can be shared with `core/orchestration` without cross-module imports:
+- `CheckpointTrigger`
+- `HeartbeatInput`
+- `CheckpointInput`
+- `AutoCheckpointInput`
+- `CheckpointSuggestion`
+
+Use `domain.HeartbeatInput`, `domain.CheckpointInput`, etc. instead of local package types.

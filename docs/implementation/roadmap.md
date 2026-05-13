@@ -40,12 +40,12 @@ UserMessage/CLI
 ## Estado Atual Honesto
 
 | Fase | Milestone | Status Real |
-|---|---|---|
+|---||---|
 | Fase 1 | M0-M1: Fundação | ✅ Completo |
 | Fase 2 | M2-M3: Planejamento Manual | ⚠️ Funcional mas não integrado |
 | Fase 3 | M4: Runtime Isolado | ⚠️ Existe mas é ilha (sem relay) |
-| Fase 4 | M4.5: Integração E2E | ❌ Inexistente — **PRÓXIMO PASSO CRÍTICO** |
-| Fase 5 | M5: Orquestração | ❌ Inexistente |
+| Fase 4 | M4.5: Integração E2E | ✅ Completo |
+| Fase 5 | M5: Orquestração | ❌ Inexistente — **PRÓXIMO PASSO CRÍTICO** |
 | Fase 6 | M7: Sandbox | ❌ Inexistente |
 | Fase 7 | M8: Policy Engine | ❌ Inexistente |
 | Fase 8 | M6+M9: Comunicação + Runtime Real | ❌ Inexistente |
@@ -538,13 +538,13 @@ UserMessage/CLI
 | P0 | Fundação técnica (M0-M1) | Fase 1 | ✅ |
 | P0 | Task Graph + Prompt Composer (M2-M3) | Fase 2 | ✅ |
 | P0 | Runtime isolado (M4) | Fase 3 | ⚠️ |
-| **P0** | **Relay de eventos Runtime → Serviços** | **Fase 4** | **🔥 PRÓXIMO** |
-| **P0** | **Depreciar Commander** | **Fase 4** | **🔥 PRÓXIMO** |
-| **P0** | **Teste E2E integrado (Task → Complete)** | **Fase 4** | **🔥 PRÓXIMO** |
-| **P0** | **Flag `--planner` na CLI** | **Fase 4** | **🔥 PRÓXIMO** |
-| P0 | AgentService | Fase 5 | pendente |
-| P0 | OrchestratorService.RunTask() | Fase 5 | pendente |
-| P0 | CLI `task run` | Fase 5 | pendente |
+| P0 | Relay de eventos Runtime → Serviços | Fase 4 | ✅ |
+| P0 | Depreciar Commander | Fase 4 | ✅ |
+| P0 | Teste E2E integrado (Task → Complete) | Fase 4 | ✅ |
+| P0 | Flag `--planner` na CLI | Fase 4 | ✅ |
+| **P0** | **AgentService** | **Fase 5** | **🔥 PRÓXIMO** |
+| **P0** | **OrchestratorService.RunTask()** | **Fase 5** | **🔥 PRÓXIMO** |
+| **P0** | **CLI `task run`** | **Fase 5** | **🔥 PRÓXIMO** |
 | P1 | Sandbox Manager (branch + worktree) | Fase 6 | pendente |
 | P1 | Policy Engine mínimo | Fase 7 | pendente |
 | P1 | WebSocket / Live View | Fase 8 | pendente |

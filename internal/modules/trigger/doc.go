@@ -29,6 +29,7 @@
 //   - Detectors are deterministic: same input always produces same output.
 //   - Detectors have no side effects; they only analyze and return triggers.
 //   - TriggerService persists triggers and emits events.
+//   - Duplicate active/triggered triggers are suppressed before insertion.
 //   - NEVER write SQL outside queries.go.
 //   - NEVER call run.Service or agentsession.Service methods directly.
 //

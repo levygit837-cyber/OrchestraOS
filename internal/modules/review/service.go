@@ -107,6 +107,24 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 			return nil, apperrors.New(apperrors.CodeConflict, "review_service.create", "an active review already exists for this work unit and gate")
 		}
 	}
+	if input.RunID != "" {
+		exists, err := NewRepository(tx).ExistsActiveByRunAndGate(input.RunID, input.GateType)
+		if err != nil {
+			return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.check_duplicate_run", err)
+		}
+		if exists {
+			return nil, apperrors.New(apperrors.CodeConflict, "review_service.create", "an active review already exists for this run and gate")
+		}
+	}
+	if input.TaskID != "" {
+		exists, err := NewRepository(tx).ExistsActiveByTaskAndGate(input.TaskID, input.GateType)
+		if err != nil {
+			return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.check_duplicate_task", err)
+		}
+		if exists {
+			return nil, apperrors.New(apperrors.CodeConflict, "review_service.create", "an active review already exists for this task and gate")
+		}
+	}
 
 	if err := NewRepository(tx).Create(review); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.create_projection", err)
@@ -132,9 +150,9 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 		ID:          input.EventID,
 		Type:        EventTypeCreated,
 		Version:     transition.EventVersionV1,
-		TaskID:      sqlString(taskID),
-		RunID:       sqlString(runID),
-		WorkUnitID:  sqlString(workUnitID),
+		TaskID:      derefString(taskID),
+		RunID:       derefString(runID),
+		WorkUnitID:  derefString(workUnitID),
 		AgentID:     input.ReviewerAgentID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
@@ -187,9 +205,9 @@ func (s *ReviewService) Start(ctx context.Context, reviewID string, input StartR
 		ID:          input.EventID,
 		Type:        EventTypeStarted,
 		Version:     transition.EventVersionV1,
-		TaskID:      sqlString(review.TaskID),
-		RunID:       sqlString(review.RunID),
-		WorkUnitID:  sqlString(review.WorkUnitID),
+		TaskID:      derefString(review.TaskID),
+		RunID:       derefString(review.RunID),
+		WorkUnitID:  derefString(review.WorkUnitID),
 		AgentID:     input.AgentID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
@@ -258,9 +276,9 @@ func (s *ReviewService) SubmitVerdict(ctx context.Context, reviewID string, inpu
 		ID:          input.EventID,
 		Type:        EventTypeVerdictSubmitted,
 		Version:     transition.EventVersionV1,
-		TaskID:      sqlString(review.TaskID),
-		RunID:       sqlString(review.RunID),
-		WorkUnitID:  sqlString(review.WorkUnitID),
+		TaskID:      derefString(review.TaskID),
+		RunID:       derefString(review.RunID),
+		WorkUnitID:  derefString(review.WorkUnitID),
 		AgentID:     input.AgentID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
@@ -281,7 +299,7 @@ func (s *ReviewService) GetByID(ctx context.Context, id string) (*domain.Review,
 	if err := validation.RequiredUUID(id, "review_id", op); err != nil {
 		return nil, err
 	}
-	review, err := NewRepository(s.db).GetByID(id)
+	review, err := NewRepository(s.db).GetByID(ctx, id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, op, err)
 	}
@@ -293,7 +311,7 @@ func (s *ReviewService) ListByTask(ctx context.Context, taskID string) ([]*domai
 	if err := validation.RequiredUUID(taskID, "task_id", op); err != nil {
 		return nil, err
 	}
-	reviews, err := NewRepository(s.db).ListByTask(taskID)
+	reviews, err := NewRepository(s.db).ListByTask(ctx, taskID)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, op, err)
 	}
@@ -301,7 +319,7 @@ func (s *ReviewService) ListByTask(ctx context.Context, taskID string) ([]*domai
 }
 
 func (s *ReviewService) ListPending(ctx context.Context) ([]*domain.Review, error) {
-	reviews, err := NewRepository(s.db).ListPending()
+	reviews, err := NewRepository(s.db).ListPending(ctx)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.list_pending", err)
 	}
@@ -309,7 +327,7 @@ func (s *ReviewService) ListPending(ctx context.Context) ([]*domain.Review, erro
 }
 
 func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*domain.Review, error) {
-	review, err := NewRepository(tx).GetByID(id)
+	review, err := NewRepository(tx).GetByID(ctx, id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review.require_by_id", err)
 	}
@@ -328,7 +346,7 @@ func isFinalReviewStatus(status domain.ReviewStatus) bool {
 	}
 }
 
-func sqlString(s *string) string {
+func derefString(s *string) string {
 	if s == nil {
 		return ""
 	}

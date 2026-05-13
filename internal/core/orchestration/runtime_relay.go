@@ -1,4 +1,4 @@
-package orchestration
+	package orchestration
 
 import (
 	"context"
@@ -13,17 +13,37 @@ import (
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
-	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
+
+// EventSource abstracts a runtime that produces events.
+type EventSource interface {
+	ReceiveEvent(ctx context.Context) (*domain.EventEnvelope, error)
+}
+
+// SessionService abstracts agent-session operations needed by the relay.
+type SessionService interface {
+	Heartbeat(ctx context.Context, sessionID string, input domain.HeartbeatInput) (*transition.OperationResult[*domain.AgentSession], error)
+	CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*transition.OperationResult[*domain.AgentSession], error)
+	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	AutomaticCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*transition.OperationResult[*domain.AgentSession], *domain.CheckpointSuggestion, error)
+}
+
+// RunService abstracts run operations needed by the relay.
+type RunService interface {
+	Validate(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+	Complete(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+	Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+	Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+}
 
 // RuntimeEventRelay consumes events from a runtime and routes them to the
 // appropriate domain services. It blocks until the runtime completes or fails.
 type RuntimeEventRelay struct {
 	db             *sql.DB
-	sessionService *agentsessionmod.AgentSessionService
-	runService     *runmod.RunService
+	sessionService SessionService
+	runService     RunService
 }
 
 // RelayConfig holds the identifiers needed to route runtime events.
@@ -38,8 +58,8 @@ type RelayConfig struct {
 // NewRuntimeEventRelay creates a relay wired to the given domain services.
 func NewRuntimeEventRelay(
 	db *sql.DB,
-	sessionService *agentsessionmod.AgentSessionService,
-	runService *runmod.RunService,
+	sessionService SessionService,
+	runService RunService,
 ) *RuntimeEventRelay {
 	return &RuntimeEventRelay{
 		db:             db,
@@ -50,7 +70,7 @@ func NewRuntimeEventRelay(
 
 // Run blocks, consuming runtime events until the runtime completes, fails, or
 // the context is cancelled. It returns the final run status and any error.
-func (r *RuntimeEventRelay) Run(ctx context.Context, runtime agent.Runtime, config RelayConfig) (domain.RunStatus, error) {
+func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config RelayConfig) (domain.RunStatus, error) {
 	for {
 		event, err := runtime.ReceiveEvent(ctx)
 		if err != nil {
@@ -146,7 +166,7 @@ func (r *RuntimeEventRelay) handleHeartbeat(ctx context.Context, config RelayCon
 	if err != nil {
 		return err
 	}
-	_, err = r.sessionService.Heartbeat(ctx, config.SessionID, agentsessionmod.HeartbeatInput{
+	_, err = r.sessionService.Heartbeat(ctx, config.SessionID, domain.HeartbeatInput{
 		EventID: event.ID,
 		Payload: payload,
 	})
@@ -155,10 +175,7 @@ func (r *RuntimeEventRelay) handleHeartbeat(ctx context.Context, config RelayCon
 
 func (r *RuntimeEventRelay) handleCheckpoint(ctx context.Context, config RelayConfig, event *domain.EventEnvelope) error {
 	_, err := r.sessionService.CheckpointFromEvent(ctx, config.SessionID, event)
-	if err != nil {
-		return fmt.Errorf("failed to persist checkpoint: %w", err)
-	}
-	return nil
+	return err
 }
 
 func (r *RuntimeEventRelay) handleCompleted(ctx context.Context, config RelayConfig, event *domain.EventEnvelope) error {
@@ -179,8 +196,8 @@ func (r *RuntimeEventRelay) handleFailed(ctx context.Context, config RelayConfig
 	}
 
 	failureReason := "runtime failed"
-	if r, ok := payload["reason"].(string); ok && r != "" {
-		failureReason = r
+	if reason, ok := payload["reason"].(string); ok && reason != "" {
+		failureReason = reason
 	}
 
 	if _, err := r.sessionService.Fail(ctx, config.SessionID, transition.TransitionInput{
@@ -314,7 +331,7 @@ func (r *RuntimeEventRelay) maybeAutoCheckpoint(ctx context.Context, config Rela
 	if value, ok := payload["ledger"].(map[string]interface{}); ok {
 		ledger = value
 	}
-	_, _, err = r.sessionService.AutomaticCheckpoint(ctx, config.SessionID, agentsessionmod.AutoCheckpointInput{
+	_, _, err = r.sessionService.AutomaticCheckpoint(ctx, config.SessionID, domain.AutoCheckpointInput{
 		EventID: uuid.NewSHA1(uuid.NameSpaceURL, []byte("orchestraos:auto_checkpoint:"+config.SessionID+":"+event.ID+":"+string(trigger))).String(),
 		Trigger: trigger,
 		CurrentGoal:    currentGoal,
@@ -342,14 +359,14 @@ func decodePayloadMap(event *domain.EventEnvelope) (map[string]interface{}, erro
 	return payload, nil
 }
 
-func checkpointTriggerForRuntimeEvent(eventType string) (agentsessionmod.CheckpointTrigger, bool) {
+func checkpointTriggerForRuntimeEvent(eventType string) (domain.CheckpointTrigger, bool) {
 	switch eventType {
 	case "agent.tool_requested":
-		return agentsessionmod.CheckpointTriggerToolRequest, true
+		return domain.CheckpointTriggerToolRequest, true
 	case "agent.tool_executed", "tool.completed":
-		return agentsessionmod.CheckpointTriggerToolExecuted, true
+		return domain.CheckpointTriggerToolExecuted, true
 	case "agent.completed":
-		return agentsessionmod.CheckpointTriggerBeforeCompletion, true
+		return domain.CheckpointTriggerBeforeCompletion, true
 	default:
 		return "", false
 	}

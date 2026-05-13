@@ -10,9 +10,11 @@
 //   - Runtime: interface for agent execution (Plan, Execute, etc.)
 //   - GeminiPlanner: LLM-based task decomposition using Gemini
 //   - FakeRuntime: test double with canned responses
+//   - AgentService: domain service for agent CRUD and FindOrCreate
+//   - CreateAgentInput, AgentReader: service inputs and read abstraction
 //
 // # Dependencies
-//   - domain: Task, WorkUnit
+//   - domain: Task, WorkUnit, Agent, AgentRuntimeType
 //
 // # Related Packages
 //   - taskgraph/: uses GeminiPlanner for decomposition
@@ -24,6 +26,7 @@
 //   - GeminiPlanner returns either a fully valid GraphPlan or an error — no partial plans.
 //   - NEVER import internal/modules/* or internal/core/orchestration.
 //   - NEVER mutate tasks, work_units, runs, or agent_sessions tables directly.
+//   - FindOrCreate must be atomic (transaction) and handle unique-violation races.
 //
 // For full contracts, invariants, and boundary rules:
 //   READ: README.md  → purpose, dependencies, file map
