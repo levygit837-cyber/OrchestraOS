@@ -12,7 +12,7 @@ Manages configurable anomaly detection and threshold triggers for runs, agent se
 | `contract.go` | ModuleContract for LLM agents |
 | `models.go` | Domain type aliases |
 | `queries.go` | SQL constants |
-| `repository.go` | Pure CRUD |
+| `repository.go` | Pure CRUD (context-aware queries) |
 | `fetch.go` | `RequireByID` helper |
 | `events.go` | Event type mapping |
 | `service.go` | `TriggerService` with Create, EvaluateRun, EvaluateSession, EvaluateWorkUnit, Resolve, Dismiss, ListActive, ListByRun |

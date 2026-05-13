@@ -259,7 +259,7 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 					if err := json.Unmarshal(event.Payload, &payload); err != nil {
 						t.Fatalf("Failed to decode heartbeat payload: %v", err)
 					}
-					if _, err := sessionService.Heartbeat(ctx, session.ID, agentsessionmod.HeartbeatInput{
+					if _, err := sessionService.Heartbeat(ctx, session.ID, domain.HeartbeatInput{
 						EventID: event.ID,
 						Payload: payload,
 					}); err != nil {

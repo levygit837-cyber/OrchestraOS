@@ -8,9 +8,10 @@
 - Runtime configuration must be validated before `Start` is called.
 - `RuntimeType` values are fixed constants; adding a new runtime requires updating validation.
 - Agent creation emits exactly one `agent.created` domain event.
-- Agent profile and runtime_type are validated against fixed allowed values.
-- `FindOrCreate` reuses existing active agents when available.
+- Agent profile is validated as non-empty snake_case; the database CHECK constraint enforces the allowed set.
+- `FindOrCreate` is atomic (transaction + INSERT) and handles unique-violation races by falling back to SELECT.
 - Agent ID must be a valid UUID.
+- Empty arrays (capabilities, allowed_tools, default_prompt_fragments) are persisted as empty arrays, not NULL.
 
 Violating invariants is considered a **CRITICAL FAILURE**.
 
@@ -44,6 +45,7 @@ Configured → Starting → Running → Stopping → Stopped
 - Agent creation must use transactions (`core/db.BeginTx` / `CommitTx` / `RollbackTx`).
 - Agent creation must emit an event via `transition.AppendServiceEvent`.
 - `GetByID` must validate that the ID is a valid UUID before querying the database.
+- `FindOrCreate` must run inside a transaction and handle `23505` unique-violation by re-selecting the existing row.
 
 ---
 
@@ -88,6 +90,7 @@ Cross-module orchestration belongs ONLY to:
 - No business logic inside repositories — pure CRUD + row-scanning.
 - Use `core/db.BeginTx` / `CommitTx` / `RollbackTx` for transactions.
 - Agent creation is atomic (single transaction with event append).
+- `FindOrCreate` uses a unique index on `(profile, runtime_type)` to prevent race-condition duplicates.
 
 ---
 

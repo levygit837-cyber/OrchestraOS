@@ -8,13 +8,16 @@ package agent
 import (
 	"context"
 	"database/sql"
+	"errors"
 
+	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/lib/pq"
 )
 
 type AgentService struct {
@@ -125,23 +128,50 @@ func (s *AgentService) FindOrCreate(ctx context.Context, profile string, runtime
 		return nil, err
 	}
 
-	// Try to find existing active agent
-	agent, err := NewRepository(s.db).FindByProfileAndRuntime(profile, runtimeType)
+	tx, err := dbcore.BeginTx(ctx, s.db, "agent_service.find_or_create")
+	if err != nil {
+		return nil, err
+	}
+	defer dbcore.RollbackTx(tx)
+
+	repo := NewRepository(tx)
+
+	// Try to find existing active agent first (fast path)
+	agent, err := repo.FindByProfileAndRuntime(profile, runtimeType)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, op, err)
 	}
 	if agent != nil {
+		if err := dbcore.CommitTx(tx, "agent_service.find_or_create"); err != nil {
+			return nil, err
+		}
 		return agent, nil
 	}
 
-	// Create new agent
-	result, err := s.Create(ctx, CreateAgentInput{
+	// Atomically create; if a concurrent call already created it, the unique
+	// constraint will raise a violation that we handle by selecting again.
+	agent = &domain.Agent{
+		ID:          uuid.New().String(),
 		Name:        profile + " agent",
 		Profile:     profile,
 		RuntimeType: runtimeType,
-	})
-	if err != nil {
+	}
+	if err := repo.Create(agent); err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			agent, findErr := repo.FindByProfileAndRuntime(profile, runtimeType)
+			if findErr != nil {
+				return nil, apperrors.Wrap(apperrors.CodePersistence, op, findErr)
+			}
+			if agent != nil {
+				return agent, nil
+			}
+		}
+		return nil, apperrors.Wrap(apperrors.CodePersistence, op, err)
+	}
+
+	if err := dbcore.CommitTx(tx, "agent_service.find_or_create"); err != nil {
 		return nil, err
 	}
-	return result.Value, nil
+	return agent, nil
 }

@@ -305,13 +305,13 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		sessionService := bootstrap.AgentSessionService(db)
-		if _, err := sessionService.Heartbeat(context.Background(), session.ID, agentsessionmod.HeartbeatInput{
+		if _, err := sessionService.Heartbeat(context.Background(), session.ID, domain.HeartbeatInput{
 			Payload: map[string]interface{}{"source": "integration-test"},
 		}); err != nil {
 			t.Fatalf("Failed to persist heartbeat via service: %v", err)
 		}
 
-		if _, err := sessionService.Checkpoint(context.Background(), session.ID, agentsessionmod.CheckpointInput{
+		if _, err := sessionService.Checkpoint(context.Background(), session.ID, domain.CheckpointInput{
 			CheckpointID:   "integration-checkpoint-" + uuid.New().String(),
 			CurrentGoal:    "agent session integration",
 			MinimalSummary: "session state persisted through service checkpoint",

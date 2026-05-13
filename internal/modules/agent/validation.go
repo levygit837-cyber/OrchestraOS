@@ -1,18 +1,12 @@
 package agent
 
 import (
+	"regexp"
+
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
-
-var validProfiles = map[string]bool{
-	"code_worker": true,
-	"docs_writer": true,
-	"reviewer":    true,
-	"debugger":    true,
-	"default":     true,
-}
 
 var validRuntimeTypes = map[domain.AgentRuntimeType]bool{
 	domain.AgentRuntimeTypeFake:     true,
@@ -21,13 +15,16 @@ var validRuntimeTypes = map[domain.AgentRuntimeType]bool{
 	domain.AgentRuntimeTypeExternal: true,
 }
 
-// ValidateProfile checks if the profile is valid
+var profilePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
+
+// ValidateProfile checks if the profile is valid (snake_case, non-empty).
+// The database CHECK constraint enforces the allowed set of values.
 func ValidateProfile(profile string, op string) error {
 	if err := validation.RequiredText(profile, "profile", op); err != nil {
 		return err
 	}
-	if !validProfiles[profile] {
-		return apperrors.New(apperrors.CodeValidation, op, "invalid profile: must be one of code_worker, docs_writer, reviewer, debugger, default")
+	if !profilePattern.MatchString(profile) {
+		return apperrors.New(apperrors.CodeValidation, op, "invalid profile: must be snake_case starting with a letter")
 	}
 	return nil
 }

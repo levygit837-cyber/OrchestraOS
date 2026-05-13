@@ -5,7 +5,7 @@
 // This package contains NO domain logic — only reusable SQL helpers.
 //
 // # Key Types
-//   - DBTX: interface abstracting *sql.DB and *sql.Tx
+//   - DBTX: interface abstracting *sql.DB and *sql.Tx (supports context methods)
 //   - BeginTx, CommitTx, RollbackTx: transaction lifecycle
 //   - EnsureRowsAffected: verifies that an UPDATE/DELETE touched at least one row
 //   - AcquireAdvisoryTxLock: PostgreSQL advisory transaction-level lock

@@ -24,4 +24,14 @@ const (
 		    resolved_at = COALESCE($4, resolved_at),
 		    resolution_action = COALESCE($5, resolution_action)
 		WHERE id = $1`
+
+	QueryExistsActiveSimilar = `
+		SELECT EXISTS(
+			SELECT 1 FROM triggers
+			WHERE status IN ('active', 'triggered')
+			AND trigger_type = $1
+			AND COALESCE(run_id, '') = COALESCE($2, '')
+			AND COALESCE(agent_session_id, '') = COALESCE($3, '')
+			AND COALESCE(anomaly_type, '') = COALESCE($4, '')
+		)`
 )

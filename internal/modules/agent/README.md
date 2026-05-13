@@ -22,8 +22,9 @@ You MUST read it before making any modification.
 
 Critical invariants:
 - Agent creation emits exactly one `agent.created` event.
-- Agent profile and runtime_type are validated against fixed allowed values.
-- `FindOrCreate` reuses existing active agents when available.
+- Agent profile is validated as non-empty snake_case; the database CHECK constraint enforces the allowed set.
+- Agent runtime_type is validated against fixed allowed values.
+- `FindOrCreate` is atomic (transaction + INSERT) and handles unique-violation races by falling back to SELECT.
 - Every runtime must implement the `Runtime` interface.
 - `FakeRuntime` is deterministic and safe for parallel tests.
 - `GeminiPlanner` must return a valid `GraphPlan` or a typed error — no partial results.
@@ -32,7 +33,7 @@ Critical invariants:
 State Flow:
 ```
 AgentService.Create → agent.created event → persisted agent
-AgentService.FindOrCreate → existing agent OR Create → agent.created event
+AgentService.FindOrCreate → SELECT → INSERT (atomic) OR existing agent
 RuntimeConfig → Runtime.Start → Runtime.Execute → Runtime.Stop
 ```
 
@@ -44,7 +45,7 @@ RuntimeConfig → Runtime.Start → Runtime.Execute → Runtime.Stop
 - `models.go` → `Agent`, `RuntimeType`, `AgentStatus` definitions and converters
 - `runtime.go` → `Runtime` interface and `RuntimeConfig`
 - `service.go` → AgentService (Create, GetByID, FindOrCreate) with persistence
-- `repository.go` → agent CRUD and query operations
+- `repository.go` → agent CRUD and query operations (uses context.Context)
 - `queries.go` → SQL constants for agents table
 - `validation.go` → input validation (profile, runtime_type, name)
 - `events.go` → event-type mapping for agent lifecycle

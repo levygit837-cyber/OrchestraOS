@@ -3,15 +3,15 @@ package orchestration
 import (
 	"testing"
 
-	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 func TestCheckpointTriggerForRuntimeEventIncludesDirectToolExecution(t *testing.T) {
-	tests := map[string]agentsessionmod.CheckpointTrigger{
-		"agent.tool_requested": agentsessionmod.CheckpointTriggerToolRequest,
-		"agent.tool_executed":  agentsessionmod.CheckpointTriggerToolExecuted,
-		"tool.completed":       agentsessionmod.CheckpointTriggerToolExecuted,
-		"agent.completed":      agentsessionmod.CheckpointTriggerBeforeCompletion,
+	tests := map[string]domain.CheckpointTrigger{
+		"agent.tool_requested": domain.CheckpointTriggerToolRequest,
+		"agent.tool_executed":  domain.CheckpointTriggerToolExecuted,
+		"tool.completed":       domain.CheckpointTriggerToolExecuted,
+		"agent.completed":      domain.CheckpointTriggerBeforeCompletion,
 	}
 
 	for eventType, want := range tests {
