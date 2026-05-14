@@ -82,7 +82,9 @@ O limite inicial de paralelismo e 1 agente por vez. Paralelismo real (2-5 agente
 
 ### Onde implementar
 
-O `OrchestratorService` deve ser implementado em `internal/services/orchestrator_service.go`, seguindo o padrao dos demais servicos de dominio (recebe `*sql.DB`, usa transacoes, emite eventos).
+O `OrchestratorService` deve ser implementado em `internal/modules/orchestrator/service.go`, seguindo o padrao dos demais servicos de dominio (recebe `*sql.DB`, usa transacoes, emite eventos).
+
+**Nota de implementação atual:** Conforme ADR 0022 (Vertical Slice Architecture), o OrchestratorService foi implementado em `internal/modules/orchestrator/` com adapters via `internal/bootstrap/services.go` para conectar outros módulos verticais sem dependências diretas entre eles.
 
 ## Consequencias
 

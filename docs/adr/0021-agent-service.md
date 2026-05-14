@@ -60,7 +60,7 @@ No primeiro corte, cada work unit cria um agente novo via `FindOrCreate`. Reutil
 
 ### Onde implementar
 
-O `AgentService` deve ser implementado em `internal/services/agent_service.go`, seguindo o padrao dos demais servicos (recebe `*sql.DB`, usa transacoes, emite eventos).
+O `AgentService` deve ser implementado em `internal/modules/agent/service.go`, seguindo o padrao dos demais servicos de dominio (recebe `*sql.DB`, usa transacoes, emite eventos).
 
 ## Consequencias
 

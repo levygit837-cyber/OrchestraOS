@@ -1,5 +1,9 @@
 # ADR 0017: Servicos de Dominio para Dependencias Operacionais
 
+**Status:** ⚠️ **DEPRECATED** - Ver ADR 0024
+
+Este ADR foi deprecado em favor da ADR 0022 (LLM-Optimized Module Architecture). A camada `internal/services/` descrita neste documento não existe mais. Os serviços de domínio foram migrados para módulos verticais em `internal/modules/*/service.go` conforme ADR 0022.
+
 ## Contexto
 
 O OrchestraOS ja possui contratos, persistencia inicial e Event Store para entidades M0 como `Task`, `Run`, `WorkUnit`, `AgentSession` e `Event`.

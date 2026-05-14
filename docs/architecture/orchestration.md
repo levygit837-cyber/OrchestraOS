@@ -178,15 +178,17 @@ Persiste eventos de task, run, agente, ferramentas, mensagens, checkpoints, arte
 
 ### Domain Services
 
-`internal/services` e a fronteira de comando para operacoes que alteram estado operacional.
+`internal/modules/*/service.go` é a fronteira de comando para operações que alteram estado operacional. Conforme ADR 0022 (Vertical Slice Architecture), cada entidade de domínio tem seu próprio módulo vertical autônomo.
 
-- `TaskService`, `WorkUnitService`, `RunService` e `AgentSessionService` validam entrada, aplicam state machines, gravam eventos canonicos e atualizam projecoes relacionais na mesma transacao.
-- `EventService` envolve o Event Store para append validado, idempotencia por `event_id`, compatibilidade de referencias, consultas e replay estrito.
+- `TaskService` (`internal/modules/task/service.go`), `WorkUnitService` (`internal/modules/workunit/service.go`), `RunService` (`internal/modules/run/service.go`) e `AgentSessionService` (`internal/modules/agentsession/service.go`) validam entrada, aplicam state machines, gravam eventos canonicos e atualizam projecoes relacionais na mesma transação.
+- `EventService` (`internal/core/event/service.go`) envolve o Event Store para append validado, idempotencia por `event_id`, compatibilidade de referencias, consultas e replay estrito.
 - `WorkUnitService` serializa a checagem de `owned_paths` por task durante agendamento/inicio, evitando que runs concorrentes ativem work units com paths conflitantes.
 - `RunService.Retry` exige `event_id` como chave de idempotencia, aplica timeout/backoff da politica de retry e registra a politica no evento da nova tentativa.
-- `AgentSessionService` e a unidade canonica de checkpoints.
-- CLI, TUI, runtimes de agente e conectores futuros devem chamar servicos quando houver regra de dominio, transicao de estado, retry, timeout, cancelamento ou auditoria obrigatoria.
+- `AgentSessionService` é a unidade canonica de checkpoints.
+- CLI, TUI, runtimes de agente e conectores futuros devem chamar serviços quando houver regra de dominio, transicao de estado, retry, timeout, cancelamento ou auditoria obrigatoria.
 - Repositorios continuam como primitivas de leitura e escrita, mas nao decidem transicoes, retry, timeout, conclusao ou compensacao.
+
+**Nota sobre arquitetura:** Conforme ADR 0022, módulos verticais em `internal/modules/` não se importam diretamente. Comunicação cross-module ocorre via `internal/core/orchestration/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
 
 ### Agent Task Ledger
 

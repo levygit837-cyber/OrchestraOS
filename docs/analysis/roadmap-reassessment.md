@@ -132,7 +132,7 @@ Manter mas marcar como **incompleto sem integração**. O runtime existe mas é 
 
 ### Fase 12 — Arquitetura LLM-Optimized (ADR 0022)
 - Migração completa para módulos verticais isolados
-- **Pós-MVP**
+- **NOTA: ADR 0022 já está implementada no código atual. Esta fase representa refinamentos e otimizações adicionais.**
 
 ---
 
@@ -143,7 +143,7 @@ Manter mas marcar como **incompleto sem integração**. O runtime existe mas é 
 | M4.5 como "próximo passo" | Era um mini-épico de integração, mas o roadmap o tratava como trivial. | Eleva M4.5 a **Fase 4 obrigatória** com critérios de aceite rígidos. |
 | M6 (WebSocket) antes de M7 (Sandbox) | WebSocket sem runtime integrado não transmite nada útil. | M6 deslocado para **Fase 8**, após Sandbox e Policy. |
 | M9 (Codex Runtime) após M10/M11 | Runtime real deveria vir antes de Review/Merge para gerar diffs reais. | M9 deslocado para **Fase 8**, junto com WebSocket. |
-| ADR 0022 como P1 no backlog | Migração arquitetural pesada durante construção do MVP. | Rebaixado para **Fase 12 (pós-MVP)**. |
+| ADR 0022 como P1 no backlog | Migração arquitetural pesada durante construção do MVP. | **JÁ IMPLEMENTADA** no código atual. Fase 12 representa refinamentos adicionais. |
 | Sem fase de testes E2E explícita | Testes existem isolados, mas não há validação do fluxo completo. | Cada fase agora exige **teste E2E** como critério de aceite. |
 
 ---

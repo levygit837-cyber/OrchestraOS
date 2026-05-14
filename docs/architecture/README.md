@@ -1,12 +1,27 @@
 # Arquitetura do OrchestraOS
 
-Este documento registra a arquitetura inicial do OrchestraOS a partir das decisoes tomadas em 2026-05-03.
+Este documento registra a arquitetura do OrchestraOS, refletindo a arquitetura de **Módulos Verticais (Vertical Slice Architecture)** conforme ADR 0022.
 
 ## Contexto
 
-O OrchestraOS sera um sistema de orquestracao de agentes capaz de executar multiplas tasks em paralelo. Cada agente deve trabalhar com contexto isolado, sandbox proprio e worktree separado por task.
+O OrchestraOS é um sistema de orquestração de agentes capaz de executar múltiplas tasks em paralelo. Cada agente trabalha com contexto isolado, sandbox próprio e worktree separada por task.
 
-O produto deve nascer local-first para desenvolvimento, mas com desenho pronto para rodar em servidor. A interface inicial sera CLI fina, com GitHub como superficie externa principal. O primeiro runtime de agente sera Codex/CLI em sandbox.
+O produto é local-first para desenvolvimento, com desenho pronto para rodar em servidor. A interface inicial é CLI fina, com GitHub como superfície externa principal. O primeiro runtime de agente é Codex/CLI em sandbox.
+
+## Arquitetura de Módulos Verticais
+
+Conforme ADR 0022 (LLM-Optimized Module Architecture), o OrchestraOS adota uma arquitetura de **Módulos Verticais** para otimizar o sistema para operação por agentes de IA (LLMs). Cada entidade de domínio tem seu próprio módulo autônomo em `internal/modules/<entity>/`.
+
+### Regra de Ouro
+
+**Módulos verticais NUNCA importam outros módulos diretamente.** Comunicação cross-module ocorre via `internal/core/orchestration/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
+
+### Estrutura
+
+- **Módulos Verticais (`internal/modules/`)**: Cada módulo representa uma entidade de domínio (agent, task, run, workunit, etc.) com sua própria lógica, repositório, validação e contratos.
+- **Core (`internal/core/`)**: Componentes compartilhados usados por todos os módulos (apperrors, db, eventstore, orchestration, statemachine, validation).
+- **Domain (`internal/domain/`)**: Tipos compartilhados entre módulos que não pertencem a um único módulo vertical.
+- **Bootstrap (`internal/bootstrap/`)**: Injeção de dependências e wiring de serviços com adapters para conectar módulos sem dependências diretas.
 
 ## Decisao Arquitetural
 
@@ -113,7 +128,10 @@ flowchart TD
 - [ADR 0014: Persistencia M0, CLI minima e testes](../adr/0014-m0-cli-persistence-and-integration-tests.md)
 - [ADR 0015: TUI como interface local primaria](../adr/0015-tui-as-primary-local-interface.md)
 - [ADR 0016: State Machine event-sourced](../adr/0016-event-sourced-state-machine.md)
+- [ADR 0022: LLM-Optimized Module Architecture](../adr/0022-llm-optimized-module-architecture.md)
 - [ADR 0023: Hybrid Intelligent Orchestrator Architecture](../adr/0023-hybrid-intelligent-orchestrator.md)
+- [ADR 0024: Deprecation of ADR 0017 - Domain Services Layer](../adr/0024-deprecation-of-adr-0017.md)
+- [Migration to Vertical Slices](migration-vertical-slices.md)
 
 ## Referencias Tecnicas
 

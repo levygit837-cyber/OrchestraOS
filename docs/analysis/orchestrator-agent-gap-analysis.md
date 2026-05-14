@@ -393,17 +393,17 @@ Para criarmos testes que validem o fluxo ideal usando inferência real (Gemini),
 
 | # | Necessidade | Onde implementar | Complexidade |
 |---|-------------|------------------|--------------|
-| 1 | **Planner LLM-based** (ou stub que simule decomposição inteligente) | `internal/services/task_graph_service.go` (nova strategy) ou serviço separado | Média |
-| 2 | **Atribuição de perfil dinâmico** nas work units | `internal/services/task_graph_service.go` | Baixa |
-| 3 | **AgentService** (registro de agentes) | `internal/services/agent_service.go` + migration | Baixa |
-| 4 | **OrchestratorService** (loop que cria runs/sessions automaticamente) | `internal/orchestration/orchestrator.go` | Alta |
+| 1 | **Planner LLM-based** (ou stub que simule decomposição inteligente) | `internal/modules/taskgraph/service.go` (nova strategy) ou serviço separado | Média |
+| 2 | **Atribuição de perfil dinâmico** nas work units | `internal/modules/taskgraph/service.go` | Baixa |
+| 3 | **AgentService** (registro de agentes) | `internal/modules/agent/service.go` + migration | Baixa |
+| 4 | **OrchestratorService** (loop que cria runs/sessions automaticamente) | `internal/modules/orchestrator/service.go` | Alta |
 | 5 | **Teste E2E: Task → TaskGraph → WorkUnits → Prompt → GeminiRuntime → Complete** | `tests/integration/gemini_orchestration_test.go` | Alta |
 
 ### Prioridade P1 (Melhora significativamente os testes)
 
 | # | Necessidade | Onde implementar | Complexidade |
 |---|-------------|------------------|--------------|
-| 6 | **Policy Engine mínimo** para auto-aprovação de tools seguras | `internal/services/policy_service.go` | Média |
+| 6 | **Policy Engine mínimo** para auto-aprovação de tools seguras | `internal/modules/policy/service.go` (futuro) | Média |
 | 7 | **Sandbox Manager mínimo** (worktree por work unit) | `internal/sandbox/` (novo package) | Média |
 | 8 | **Prompt do perfil "orchestrator"** no catálogo | `internal/prompting/catalog/fragments/` | Baixa |
 | 9 | **Toolset do orquestrador** | `internal/prompting/toolset.go` | Baixa |
@@ -499,8 +499,8 @@ A construção do Orchestrator automático é um projeto maior (múltiplas miles
 
 - `docs/canvas/project-canvas.md` — Visão e premissas do projeto
 - `docs/implementation/roadmap.md` — Milestones planejadas
-- `internal/services/task_graph_service.go` — Decomposição atual (heurística)
-- `internal/services/prompt_service.go` — Montagem de prompts
+- `internal/modules/taskgraph/service.go` — Decomposição atual (heurística)
+- `internal/modules/prompt/service.go` — Montagem de prompts
 - `internal/agent/gemini_runtime.go` — Runtime de inferência
 - `tests/integration/services_test.go` — Testes de integração existentes
 - `tests/integration/fake_runtime_test.go` — Testes com FakeRuntime
