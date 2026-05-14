@@ -6,7 +6,7 @@ O OrchestraOS possui dois componentes de inferencia LLM implementados que operam
 
 - `GeminiRuntime` (`internal/agent/gemini_runtime.go`): executa work units individuais via inference loop multi-turn com function calling. Emite eventos como `agent.started`, `agent.heartbeat`, `agent.checkpoint_reached`, `agent.tool_requested` e `agent.completed` em um canal interno.
 
-- `GeminiPlanner` (`internal/services/gemini_planner.go`): decompoe tasks em grafos de work units usando a API Gemini com structured generation. Implementa a interface `Planner` e produz `GraphPlan` validado.
+- `GeminiPlanner` (`internal/modules/taskgraph/gemini_planner.go`): decompoe tasks em grafos de work units usando a API Gemini com structured generation. Implementa a interface `Planner` e produz `GraphPlan` validado.
 
 O problema central e que nenhum dos dois esta integrado ao fluxo operacional:
 

@@ -147,7 +147,7 @@ UserMessage/CLI
      - `agent.completed` → `RunService.Complete()`
      - `agent.failed` → `RunService.Fail()`
      - `agent.tool_requested` → `EventService.Append()` (e futuramente PolicyEngine)
-   - Localização: `internal/services/runtime_relay.go` ou `internal/orchestration/runtime_relay.go`
+   - Localização: `internal/core/orchestration/runtime_event_relay.go`
    - Deve rodar em goroutine durante a vida da run.
 
 2. **Atualizar CLI `run start`**
@@ -243,7 +243,7 @@ UserMessage/CLI
         g. Aguarda conclusão ou falha
      5. Quando todas as WUs completas, `TaskService.Complete()`
    - Primeiro corte: execução **sequencial** (1 work unit por vez).
-   - Localização: `internal/services/orchestrator_service.go`
+   - Localização: `internal/modules/orchestrator/service.go`
 
 4. **CLI `task run`**
    - Flags: `--task-id`, `--runtime`, `--planner`, `--max-steps`

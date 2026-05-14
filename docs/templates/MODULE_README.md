@@ -56,10 +56,10 @@ State Flow:
 - {{ALLOWED_MODULE}}
 
 Forbidden:
-- Direct imports of other modules' service logic
+- Direct imports of other modules' service logic (ADR 0022: modules never import other modules directly)
 - Cross-module mutations outside `core/orchestration`
-- `internal/services` (removed)
-- `internal/repository` (removed)
+- `internal/services` (replaced by `internal/modules/*`)
+- `internal/repository` (removed - each module has its own repository)
 
 ---
 

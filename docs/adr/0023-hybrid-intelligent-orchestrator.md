@@ -51,7 +51,7 @@ Um **Agente Orquestrador Inteligente** (`Intelligent Orchestrator Agent`) que at
 O `OrchestratorService` existente continua como **control plane central e gatekeeper**.
 
 **Caracteristicas:**
-- Servico Go deterministico em `internal/services/orchestrator_service.go`.
+- Servico Go deterministico em `internal/modules/orchestrator/service.go`.
 - Unica entidade com acesso direto aos servicos de dominio e ao Event Store.
 - Responsavel por validar, persistir e executar TODAS as operacoes.
 - Reage a eventos estruturados do sistema e a comandos sugeridos pelo Agente Inteligente.

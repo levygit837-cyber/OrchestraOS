@@ -422,7 +422,7 @@ type TriggerConfig struct {
 A Observation API deve ser implementada como metodo do `OrchestratorService`:
 
 ```go
-// internal/services/orchestrator_service.go
+// internal/modules/orchestrator/service.go
 
 func (s *OrchestratorService) GetObservation(ctx context.Context, req ObservationRequest) (*Observation, error) {
     // 1. Validar permissao da sessao
