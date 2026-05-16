@@ -2,8 +2,6 @@ package task
 
 import (
 	"time"
-
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 type Status string
@@ -52,42 +50,4 @@ type Task struct {
 	AcceptanceCriteria   []string  `json:"acceptance_criteria"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
-}
-
-// ToDomain converts a local Task to the legacy domain.Task for external consumers.
-func ToDomain(t *Task) *domain.Task {
-	if t == nil {
-		return nil
-	}
-	return &domain.Task{
-		ID:                   t.ID,
-		Title:                t.Title,
-		Description:          t.Description,
-		Status:               domain.TaskStatus(t.Status),
-		Priority:             domain.Priority(t.Priority),
-		RiskLevel:            domain.RiskLevel(t.RiskLevel),
-		CreatedFromMessageID: t.CreatedFromMessageID,
-		AcceptanceCriteria:   t.AcceptanceCriteria,
-		CreatedAt:            t.CreatedAt,
-		UpdatedAt:            t.UpdatedAt,
-	}
-}
-
-// FromDomain converts a legacy domain.Task to the local Task.
-func FromDomain(t *domain.Task) *Task {
-	if t == nil {
-		return nil
-	}
-	return &Task{
-		ID:                   t.ID,
-		Title:                t.Title,
-		Description:          t.Description,
-		Status:               Status(t.Status),
-		Priority:             Priority(t.Priority),
-		RiskLevel:            RiskLevel(t.RiskLevel),
-		CreatedFromMessageID: t.CreatedFromMessageID,
-		AcceptanceCriteria:   t.AcceptanceCriteria,
-		CreatedAt:            t.CreatedAt,
-		UpdatedAt:            t.UpdatedAt,
-	}
 }

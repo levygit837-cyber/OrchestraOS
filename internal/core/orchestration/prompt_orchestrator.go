@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/bridge"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
@@ -82,7 +83,7 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
 		Run:                    run,
 		WorkUnit:               wu,
-		Task:                   taskmod.ToDomain(task),
+		Task:                   bridge.TaskToDomain(task),
 		Session:                session,
 		PromptSnapshotID:       input.PromptSnapshotID,
 		ToolsetSnapshotID:      input.ToolsetSnapshotID,

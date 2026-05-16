@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/bridge"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
@@ -40,7 +41,7 @@ func (a *taskReaderAdapter) GetByID(id string) (*domain.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	return taskmod.ToDomain(t), nil
+	return bridge.TaskToDomain(t), nil
 }
 
 // RunService creates a RunService with standard repository factories.
@@ -176,7 +177,7 @@ func (a *taskAdapter) GetByID(ctx context.Context, id string) (*domain.Task, err
 	if err != nil {
 		return nil, err
 	}
-	return taskmod.ToDomain(t), nil
+	return bridge.TaskToDomain(t), nil
 }
 func (a *taskAdapter) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	res, err := a.svc.Complete(ctx, taskID, input)
@@ -184,7 +185,7 @@ func (a *taskAdapter) Complete(ctx context.Context, taskID string, input transit
 		return nil, err
 	}
 	return &transition.OperationResult[*domain.Task]{
-		Value:     taskmod.ToDomain(res.Value),
+		Value:     bridge.TaskToDomain(res.Value),
 		Event:     res.Event,
 		Duplicate: res.Duplicate,
 	}, nil
@@ -195,7 +196,7 @@ func (a *taskAdapter) Fail(ctx context.Context, taskID string, input transition.
 		return nil, err
 	}
 	return &transition.OperationResult[*domain.Task]{
-		Value:     taskmod.ToDomain(res.Value),
+		Value:     bridge.TaskToDomain(res.Value),
 		Event:     res.Event,
 		Duplicate: res.Duplicate,
 	}, nil

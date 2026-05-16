@@ -14,6 +14,7 @@ import (
 var allowedOrchestrationImporters = []string{
 	"internal/core/orchestration",
 	"internal/bootstrap",
+	"internal/bridge",
 	"cmd",
 }
 
