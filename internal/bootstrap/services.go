@@ -31,6 +31,8 @@ func TaskService(db *sql.DB) *taskmod.TaskService {
 }
 
 // taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.
+// TODO: remove when orchestrator.TaskServiceReader, run.TaskReader, workunit.TaskReader
+// and prompt.PrepareAndPersistInput.Task use *task.Task directly.
 func taskToDomain(t *taskmod.Task) *domain.Task {
 	if t == nil {
 		return nil
@@ -50,6 +52,7 @@ func taskToDomain(t *taskmod.Task) *domain.Task {
 }
 
 // taskReaderAdapter wraps task.Repository to return domain.Task for cross-module compatibility.
+// TODO: remove when all TaskReader interfaces use *task.Task directly.
 type taskReaderAdapter struct {
 	repo *taskmod.Repository
 }
@@ -184,6 +187,8 @@ func OrchestratorService(db *sql.DB) *orchestratormod.Service {
 
 // --- Adapters (bridge module types → orchestrator-local interfaces per ADR 0022) ---
 
+// taskAdapter wraps task.TaskService to implement orchestrator.TaskServiceReader with domain.Task.
+// TODO: remove when orchestrator.TaskServiceReader uses *task.Task directly.
 type taskAdapter struct {
 	db  *sql.DB
 	svc *taskmod.TaskService
