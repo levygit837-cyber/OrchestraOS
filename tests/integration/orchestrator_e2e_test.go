@@ -23,8 +23,8 @@ func TestOrchestratorServiceStub_Interface(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Orchestrator Interface Test",
 		Description:        "Validate OrchestratorService exists and is callable",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"orchestrator service is reachable"},
 	})
 	if err != nil {
@@ -75,8 +75,8 @@ func TestRunStart_UsesAgentServiceFindOrCreate(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Agent FindOrCreate Test",
 		Description:        "Validate that run start uses AgentService.FindOrCreate",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"agent is registered"},
 	})
 	if err != nil {
@@ -146,8 +146,8 @@ func TestOrchestratorE2E_FullFlow(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "E2E Orchestrated Task",
 		Description:        "Full flow via OrchestratorService",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"WU A implements X", "WU B validates X"},
 	})
 	if err != nil {
@@ -180,7 +180,7 @@ func TestOrchestratorE2E_FullFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get task: %v", err)
 	}
-	if completedTask.Status != domain.TaskStatusCompleted {
+	if completedTask.Status != taskmod.StatusCompleted {
 		t.Fatalf("expected task status completed, got %s", completedTask.Status)
 	}
 

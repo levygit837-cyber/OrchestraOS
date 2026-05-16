@@ -43,8 +43,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "E2E Integration Test Task",
 		Description: "Validate full orchestration flow",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelLow,
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"Work unit can be created",
 			"Runtime can execute",
@@ -275,8 +275,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "E2E Gemini Integration Test",
 		Description: "Validate Gemini runtime through full orchestration flow",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelLow,
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"Agent can process a simple request",
 			"Runtime emits completion event",

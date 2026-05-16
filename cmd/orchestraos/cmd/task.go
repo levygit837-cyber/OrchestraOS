@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 	"github.com/spf13/cobra"
@@ -31,8 +30,8 @@ var taskCreateCmd = &cobra.Command{
 		result, err := service.Create(cmd.Context(), taskmod.CreateTaskInput{
 			Title:              title,
 			Description:        description,
-			Priority:           domain.Priority(priority),
-			RiskLevel:          domain.RiskLevel(riskLevel),
+			Priority:           taskmod.Priority(priority),
+			RiskLevel:          taskmod.RiskLevel(riskLevel),
 			AcceptanceCriteria: acceptanceCriteria,
 		})
 		if err != nil {

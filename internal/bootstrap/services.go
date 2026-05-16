@@ -30,10 +30,23 @@ func TaskService(db *sql.DB) *taskmod.TaskService {
 	)
 }
 
+// taskReaderAdapter wraps task.Repository to return domain.Task for cross-module compatibility.
+type taskReaderAdapter struct {
+	repo *taskmod.Repository
+}
+
+func (a *taskReaderAdapter) GetByID(id string) (*domain.Task, error) {
+	t, err := a.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return taskmod.ToDomain(t), nil
+}
+
 // RunService creates a RunService with standard repository factories.
 func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
-		func(tx *sql.Tx) runmod.TaskReader { return taskmod.NewRepository(tx) },
+		func(tx *sql.Tx) runmod.TaskReader { return &taskReaderAdapter{repo: taskmod.NewRepository(tx)} },
 		func(tx *sql.Tx) runmod.WorkUnitReader { return workunitmod.NewRepository(tx) },
 		func(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error {
 			return orchestration.TransitionRunWithWorkUnit(ctx, tx, run, target, input)
@@ -44,7 +57,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 // WorkUnitService creates a WorkUnitService with standard repository factories.
 func WorkUnitService(db *sql.DB) *workunitmod.WorkUnitService {
 	return workunitmod.NewWorkUnitService(db,
-		func(tx *sql.Tx) workunitmod.TaskReader { return taskmod.NewRepository(tx) },
+		func(tx *sql.Tx) workunitmod.TaskReader { return &taskReaderAdapter{repo: taskmod.NewRepository(tx)} },
 		func(tx *sql.Tx) workunitmod.TaskGraphManager { return taskgraphmod.NewRepository(tx) },
 	)
 }
@@ -64,7 +77,9 @@ func AgentService(db *sql.DB) *agentmod.AgentService {
 // TaskGraphService creates a TaskGraphService with standard repository factories.
 func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
 	return taskgraphmod.NewTaskGraphService(db,
-		func(executor dbcore.DBTX) taskgraphmod.TaskReader { return taskmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) taskgraphmod.TaskReader {
+			return &taskReaderAdapter{repo: taskmod.NewRepository(executor)}
+		},
 		func(executor dbcore.DBTX) taskgraphmod.WorkUnitCreator { return workunitmod.NewRepository(executor) },
 		func(executor dbcore.DBTX) taskgraphmod.WorkUnitLister { return workunitmod.NewRepository(executor) },
 	)
@@ -157,13 +172,33 @@ type taskAdapter struct {
 
 func (a *taskAdapter) GetByID(ctx context.Context, id string) (*domain.Task, error) {
 	_ = ctx
-	return taskmod.NewRepository(a.db).GetByID(id)
+	t, err := taskmod.NewRepository(a.db).GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return taskmod.ToDomain(t), nil
 }
 func (a *taskAdapter) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
-	return a.svc.Complete(ctx, taskID, input)
+	res, err := a.svc.Complete(ctx, taskID, input)
+	if err != nil {
+		return nil, err
+	}
+	return &transition.OperationResult[*domain.Task]{
+		Value:     taskmod.ToDomain(res.Value),
+		Event:     res.Event,
+		Duplicate: res.Duplicate,
+	}, nil
 }
 func (a *taskAdapter) Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
-	return a.svc.Fail(ctx, taskID, input)
+	res, err := a.svc.Fail(ctx, taskID, input)
+	if err != nil {
+		return nil, err
+	}
+	return &transition.OperationResult[*domain.Task]{
+		Value:     taskmod.ToDomain(res.Value),
+		Event:     res.Event,
+		Duplicate: res.Duplicate,
+	}, nil
 }
 
 type taskGraphAdapter struct {

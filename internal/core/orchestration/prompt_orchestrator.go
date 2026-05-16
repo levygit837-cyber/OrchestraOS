@@ -80,13 +80,13 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 	}
 
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
-		Run:                     run,
-		WorkUnit:                wu,
-		Task:                    task,
-		Session:                 session,
-		PromptSnapshotID:        input.PromptSnapshotID,
-		ToolsetSnapshotID:       input.ToolsetSnapshotID,
-		PromptSnapshotEventID:   input.PromptSnapshotEventID,
-		ToolsetSnapshotEventID:  input.ToolsetSnapshotEventID,
+		Run:                    run,
+		WorkUnit:               wu,
+		Task:                   taskmod.ToDomain(task),
+		Session:                session,
+		PromptSnapshotID:       input.PromptSnapshotID,
+		ToolsetSnapshotID:      input.ToolsetSnapshotID,
+		PromptSnapshotEventID:  input.PromptSnapshotEventID,
+		ToolsetSnapshotEventID: input.ToolsetSnapshotEventID,
 	})
 }

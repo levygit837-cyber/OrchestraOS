@@ -158,11 +158,11 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 
 	t.Run("full integration flow", func(t *testing.T) {
 		// 1. Create task
-		task := &domain.Task{
+		task := &taskmod.Task{
 			ID:        uuid.New().String(),
 			Title:     "Integration Test Task",
-			Status:    domain.TaskStatusCreated,
-			Priority:  domain.PriorityP1,
+			Status:    taskmod.StatusCreated,
+			Priority:  taskmod.PriorityP1,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}

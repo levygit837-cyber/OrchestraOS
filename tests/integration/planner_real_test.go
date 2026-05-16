@@ -124,8 +124,8 @@ func TestTaskGraphService_Decompose_RealLLM(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "Implementar sistema de cache distribuído",
 		Description: "Criar um sistema de cache distribuído com Redis, suportando TTL, invalidação por padrão e fallback para banco de dados. Deve incluir testes de integração e documentação.",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelMedium,
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelMedium,
 		AcceptanceCriteria: []string{
 			"Cache hit retorna dados em menos de 10ms",
 			"Cache miss busca do banco e popula o cache automaticamente",

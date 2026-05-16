@@ -134,8 +134,8 @@ func TestTriggerServiceEvaluateRun(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Trigger evaluate run",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -211,8 +211,8 @@ func TestTriggerServiceEvaluateSession(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Trigger evaluate session",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -272,8 +272,8 @@ func TestTriggerServiceEvaluateWorkUnit(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Trigger evaluate work unit",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)

@@ -40,8 +40,8 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Service lifecycle",
 		Description:        "Validate service orchestration",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"run completes with validation evidence"},
 	})
 	if err != nil {
@@ -167,8 +167,8 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "Prompt composition",
 		Description: "Build prompt snapshots for a run.",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelLow,
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"PromptSnapshot persisted",
 			"ToolsetSnapshot persisted",
@@ -368,8 +368,8 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Cascade cancel",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -425,8 +425,8 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Task graph decomposition",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"Criar schema do task graph",
 			"Criar repository do task graph",
@@ -527,8 +527,8 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 
 	otherTask, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Other task",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create other task: %v", err)
@@ -557,8 +557,8 @@ func TestEventServiceIdempotencyAndConflict(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Event service idempotency",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -614,8 +614,8 @@ func TestEventServiceConcurrentIdempotencyConflict(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Concurrent event idempotency",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -688,8 +688,8 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Parallel services",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -784,8 +784,8 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Concurrent path conflict",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -852,8 +852,8 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Replay starting session",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -900,8 +900,8 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Automatic checkpoints",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -1019,8 +1019,8 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Retry policy",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -1270,8 +1270,8 @@ func TestAgentSessionServiceAgentIDValidation(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Test Task",
 		Description:        "Test agent ID validation",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"agent ID is validated"},
 	})
 	if err != nil {

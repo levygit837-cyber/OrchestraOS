@@ -1,16 +1,12 @@
 package task
 
-import (
-	"testing"
-
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-)
+import "testing"
 
 func TestValidateCreateTaskInputRejectsBlankTitle(t *testing.T) {
 	if err := ValidateCreateTaskInput(CreateTaskInput{
 		Title:     "   ",
-		Priority:  domain.Priority("P9"),
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  Priority("P9"),
+		RiskLevel: RiskLevelLow,
 	}); err == nil {
 		t.Fatal("expected invalid input for blank title")
 	}
@@ -19,8 +15,8 @@ func TestValidateCreateTaskInputRejectsBlankTitle(t *testing.T) {
 func TestValidateCreateTaskInputRejectsInvalidPriority(t *testing.T) {
 	if err := ValidateCreateTaskInput(CreateTaskInput{
 		Title:     "Valid",
-		Priority:  domain.Priority("P9"),
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  Priority("P9"),
+		RiskLevel: RiskLevelLow,
 	}); err == nil {
 		t.Fatal("expected invalid priority to be rejected")
 	}

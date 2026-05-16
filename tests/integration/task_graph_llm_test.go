@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
@@ -23,8 +22,8 @@ func TestTaskGraphService_Decompose_Heuristic_Default(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Heuristic decomposition test",
 		Description:        "Test default heuristic decomposition",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"Criterion 1", "Criterion 2", "Criterion 3"},
 	})
 	if err != nil {
@@ -69,8 +68,8 @@ func TestTaskGraphService_Decompose_LLM_FallbackToHeuristic(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "LLM fallback test",
 		Description:        "Test LLM fallback when API key is missing",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"Criterion 1", "Criterion 2"},
 	})
 	if err != nil {
@@ -105,8 +104,8 @@ func TestTaskGraphService_Decompose_UnknownStrategy(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Unknown strategy test",
 		Description:        "Test fallback on unknown strategy",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"Criterion 1", "Criterion 2"},
 	})
 	if err != nil {
@@ -137,8 +136,8 @@ func TestTaskGraphService_Decompose_ReplaceActive(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Replace active graph test",
 		Description:        "Test replacing active graph",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"A", "B", "C"},
 	})
 	if err != nil {
@@ -188,8 +187,8 @@ func TestTaskGraphService_Decompose_Idempotency(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Idempotency test",
 		Description:        "Test idempotent decomposition",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"X", "Y"},
 	})
 	if err != nil {

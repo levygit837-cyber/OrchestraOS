@@ -17,7 +17,7 @@
 //   - core/orchestration: TransitionInput, OperationResult, state transitions
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
-//   - domain: Task, TaskStatus, Priority, RiskLevel
+//   - domain: EventEnvelope (event types only)
 //
 // # Related Packages
 //   - workunit/: tasks create work units via decomposition
@@ -32,8 +32,9 @@
 //   - NEVER write SQL outside queries.go.
 //
 // For full contracts, invariants, state machine, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, state machine, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, state machine, boundary rules
 //
 // Quick code reference: see ModuleContract in contract.go
 package task

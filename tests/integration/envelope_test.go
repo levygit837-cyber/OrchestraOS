@@ -303,13 +303,13 @@ func createTestTaskWithID(t *testing.T, db *sql.DB, id string) string {
 	t.Helper()
 
 	repo := taskmod.NewRepository(db)
-	task := &domain.Task{
+	task := &taskmod.Task{
 		ID:          id,
 		Title:       "Integration Test Task",
 		Description: "Created by integration test",
-		Status:      domain.TaskStatusCreated,
-		Priority:    domain.PriorityP2,
-		RiskLevel:   domain.RiskLevelLow,
+		Status:      taskmod.StatusCreated,
+		Priority:    taskmod.PriorityP2,
+		RiskLevel:   taskmod.RiskLevelLow,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}

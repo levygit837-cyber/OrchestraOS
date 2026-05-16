@@ -28,13 +28,13 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 	eventStore, _ := eventstore.NewStore(db)
 
 	t.Run("create task generates event", func(t *testing.T) {
-		task := &domain.Task{
+		task := &taskmod.Task{
 			ID:          uuid.New().String(),
 			Title:       "Test Task",
 			Description: "Test Description",
-			Status:      domain.TaskStatusCreated,
-			Priority:    domain.PriorityP1,
-			RiskLevel:   domain.RiskLevelLow,
+			Status:      taskmod.StatusCreated,
+			Priority:    taskmod.PriorityP1,
+			RiskLevel:   taskmod.RiskLevelLow,
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		}
@@ -72,13 +72,13 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 
 	t.Run("task with multiple work units", func(t *testing.T) {
 		// Create task
-		task := &domain.Task{
+		task := &taskmod.Task{
 			ID:          uuid.New().String(),
 			Title:       "Task with WorkUnits",
 			Description: "Testing work units",
-			Status:      domain.TaskStatusCreated,
-			Priority:    domain.PriorityP2,
-			RiskLevel:   domain.RiskLevelMedium,
+			Status:      taskmod.StatusCreated,
+			Priority:    taskmod.PriorityP2,
+			RiskLevel:   taskmod.RiskLevelMedium,
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		}
@@ -147,11 +147,11 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 
 	t.Run("work unit with runs", func(t *testing.T) {
 		// Create task and work unit
-		task := &domain.Task{
+		task := &taskmod.Task{
 			ID:        uuid.New().String(),
 			Title:     "Task for Run",
-			Status:    domain.TaskStatusCreated,
-			Priority:  domain.PriorityP1,
+			Status:    taskmod.StatusCreated,
+			Priority:  taskmod.PriorityP1,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -251,11 +251,11 @@ func TestAgentSessionWithRun(t *testing.T) {
 
 	t.Run("agent session lifecycle", func(t *testing.T) {
 		// Create task
-		task := &domain.Task{
+		task := &taskmod.Task{
 			ID:        uuid.New().String(),
 			Title:     "Task with Agent Session",
-			Status:    domain.TaskStatusCreated,
-			Priority:  domain.PriorityP1,
+			Status:    taskmod.StatusCreated,
+			Priority:  taskmod.PriorityP1,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
