@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/bridge"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
@@ -81,9 +81,20 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 	}
 
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
-		Run:                    run,
-		WorkUnit:               wu,
-		Task:                   bridge.TaskToDomain(task),
+		Run:      run,
+		WorkUnit: wu,
+		Task: &domain.Task{
+			ID:                   task.ID,
+			Title:                task.Title,
+			Description:          task.Description,
+			Status:               domain.TaskStatus(task.Status),
+			Priority:             domain.Priority(task.Priority),
+			RiskLevel:            domain.RiskLevel(task.RiskLevel),
+			CreatedFromMessageID: task.CreatedFromMessageID,
+			AcceptanceCriteria:   task.AcceptanceCriteria,
+			CreatedAt:            task.CreatedAt,
+			UpdatedAt:            task.UpdatedAt,
+		},
 		Session:                session,
 		PromptSnapshotID:       input.PromptSnapshotID,
 		ToolsetSnapshotID:      input.ToolsetSnapshotID,

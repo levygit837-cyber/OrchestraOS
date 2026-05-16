@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/bridge"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
@@ -31,6 +30,25 @@ func TaskService(db *sql.DB) *taskmod.TaskService {
 	)
 }
 
+// taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.
+func taskToDomain(t *taskmod.Task) *domain.Task {
+	if t == nil {
+		return nil
+	}
+	return &domain.Task{
+		ID:                   t.ID,
+		Title:                t.Title,
+		Description:          t.Description,
+		Status:               domain.TaskStatus(t.Status),
+		Priority:             domain.Priority(t.Priority),
+		RiskLevel:            domain.RiskLevel(t.RiskLevel),
+		CreatedFromMessageID: t.CreatedFromMessageID,
+		AcceptanceCriteria:   t.AcceptanceCriteria,
+		CreatedAt:            t.CreatedAt,
+		UpdatedAt:            t.UpdatedAt,
+	}
+}
+
 // taskReaderAdapter wraps task.Repository to return domain.Task for cross-module compatibility.
 type taskReaderAdapter struct {
 	repo *taskmod.Repository
@@ -41,7 +59,7 @@ func (a *taskReaderAdapter) GetByID(id string) (*domain.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	return bridge.TaskToDomain(t), nil
+	return taskToDomain(t), nil
 }
 
 // RunService creates a RunService with standard repository factories.
@@ -177,7 +195,7 @@ func (a *taskAdapter) GetByID(ctx context.Context, id string) (*domain.Task, err
 	if err != nil {
 		return nil, err
 	}
-	return bridge.TaskToDomain(t), nil
+	return taskToDomain(t), nil
 }
 func (a *taskAdapter) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	res, err := a.svc.Complete(ctx, taskID, input)
@@ -185,7 +203,7 @@ func (a *taskAdapter) Complete(ctx context.Context, taskID string, input transit
 		return nil, err
 	}
 	return &transition.OperationResult[*domain.Task]{
-		Value:     bridge.TaskToDomain(res.Value),
+		Value:     taskToDomain(res.Value),
 		Event:     res.Event,
 		Duplicate: res.Duplicate,
 	}, nil
@@ -196,7 +214,7 @@ func (a *taskAdapter) Fail(ctx context.Context, taskID string, input transition.
 		return nil, err
 	}
 	return &transition.OperationResult[*domain.Task]{
-		Value:     bridge.TaskToDomain(res.Value),
+		Value:     taskToDomain(res.Value),
 		Event:     res.Event,
 		Duplicate: res.Duplicate,
 	}, nil
