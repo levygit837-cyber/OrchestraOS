@@ -10,18 +10,47 @@
 
 ## Sessão 1 — Task Module
 
-- [ ] `internal/modules/task/models.go` define `Task`, `Status`, `Priority`, `RiskLevel` localmente (sem import de `domain`)
-- [ ] `internal/modules/task/repository.go` usa `*Task`, `[]Task`, `Task` (não `domain.Task`)
-- [ ] `internal/modules/task/service.go` usa `Status`, `Priority`, `RiskLevel` locais
-- [ ] `internal/modules/task/fetch.go` retorna `*Task`
-- [ ] `internal/modules/task/events.go` usa `Status` local
-- [ ] `internal/modules/task/validation_test.go` usa `Priority`, `RiskLevel` locais
-- [ ] `internal/core/orchestration/prompt_orchestrator.go` tem adapter `toDomainTask()`
-- [ ] `cmd/orchestraos/cmd/task.go` usa `task.Priority` / `task.RiskLevel`
-- [ ] `tests/integration/*` substituíram `domain.TaskStatusX` → `task.StatusX`, `domain.PriorityP2` → `task.PriorityP2`
-- [ ] `go build ./...` passa
-- [ ] `go test ./...` passa
-- [ ] `./scripts/safe-commit.sh "ADR-0022: migrate Task types to modules/task"` passa
+- [x] `internal/modules/task/models.go` define `Task`, `Status`, `Priority`, `RiskLevel` localmente (sem import de `domain`)
+- [x] `internal/modules/task/repository.go` usa `*Task`, `[]Task`, `Task` (não `domain.Task`)
+- [x] `internal/modules/task/service.go` usa `Status`, `Priority`, `RiskLevel` locais
+- [x] `internal/modules/task/fetch.go` retorna `*Task`
+- [x] `internal/modules/task/events.go` usa `Status` local
+- [x] `internal/modules/task/validation_test.go` usa `Priority`, `RiskLevel` locais
+- [x] `internal/core/orchestration/prompt_orchestrator.go` tem conversão inline `task→domain`
+- [x] `cmd/orchestraos/cmd/task.go` usa `task.Priority` / `task.RiskLevel`
+- [x] `tests/integration/*` substituíram `domain.TaskStatusX` → `task.StatusX`, `domain.PriorityP2` → `task.PriorityP2`
+- [x] `go build ./...` passa
+- [x] `go test ./...` passa
+- [x] `./scripts/safe-commit.sh "ADR-0022: migrate Task types to modules/task"` passa
+
+### Trabalho Remanescente — Task (requer migração de outros módulos)
+
+Os adapters de conversão `task.Task → domain.Task` ainda existem porque as interfaces dos outros módulos ainda usam `domain.Task`:
+
+| Arquivo | Adapter | Motivo |
+|---------|---------|--------|
+| `internal/bootstrap/services.go:33-49` | `taskToDomain()` | `orchestrator.TaskServiceReader`, `run.TaskReader`, `workunit.TaskReader` exigem `*domain.Task` |
+| `internal/core/orchestration/prompt_orchestrator.go:86-97` | inline `&domain.Task{}` | `prompt.PrepareAndPersistInput.Task` é `*domain.Task` |
+| `internal/bootstrap/services.go:128` | `PlannerPrompt(task *domain.Task)` | `taskgraphmod.PlannerPrompt` exige `*domain.Task` |
+
+**Para eliminar esses adapters, as seguintes interfaces precisam ser migradas:**
+
+1. `internal/modules/orchestrator/models.go` — `TaskServiceReader` interface:
+   - `GetByID(...) (*domain.Task, error)` → `(*task.Task, error)`
+   - `Complete(...) (*transition.OperationResult[*domain.Task], error)` → `(*transition.OperationResult[*task.Task], error)`
+   - `Fail(...) (*transition.OperationResult[*domain.Task], error)` → `(*transition.OperationResult[*task.Task], error)`
+
+2. `internal/modules/prompt/service.go` — `PrepareAndPersistInput` struct:
+   - `Task *domain.Task` → `Task *task.Task`
+
+3. `internal/modules/taskgraph/planner_prompt.go` — `PlannerPrompt` function:
+   - `PlannerPrompt(task *domain.Task)` → `PlannerPrompt(task *task.Task)`
+
+4. Verificar se `internal/modules/run/` e `internal/modules/workunit/` têm `TaskReader` interfaces com `*domain.Task`.
+
+**Quando essas interfaces forem migradas, os adapters podem ser removidos.**
+
+---
 
 ---
 
