@@ -5,10 +5,11 @@ import (
 	"database/sql"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // RequireByID retrieves a work unit by ID within a transaction, returning a not-found error if absent.
-func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*WorkUnit, error) {
+func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*domain.WorkUnit, error) {
 	_ = ctx
 	wu, err := NewRepository(tx).GetByID(id)
 	if err != nil {

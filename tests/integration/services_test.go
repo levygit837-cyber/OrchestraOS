@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -134,7 +134,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get work unit: %v", err)
 	}
-	if wu.Status != workunitmod.StatusCompleted {
+	if wu.Status != domain.WorkUnitStatusCompleted {
 		t.Fatalf("expected work unit completed, got %s", wu.Status)
 	}
 	session, err := agentsessionmod.NewRepository(db).GetByID(sessionResult.Value.ID)
@@ -408,7 +408,7 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get work unit: %v", err)
 	}
-	if wu.Status != workunitmod.StatusCancelled {
+	if wu.Status != domain.WorkUnitStatusCancelled {
 		t.Fatalf("expected related work unit cancelled, got %s", wu.Status)
 	}
 }

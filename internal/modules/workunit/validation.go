@@ -12,6 +12,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 func validateCreateWorkUnitInput(input CreateWorkUnitInput) error {
@@ -57,7 +58,7 @@ func validateCreateWorkUnitInput(input CreateWorkUnitInput) error {
 	return nil
 }
 
-func ValidateWorkUnitDependencies(inputs []CreateWorkUnitInput, existing []WorkUnit) error {
+func ValidateWorkUnitDependencies(inputs []CreateWorkUnitInput, existing []domain.WorkUnit) error {
 	op := "work_unit_service.validate_dependencies"
 	known := map[string]bool{}
 	for _, wu := range existing {
@@ -105,7 +106,7 @@ func ValidateWorkUnitDependencies(inputs []CreateWorkUnitInput, existing []WorkU
 	return nil
 }
 
-func ValidateDependenciesCompleted(ctx context.Context, tx *sql.Tx, wu *WorkUnit) error {
+func ValidateDependenciesCompleted(ctx context.Context, tx *sql.Tx, wu *domain.WorkUnit) error {
 	_ = ctx
 	if len(wu.DependsOn) == 0 {
 		return nil
@@ -122,14 +123,14 @@ func ValidateDependenciesCompleted(ctx context.Context, tx *sql.Tx, wu *WorkUnit
 		if dep.TaskID != wu.TaskID || dep.TaskGraphID != wu.TaskGraphID {
 			return apperrors.New(apperrors.CodeInvalidInput, "work_unit_service.get_dependency", "dependency belongs to a different task graph")
 		}
-		if dep.Status != StatusCompleted {
+		if dep.Status != domain.WorkUnitStatusCompleted {
 			return apperrors.New(apperrors.CodeInvalidTransition, "work_unit_service.dependencies", "dependencies must be completed before scheduling or starting")
 		}
 	}
 	return nil
 }
 
-func ValidateOwnedPathAvailability(ctx context.Context, tx *sql.Tx, wu *WorkUnit) error {
+func ValidateOwnedPathAvailability(ctx context.Context, tx *sql.Tx, wu *domain.WorkUnit) error {
 	_ = ctx
 	if len(wu.OwnedPaths) == 0 {
 		return nil
@@ -142,7 +143,7 @@ func ValidateOwnedPathAvailability(ctx context.Context, tx *sql.Tx, wu *WorkUnit
 		if other.ID == wu.ID {
 			continue
 		}
-		if other.Status != StatusScheduled && other.Status != StatusRunning && other.Status != StatusValidating {
+		if other.Status != domain.WorkUnitStatusScheduled && other.Status != domain.WorkUnitStatusRunning && other.Status != domain.WorkUnitStatusValidating {
 			continue
 		}
 		if pathsOverlap(wu.OwnedPaths, other.OwnedPaths) {

@@ -89,14 +89,14 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 
 		// Create multiple work units
 		taskGraphID := createTestTaskGraph(t, db, task.ID)
-		workUnits := []workunitmod.WorkUnit{
+		workUnits := []domain.WorkUnit{
 			{
 				TaskID:               task.ID,
 				TaskGraphID:          taskGraphID,
 				Title:                "Work Unit 1",
 				Objective:            "First objective",
 				AssignedAgentProfile: "default",
-				Status:               workunitmod.StatusCreated,
+				Status:               domain.WorkUnitStatusCreated,
 			},
 			{
 				TaskID:               task.ID,
@@ -104,7 +104,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 				Title:                "Work Unit 2",
 				Objective:            "Second objective",
 				AssignedAgentProfile: "default",
-				Status:               workunitmod.StatusCreated,
+				Status:               domain.WorkUnitStatusCreated,
 			},
 		}
 
@@ -160,12 +160,12 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		}
 
 		taskGraphID := createTestTaskGraph(t, db, task.ID)
-		wu := &workunitmod.WorkUnit{
+		wu := &domain.WorkUnit{
 			TaskID:               task.ID,
 			TaskGraphID:          taskGraphID,
 			Title:                "Work Unit with Run",
 			AssignedAgentProfile: "default",
-			Status:               workunitmod.StatusCreated,
+			Status:               domain.WorkUnitStatusCreated,
 		}
 		if err := wuRepo.Create(wu); err != nil {
 			t.Fatalf("Failed to create work unit: %v", err)
@@ -265,12 +265,12 @@ func TestAgentSessionWithRun(t *testing.T) {
 
 		// Create work unit
 		taskGraphID := createTestTaskGraph(t, db, task.ID)
-		wu := &workunitmod.WorkUnit{
+		wu := &domain.WorkUnit{
 			TaskID:               task.ID,
 			TaskGraphID:          taskGraphID,
 			Title:                "Work Unit for Agent",
 			AssignedAgentProfile: "default",
-			Status:               workunitmod.StatusCreated,
+			Status:               domain.WorkUnitStatusCreated,
 		}
 		if err := wuRepo.Create(wu); err != nil {
 			t.Fatalf("Failed to create work unit: %v", err)

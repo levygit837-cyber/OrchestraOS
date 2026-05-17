@@ -1,7 +1,9 @@
 package workunit
 
-func EventTypeForStatus(status Status) string {
-	if status == StatusRunning {
+import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
+
+func EventTypeForStatus(status domain.WorkUnitStatus) string {
+	if status == domain.WorkUnitStatusRunning {
 		return "work_unit.started"
 	}
 	return "work_unit." + string(status)

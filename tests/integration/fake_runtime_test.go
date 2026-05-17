@@ -172,12 +172,12 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 
 		// 2. Create work unit
 		taskGraphID := createTestTaskGraph(t, db, task.ID)
-		wu := &workunitmod.WorkUnit{
+		wu := &domain.WorkUnit{
 			TaskID:               task.ID,
 			TaskGraphID:          taskGraphID,
 			Title:                "Integration Work Unit",
 			AssignedAgentProfile: "default",
-			Status:               workunitmod.StatusCreated,
+			Status:               domain.WorkUnitStatusCreated,
 		}
 		if err := wuRepo.Create(wu); err != nil {
 			t.Fatalf("Failed to create work unit: %v", err)
