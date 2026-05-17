@@ -48,6 +48,48 @@ func workunitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
 	}
 }
 
+// planWorkUnitToDomain converts a taskgraph PlanWorkUnit to a workunit.WorkUnit.
+// TODO[ADR-0022]: remove when orchestrator and bootstrap use local types directly.
+func planWorkUnitToDomain(pwu *taskgraphmod.PlanWorkUnit) *workunitmod.WorkUnit {
+	if pwu == nil {
+		return nil
+	}
+	return &workunitmod.WorkUnit{
+		ID:                   pwu.ID,
+		TaskID:               pwu.TaskID,
+		TaskGraphID:          pwu.TaskGraphID,
+		Title:                pwu.Title,
+		Objective:            pwu.Objective,
+		AssignedAgentProfile: pwu.AssignedAgentProfile,
+		OwnedPaths:           pwu.OwnedPaths,
+		ReadPaths:            pwu.ReadPaths,
+		AcceptanceCriteria:   pwu.AcceptanceCriteria,
+		ValidationPlan:       pwu.ValidationPlan,
+		DependsOn:            pwu.DependsOn,
+	}
+}
+
+// workUnitToPlan converts a workunit.WorkUnit to a taskgraph PlanWorkUnit.
+// TODO[ADR-0022]: remove when orchestrator and bootstrap use local types directly.
+func workUnitToPlan(wu *workunitmod.WorkUnit) taskgraphmod.PlanWorkUnit {
+	if wu == nil {
+		return taskgraphmod.PlanWorkUnit{}
+	}
+	return taskgraphmod.PlanWorkUnit{
+		ID:                   wu.ID,
+		TaskID:               wu.TaskID,
+		TaskGraphID:          wu.TaskGraphID,
+		Title:                wu.Title,
+		Objective:            wu.Objective,
+		AssignedAgentProfile: wu.AssignedAgentProfile,
+		OwnedPaths:           wu.OwnedPaths,
+		ReadPaths:            wu.ReadPaths,
+		AcceptanceCriteria:   wu.AcceptanceCriteria,
+		ValidationPlan:       wu.ValidationPlan,
+		DependsOn:            wu.DependsOn,
+	}
+}
+
 // taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.
 // TODO[ADR-0022]: remove when orchestrator.TaskServiceReader, run.TaskReader, workunit.TaskReader
 // and prompt.PrepareAndPersistInput.Task use *task.Task directly.
@@ -67,20 +109,6 @@ func taskToDomain(t *taskmod.Task) *domain.Task {
 		CreatedAt:            t.CreatedAt,
 		UpdatedAt:            t.UpdatedAt,
 	}
-}
-
-// taskReaderAdapter wraps task.Repository to return domain.Task for taskgraph.TaskReader.
-// TODO[ADR-0022]: remove when all TaskReader interfaces use *task.Task directly.
-type taskReaderAdapter struct {
-	repo *taskmod.Repository
-}
-
-func (a *taskReaderAdapter) GetByID(id string) (*domain.Task, error) {
-	t, err := a.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return taskToDomain(t), nil
 }
 
 // wuTaskReaderAdapter wraps task.Repository to return *task.Task for workunit.TaskReader.
@@ -249,7 +277,7 @@ func AgentService(db *sql.DB) *agentmod.AgentService {
 func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
 	return taskgraphmod.NewTaskGraphService(db,
 		func(executor dbcore.DBTX) taskgraphmod.TaskReader {
-			return &taskReaderAdapter{repo: taskmod.NewRepository(executor)}
+			return taskmod.NewRepository(executor)
 		},
 		func(executor dbcore.DBTX) taskgraphmod.WorkUnitCreator {
 			return &workUnitCreatorAdapter{repo: workunitmod.NewRepository(executor)}
@@ -258,6 +286,34 @@ func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
 			return &workUnitListerAdapter{repo: workunitmod.NewRepository(executor)}
 		},
 	)
+}
+
+// workUnitCreatorAdapter bridges workunit.Repository to taskgraph.WorkUnitCreator.
+// TODO[ADR-0022]: remove when workunit and taskgraph share a common WorkUnit type.
+type workUnitCreatorAdapter struct {
+	repo *workunitmod.Repository
+}
+
+func (a *workUnitCreatorAdapter) Create(wu *taskgraphmod.PlanWorkUnit) error {
+	return a.repo.Create(planWorkUnitToDomain(wu))
+}
+
+// workUnitListerAdapter bridges workunit.Repository to taskgraph.WorkUnitLister.
+// TODO[ADR-0022]: remove when workunit and taskgraph share a common WorkUnit type.
+type workUnitListerAdapter struct {
+	repo *workunitmod.Repository
+}
+
+func (a *workUnitListerAdapter) ListByTaskGraph(graphID string) ([]taskgraphmod.PlanWorkUnit, error) {
+	wus, err := a.repo.ListByTaskGraph(graphID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]taskgraphmod.PlanWorkUnit, len(wus))
+	for i, wu := range wus {
+		result[i] = workUnitToPlan(&wu)
+	}
+	return result, nil
 }
 
 // PromptService creates a PromptService with standard dependencies.
@@ -281,7 +337,7 @@ func GeminiPlanner() (*taskgraphmod.GeminiPlanner, error) {
 }
 
 // PlannerPrompt renders a planner prompt for a task.
-func PlannerPrompt(task *domain.Task) (string, error) {
+func PlannerPrompt(task *taskmod.Task) (string, error) {
 	return taskgraphmod.PlannerPrompt(task)
 }
 
@@ -387,7 +443,7 @@ type taskGraphAdapter struct {
 	svc *taskgraphmod.TaskGraphService
 }
 
-func (a *taskGraphAdapter) GetActiveByTask(taskID string) (*domain.TaskGraph, error) {
+func (a *taskGraphAdapter) GetActiveByTask(taskID string) (*taskgraphmod.TaskGraph, error) {
 	return taskgraphmod.NewRepository(a.db).GetActiveByTask(taskID)
 }
 func (a *taskGraphAdapter) Decompose(ctx context.Context, input orchestratormod.DecomposeInput) (*orchestratormod.DecomposeResult, error) {
@@ -397,7 +453,11 @@ func (a *taskGraphAdapter) Decompose(ctx context.Context, input orchestratormod.
 	if err != nil {
 		return nil, err
 	}
-	return &orchestratormod.DecomposeResult{Graph: res.Graph, WorkUnits: res.WorkUnits}, nil
+	workUnits := make([]workunitmod.WorkUnit, len(res.WorkUnits))
+	for i, wu := range res.WorkUnits {
+		workUnits[i] = *planWorkUnitToDomain(&wu)
+	}
+	return &orchestratormod.DecomposeResult{Graph: res.Graph, WorkUnits: workUnits}, nil
 }
 
 type runAdapter struct{ svc *runmod.RunService }
@@ -497,43 +557,6 @@ type wuListerAdapter struct{ db *sql.DB }
 
 func (a *wuListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, error) {
 	list, err := workunitmod.NewRepository(a.db).ListByTaskGraph(graphID)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]domain.WorkUnit, len(list))
-	for i, wu := range list {
-		out[i] = *workunitToDomain(&wu)
-	}
-	return out, nil
-}
-
-// workUnitCreatorAdapter bridges taskgraph.WorkUnitCreator to workunit.Repository.
-// TODO[ADR-0022]: remove when taskgraph.WorkUnitCreator uses *workunit.WorkUnit directly.
-type workUnitCreatorAdapter struct{ repo *workunitmod.Repository }
-
-func (a *workUnitCreatorAdapter) Create(wu *domain.WorkUnit) error {
-	return a.repo.Create(&workunitmod.WorkUnit{
-		ID:                   wu.ID,
-		TaskID:               wu.TaskID,
-		TaskGraphID:          wu.TaskGraphID,
-		Title:                wu.Title,
-		Objective:            wu.Objective,
-		AssignedAgentProfile: wu.AssignedAgentProfile,
-		Status:               workunitmod.Status(wu.Status),
-		OwnedPaths:           wu.OwnedPaths,
-		ReadPaths:            wu.ReadPaths,
-		AcceptanceCriteria:   wu.AcceptanceCriteria,
-		ValidationPlan:       wu.ValidationPlan,
-		DependsOn:            wu.DependsOn,
-	})
-}
-
-// workUnitListerAdapter bridges taskgraph.WorkUnitLister to workunit.Repository.
-// TODO[ADR-0022]: remove when taskgraph.WorkUnitLister uses []workunit.WorkUnit directly.
-type workUnitListerAdapter struct{ repo *workunitmod.Repository }
-
-func (a *workUnitListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, error) {
-	list, err := a.repo.ListByTaskGraph(graphID)
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 const (
@@ -54,7 +53,7 @@ func BuildLocalHeuristicGraphPlan(task *task.Task) (*GraphPlan, error) {
 	}
 
 	graphID := uuid.New().String()
-	workUnits := make([]workunit.WorkUnit, len(groups))
+	workUnits := make([]PlanWorkUnit, len(groups))
 	criterionGroup := map[int]int{}
 	for groupIndex, group := range groups {
 		for _, criterion := range group.Criteria {
@@ -63,14 +62,13 @@ func BuildLocalHeuristicGraphPlan(task *task.Task) (*GraphPlan, error) {
 	}
 
 	for i, group := range groups {
-		workUnits[i] = workunit.WorkUnit{
+		workUnits[i] = PlanWorkUnit{
 			ID:                   uuid.New().String(),
 			TaskID:               task.ID,
 			TaskGraphID:          graphID,
 			Title:                fmt.Sprintf("%s - Parte %d", task.Title, i+1),
 			Objective:            workUnitObjective(group.Criteria),
 			AssignedAgentProfile: "default",
-			Status:               workunit.StatusCreated,
 			OwnedPaths:           []string{},
 			ReadPaths:            []string{},
 			AcceptanceCriteria:   criterionTexts(group.Criteria),

@@ -11,7 +11,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
+
 	"google.golang.org/genai"
 )
 
@@ -130,7 +130,7 @@ func (p *GeminiPlanner) convertToGraphPlan(task *task.Task, output *plannerOutpu
 	graphID := uuid.New().String()
 	wuCount := len(output.WorkUnits)
 
-	workUnits := make([]workunit.WorkUnit, wuCount)
+	workUnits := make([]PlanWorkUnit, wuCount)
 	idByIndex := make(map[int]string, wuCount)
 
 	// First pass: generate IDs
@@ -154,14 +154,13 @@ func (p *GeminiPlanner) convertToGraphPlan(task *task.Task, output *plannerOutpu
 			profile = "default"
 		}
 
-		workUnits[i] = workunit.WorkUnit{
+		workUnits[i] = PlanWorkUnit{
 			ID:                   idByIndex[i],
 			TaskID:               task.ID,
 			TaskGraphID:          graphID,
 			Title:                wu.Title,
 			Objective:            wu.Objective,
 			AssignedAgentProfile: profile,
-			Status:               workunit.StatusCreated,
 			OwnedPaths:           wu.OwnedPaths,
 			ReadPaths:            wu.ReadPaths,
 			AcceptanceCriteria:   wu.AcceptanceCriteria,

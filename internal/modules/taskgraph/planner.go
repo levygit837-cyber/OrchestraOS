@@ -5,13 +5,12 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // GraphPlan is the result of any Planner implementation.
 type GraphPlan struct {
 	GraphID   string
-	WorkUnits []workunit.WorkUnit
+	WorkUnits []PlanWorkUnit
 	Nodes     []domain.TaskGraphNodeInfo
 	Edges     []domain.TaskGraphEdgeInfo
 	Rationale string

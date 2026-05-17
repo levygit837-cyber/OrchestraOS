@@ -21,7 +21,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 const localHeuristicPlanner = "local_heuristic_v1"
@@ -33,12 +32,12 @@ type TaskReader interface {
 
 // WorkUnitCreator abstracts work-unit writes to avoid importing the workunit module.
 type WorkUnitCreator interface {
-	Create(wu *workunit.WorkUnit) error
+	Create(wu *PlanWorkUnit) error
 }
 
 // WorkUnitLister abstracts work-unit reads to avoid importing the workunit module.
 type WorkUnitLister interface {
-	ListByTaskGraph(graphID string) ([]workunit.WorkUnit, error)
+	ListByTaskGraph(graphID string) ([]PlanWorkUnit, error)
 }
 
 type TaskGraphService struct {
@@ -58,7 +57,7 @@ type DecomposeTaskGraphInput struct {
 
 type TaskGraphDecomposeResult struct {
 	Graph     *TaskGraph
-	WorkUnits []workunit.WorkUnit
+	WorkUnits []PlanWorkUnit
 	Event     *domain.EventEnvelope
 	Duplicate bool
 }
@@ -214,7 +213,6 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 			"title":                  wu.Title,
 			"objective":              wu.Objective,
 			"assigned_agent_profile": wu.AssignedAgentProfile,
-			"status":                 wu.Status,
 			"owned_paths":            wu.OwnedPaths,
 			"read_paths":             wu.ReadPaths,
 			"acceptance_criteria":    wu.AcceptanceCriteria,
@@ -295,14 +293,13 @@ func (s *TaskGraphService) buildPlan(ctx context.Context, task *task.Task, strat
 // buildFallbackPlan creates a minimal valid plan when everything else fails.
 func (s *TaskGraphService) buildFallbackPlan(task *task.Task, reason string) (*GraphPlan, string, string) {
 	graphID := uuid.New().String()
-	wu := workunit.WorkUnit{
+	wu := PlanWorkUnit{
 		ID:                   uuid.New().String(),
 		TaskID:               task.ID,
 		TaskGraphID:          graphID,
 		Title:                task.Title,
 		Objective:            task.Description,
 		AssignedAgentProfile: "default",
-		Status:               workunit.StatusCreated,
 		OwnedPaths:           []string{},
 		ReadPaths:            []string{},
 		AcceptanceCriteria:   task.AcceptanceCriteria,
@@ -311,7 +308,7 @@ func (s *TaskGraphService) buildFallbackPlan(task *task.Task, reason string) (*G
 	}
 	return &GraphPlan{
 		GraphID:   graphID,
-		WorkUnits: []workunit.WorkUnit{wu},
+		WorkUnits: []PlanWorkUnit{wu},
 		Nodes: []domain.TaskGraphNodeInfo{{
 			ID:                 wu.ID,
 			Title:              wu.Title,
