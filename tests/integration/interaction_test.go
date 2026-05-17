@@ -172,11 +172,11 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		}
 
 		// Create run
-		run := &domain.Run{
+		run := &runmod.Run{
 			ID:         uuid.New().String(),
 			TaskID:     task.ID,
 			WorkUnitID: wu.ID,
-			Status:     domain.RunStatusCreated,
+			Status:     runmod.StatusCreated,
 			Attempt:    1,
 		}
 		if err := runRepo.Create(run); err != nil {
@@ -184,7 +184,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		}
 
 		// Update run to running
-		if err := runRepo.UpdateStatus(run.ID, domain.RunStatusRunning, nil, nil); err != nil {
+		if err := runRepo.UpdateStatus(run.ID, runmod.StatusRunning, nil, nil); err != nil {
 			t.Fatalf("Failed to update run status: %v", err)
 		}
 
@@ -211,8 +211,8 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		}
 
 		// Complete run
-		result := domain.RunResultSucceeded
-		if err := runRepo.UpdateStatus(run.ID, domain.RunStatusCompleted, &result, nil); err != nil {
+		result := runmod.ResultSucceeded
+		if err := runRepo.UpdateStatus(run.ID, runmod.StatusCompleted, &result, nil); err != nil {
 			t.Fatalf("Failed to complete run: %v", err)
 		}
 
@@ -224,7 +224,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		if storedRun == nil {
 			t.Error("Run was not stored")
 		}
-		if storedRun.Status != domain.RunStatusCompleted {
+		if storedRun.Status != runmod.StatusCompleted {
 			t.Errorf("Expected status completed, got %s", storedRun.Status)
 		}
 		if storedRun.StartedAt.IsZero() {
@@ -233,7 +233,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		if storedRun.FinishedAt == nil {
 			t.Error("Expected finished_at to be set after completion")
 		}
-		if storedRun.Result == nil || *storedRun.Result != domain.RunResultSucceeded {
+		if storedRun.Result == nil || *storedRun.Result != runmod.ResultSucceeded {
 			t.Error("Expected result to be succeeded")
 		}
 	})
@@ -277,11 +277,11 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Create run
-		run := &domain.Run{
+		run := &runmod.Run{
 			ID:         uuid.New().String(),
 			TaskID:     task.ID,
 			WorkUnitID: wu.ID,
-			Status:     domain.RunStatusCreated,
+			Status:     runmod.StatusCreated,
 			Attempt:    1,
 		}
 		if err := runRepo.Create(run); err != nil {

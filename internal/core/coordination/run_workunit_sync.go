@@ -14,6 +14,7 @@ import (
 )
 
 // TransitionRunWithWorkUnit synchronizes a run transition with its associated work unit.
+// TODO[ADR-0022]: migrar para *run.Run e run.Status quando run module for totalmente desacoplado.
 func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error {
 	if run.WorkUnitID == "" {
 		return nil

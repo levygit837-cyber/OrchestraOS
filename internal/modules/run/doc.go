@@ -18,7 +18,7 @@
 //   - core/coordination: TransitionInput, OperationResult, state transitions
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
-//   - domain: Run, RunStatus, RunResult
+//   - domain: EventEnvelope, EventPriority (generic types only)
 //
 // # Related Packages
 //   - task/: runs belong to tasks
@@ -33,8 +33,9 @@
 //   - NEVER write SQL outside queries.go.
 //
 // For full contracts, invariants, state machine, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, state machine, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, state machine, boundary rules
 //
 // Quick code reference: see ModuleContract in contract.go
 package run

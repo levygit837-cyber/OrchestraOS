@@ -1,23 +1,36 @@
 package run
 
-import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
+import "time"
 
-type Status = domain.RunStatus
-type Result = domain.RunResult
-
-const (
-	StatusCreated         = domain.RunStatusCreated
-	StatusRunning         = domain.RunStatusRunning
-	StatusWaitingApproval = domain.RunStatusWaitingApproval
-	StatusPaused          = domain.RunStatusPaused
-	StatusValidating      = domain.RunStatusValidating
-	StatusCompleted       = domain.RunStatusCompleted
-	StatusFailed          = domain.RunStatusFailed
-	StatusCancelled       = domain.RunStatusCancelled
-)
+type Status string
 
 const (
-	ResultSucceeded = domain.RunResultSucceeded
-	ResultFailed    = domain.RunResultFailed
-	ResultCancelled = domain.RunResultCancelled
+	StatusCreated         Status = "created"
+	StatusRunning         Status = "running"
+	StatusWaitingApproval Status = "waiting_approval"
+	StatusPaused          Status = "paused"
+	StatusValidating      Status = "validating"
+	StatusCompleted       Status = "completed"
+	StatusFailed          Status = "failed"
+	StatusCancelled       Status = "cancelled"
 )
+
+type Result string
+
+const (
+	ResultSucceeded Result = "succeeded"
+	ResultFailed    Result = "failed"
+	ResultCancelled Result = "cancelled"
+)
+
+type Run struct {
+	ID            string     `json:"id"`
+	TaskID        string     `json:"task_id"`
+	WorkUnitID    string     `json:"work_unit_id"`
+	Status        Status     `json:"status"`
+	Attempt       int        `json:"attempt"`
+	StartedAt     time.Time  `json:"started_at"`
+	FinishedAt    *time.Time `json:"finished_at,omitempty"`
+	Result        *Result    `json:"result,omitempty"`
+	FailureReason *string    `json:"failure_reason,omitempty"`
+}

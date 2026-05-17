@@ -18,12 +18,13 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 )
 
 // TaskReader abstracts task reads to avoid cyclic imports.
 // TODO[ADR-0022]: migrar para *task.Task
 type TaskReader interface {
-	GetByID(id string) (*domain.Task, error)
+	GetByID(id string) (*taskmod.Task, error)
 }
 
 // WorkUnitReader abstracts work-unit reads to avoid cyclic imports.
@@ -35,7 +36,7 @@ type RunService struct {
 	db                *sql.DB
 	newTaskReader     func(*sql.Tx) TaskReader
 	newWorkUnitReader func(*sql.Tx) WorkUnitReader
-	afterTransition   func(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error
+	afterTransition   func(ctx context.Context, tx *sql.Tx, run *Run, target Status, input transition.TransitionInput) error
 }
 
 type CreateRunInput struct {
@@ -46,11 +47,11 @@ type CreateRunInput struct {
 	Attempt    int
 }
 
-func NewRunService(database *sql.DB, newTaskReader func(*sql.Tx) TaskReader, newWorkUnitReader func(*sql.Tx) WorkUnitReader, afterTransition func(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error) *RunService {
+func NewRunService(database *sql.DB, newTaskReader func(*sql.Tx) TaskReader, newWorkUnitReader func(*sql.Tx) WorkUnitReader, afterTransition func(ctx context.Context, tx *sql.Tx, run *Run, target Status, input transition.TransitionInput) error) *RunService {
 	return &RunService{db: database, newTaskReader: newTaskReader, newWorkUnitReader: newWorkUnitReader, afterTransition: afterTransition}
 }
 
-func (s *RunService) Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*domain.Run], error) {
+func (s *RunService) Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*Run], error) {
 	if input.ID == "" {
 		input.ID = uuid.New().String()
 	}
@@ -79,11 +80,11 @@ func (s *RunService) Create(ctx context.Context, input CreateRunInput) (*transit
 		return nil, apperrors.New(apperrors.CodeInvalidInput, "run_service.validate_refs", "work_unit_id does not belong to task_id")
 	}
 
-	run := &domain.Run{
+	run := &Run{
 		ID:         input.ID,
 		TaskID:     task.ID,
 		WorkUnitID: wu.ID,
-		Status:     domain.RunStatusCreated,
+		Status:     StatusCreated,
 		Attempt:    input.Attempt,
 	}
 	if err := NewRepository(tx).Create(run); err != nil {
@@ -117,34 +118,34 @@ func (s *RunService) Create(ctx context.Context, input CreateRunInput) (*transit
 	if err := dbcore.CommitTx(tx, "run_service.commit_create"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.Run]{Value: run, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*Run]{Value: run, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *RunService) Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	return s.transition(ctx, runID, domain.RunStatusRunning, input, true)
+func (s *RunService) Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error) {
+	return s.transition(ctx, runID, StatusRunning, input, true)
 }
 
-func (s *RunService) Resume(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	return s.transition(ctx, runID, domain.RunStatusRunning, input, false)
+func (s *RunService) Resume(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error) {
+	return s.transition(ctx, runID, StatusRunning, input, false)
 }
 
-func (s *RunService) Validate(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	return s.transition(ctx, runID, domain.RunStatusValidating, input, true)
+func (s *RunService) Validate(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error) {
+	return s.transition(ctx, runID, StatusValidating, input, true)
 }
 
-func (s *RunService) Complete(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	return s.transition(ctx, runID, domain.RunStatusCompleted, input, true)
+func (s *RunService) Complete(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error) {
+	return s.transition(ctx, runID, StatusCompleted, input, true)
 }
 
-func (s *RunService) Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	return s.transition(ctx, runID, domain.RunStatusFailed, input, true)
+func (s *RunService) Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error) {
+	return s.transition(ctx, runID, StatusFailed, input, true)
 }
 
-func (s *RunService) Cancel(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	return s.transition(ctx, runID, domain.RunStatusCancelled, input, true)
+func (s *RunService) Cancel(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error) {
+	return s.transition(ctx, runID, StatusCancelled, input, true)
 }
 
-func (s *RunService) Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
+func (s *RunService) Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error) {
 	if input.FailureReason == "" {
 		input.FailureReason = "run timed out"
 	}
@@ -155,10 +156,10 @@ func (s *RunService) Timeout(ctx context.Context, runID string, input transition
 		input.Extra = map[string]interface{}{}
 	}
 	input.Extra["timeout"] = true
-	return s.transition(ctx, runID, domain.RunStatusFailed, input, true)
+	return s.transition(ctx, runID, StatusFailed, input, true)
 }
 
-func (s *RunService) transition(ctx context.Context, runID string, target domain.RunStatus, input transition.TransitionInput, updateWorkUnit bool) (*transition.OperationResult[*domain.Run], error) {
+func (s *RunService) transition(ctx context.Context, runID string, target Status, input transition.TransitionInput, updateWorkUnit bool) (*transition.OperationResult[*Run], error) {
 	op := "run_service.transition"
 	if err := validation.RequiredUUID(runID, "run_id", op); err != nil {
 		return nil, err
@@ -184,7 +185,7 @@ func (s *RunService) transition(ctx context.Context, runID string, target domain
 	if err != nil {
 		return nil, err
 	}
-	if target == domain.RunStatusRunning {
+	if target == StatusRunning {
 		if err := validateRunStartPolicy(task, input); err != nil {
 			return nil, err
 		}
@@ -204,8 +205,8 @@ func (s *RunService) transition(ctx context.Context, runID string, target domain
 	payload := transition.TransitionPayload(run.Status, target, input)
 	payload["attempt"] = run.Attempt
 	payload["run_id"] = run.ID
-	if target == domain.RunStatusCompleted {
-		payload["result"] = domain.RunResultSucceeded
+	if target == StatusCompleted {
+		payload["result"] = ResultSucceeded
 	}
 	event, duplicate, err := transition.AppendTransition(ctx, tx, input.EventID, EventTypeForStatus(target), run.TaskID, run.ID, run.WorkUnitID, input.AgentID, payload)
 	if err != nil {
@@ -221,23 +222,23 @@ func (s *RunService) transition(ctx context.Context, runID string, target domain
 			return nil, err
 		}
 		run.Status = target
-		if target == domain.RunStatusRunning && run.StartedAt.IsZero() {
+		if target == StatusRunning && run.StartedAt.IsZero() {
 			run.StartedAt = time.Now().UTC()
 		}
 	}
 	if err := dbcore.CommitTx(tx, "run_service.commit_transition"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.Run]{Value: run, Event: event, Duplicate: duplicate}, nil
+	return &transition.OperationResult[*Run]{Value: run, Event: event, Duplicate: duplicate}, nil
 }
 
-func updateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status domain.RunStatus, result *domain.RunResult, failureReason *string) error {
+func updateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status Status, result *Result, failureReason *string) error {
 	now := time.Now().UTC()
 	var startedAt, finishedAt *time.Time
-	if status == domain.RunStatusRunning {
+	if status == StatusRunning {
 		startedAt = &now
 	}
-	if status == domain.RunStatusCompleted || status == domain.RunStatusFailed || status == domain.RunStatusCancelled {
+	if status == StatusCompleted || status == StatusFailed || status == StatusCancelled {
 		finishedAt = &now
 	}
 	var resultStr *string
@@ -272,8 +273,8 @@ func validateCreateRunInput(input CreateRunInput) error {
 	return nil
 }
 
-func validateRunStartPolicy(task *domain.Task, input transition.TransitionInput) error {
-	if task.RiskLevel == domain.RiskLevelHigh || task.RiskLevel == domain.RiskLevelCritical {
+func validateRunStartPolicy(task *taskmod.Task, input transition.TransitionInput) error {
+	if task.RiskLevel == taskmod.RiskLevelHigh || task.RiskLevel == taskmod.RiskLevelCritical {
 		if input.Justification == "" {
 			return apperrors.New(apperrors.CodePolicy, "run_service.policy", "starting high or critical risk tasks requires explicit justification")
 		}
@@ -281,7 +282,7 @@ func validateRunStartPolicy(task *domain.Task, input transition.TransitionInput)
 	return nil
 }
 
-func (s *RunService) requireTaskByID(tx *sql.Tx, id string) (*domain.Task, error) {
+func (s *RunService) requireTaskByID(tx *sql.Tx, id string) (*taskmod.Task, error) {
 	task, err := s.newTaskReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "task.get", err)

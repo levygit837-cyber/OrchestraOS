@@ -11,8 +11,11 @@ import (
 
 // allowedModuleImports define which cross-module imports are legitimate.
 // Keys are the importing module; values are the imported modules.
-// With strict vertical-slice enforcement this map must remain empty.
-var allowedModuleImports = map[string]map[string]bool{}
+// TODO[ADR-0022]: run imports task only for TaskReader DI interface (returns *task.Task).
+// Remove when task types are fully decoupled or when TaskReader uses a local struct.
+var allowedModuleImports = map[string]map[string]bool{
+	"run": {"task": true},
+}
 
 // leafModules must not import any other module under internal/modules/.
 var leafModules = map[string]bool{

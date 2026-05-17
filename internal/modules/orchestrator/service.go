@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
+	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
@@ -389,6 +389,7 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task
 	// Wait for goroutine to complete to prevent leaks
 	<-routineDone
 
+	// TODO[ADR-0022]: usar run.StatusCompleted quando orchestrator consumir *run.Run
 	result.Success = finalStatus == domain.RunStatusCompleted
 
 	// Note: Review creation for validation gates is deferred to future iteration

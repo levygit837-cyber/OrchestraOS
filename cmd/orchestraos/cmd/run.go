@@ -231,7 +231,7 @@ var runListCmd = &cobra.Command{
 
 		repo := runmod.NewRepository(getDB())
 
-		var runs []domain.Run
+		var runs []runmod.Run
 		var err error
 
 		if taskID != "" {
@@ -314,5 +314,3 @@ func init() {
 	runCmd.AddCommand(runListCmd)
 	runCmd.AddCommand(runGetCmd)
 }
-
-

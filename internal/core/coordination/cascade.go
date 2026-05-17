@@ -15,6 +15,7 @@ import (
 )
 
 // CancelTaskDependents cancels all non-terminal runs and work units belonging to a task.
+// TODO[ADR-0022]: usar run.StatusCancelled e run.ResultForStatus quando run module for totalmente desacoplado.
 func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error {
 	runRepo := runmod.NewRepository(tx)
 	runs, err := runRepo.ListByTask(taskID)
@@ -31,7 +32,13 @@ func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input 
 		if _, _, err := transition.AppendTransition(ctx, tx, "", "run.cancelled", taskID, run.ID, run.WorkUnitID, input.AgentID, transition.TransitionPayload(run.Status, domain.RunStatusCancelled, input)); err != nil {
 			return err
 		}
-		if err := UpdateRunProjection(ctx, tx, run.ID, domain.RunStatusCancelled, runmod.ResultForStatus(domain.RunStatusCancelled), nil); err != nil {
+		result := runmod.ResultForStatus(runmod.StatusCancelled)
+		var domainResult *domain.RunResult
+		if result != nil {
+			dr := domain.RunResult(*result)
+			domainResult = &dr
+		}
+		if err := UpdateRunProjection(ctx, tx, run.ID, domain.RunStatusCancelled, domainResult, nil); err != nil {
 			return err
 		}
 	}

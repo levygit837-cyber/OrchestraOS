@@ -19,7 +19,7 @@ func ValidateRunForSessionCreation(ctx context.Context, tx *sql.Tx, runID string
 	if err != nil {
 		return err
 	}
-	if run.Status == domain.RunStatusCompleted || run.Status == domain.RunStatusFailed || run.Status == domain.RunStatusCancelled {
+	if run.Status == runmod.StatusCompleted || run.Status == runmod.StatusFailed || run.Status == runmod.StatusCancelled {
 		return apperrors.New(apperrors.CodeInvalidTransition, "coordination.validate_run_for_session", "cannot create session for terminal run")
 	}
 	return nil
@@ -37,11 +37,11 @@ func AgentSessionTimeout(ctx context.Context, tx *sql.Tx, session *domain.AgentS
 	if err != nil {
 		return nil, false, err
 	}
-	if run.Status == domain.RunStatusRunning || run.Status == domain.RunStatusWaitingApproval {
-		if err := statemachine.CanTransition(statemachine.AggregateRun, string(run.Status), string(domain.RunStatusPaused), transition.TransitionContext(input)); err != nil {
+	if run.Status == runmod.StatusRunning || run.Status == runmod.StatusWaitingApproval {
+		if err := statemachine.CanTransition(statemachine.AggregateRun, string(run.Status), string(runmod.StatusPaused), transition.TransitionContext(input)); err != nil {
 			return nil, false, err
 		}
-		if _, _, err := transition.AppendTransition(ctx, tx, "", "run.paused", run.TaskID, run.ID, run.WorkUnitID, session.AgentID, transition.TransitionPayload(run.Status, domain.RunStatusPaused, input)); err != nil {
+		if _, _, err := transition.AppendTransition(ctx, tx, "", "run.paused", run.TaskID, run.ID, run.WorkUnitID, session.AgentID, transition.TransitionPayload(run.Status, runmod.StatusPaused, input)); err != nil {
 			return nil, false, err
 		}
 		if err := UpdateRunProjection(ctx, tx, run.ID, domain.RunStatusPaused, nil, nil); err != nil {
