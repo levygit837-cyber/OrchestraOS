@@ -46,3 +46,8 @@ codedb.snapshot
 # Design screenshots / temporary assets
 canvas-v3-*.png
 canvas-v4-*.png
+
+# Plans — kept locally only, not in repo
+plans/
+.ultraplan/
+temp/
