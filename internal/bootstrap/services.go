@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -65,6 +65,90 @@ func (a *taskReaderAdapter) GetByID(id string) (*domain.Task, error) {
 	return taskToDomain(t), nil
 }
 
+// workUnitToDomain converts a local workunit.WorkUnit to domain.WorkUnit for cross-module compatibility.
+// TODO[ADR-0022]: remove when consumer modules use *workunit.WorkUnit directly.
+func workUnitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
+	if wu == nil {
+		return nil
+	}
+	return &domain.WorkUnit{
+		ID:                   wu.ID,
+		TaskID:               wu.TaskID,
+		TaskGraphID:          wu.TaskGraphID,
+		Title:                wu.Title,
+		Objective:            wu.Objective,
+		AssignedAgentProfile: wu.AssignedAgentProfile,
+		Status:               domain.WorkUnitStatus(wu.Status),
+		OwnedPaths:           wu.OwnedPaths,
+		ReadPaths:            wu.ReadPaths,
+		AcceptanceCriteria:   wu.AcceptanceCriteria,
+		ValidationPlan:       wu.ValidationPlan,
+		DependsOn:            wu.DependsOn,
+	}
+}
+
+// workUnitsToDomain converts a slice of local workunit.WorkUnit to domain.WorkUnit.
+func workUnitsToDomain(wus []workunitmod.WorkUnit) []domain.WorkUnit {
+	result := make([]domain.WorkUnit, len(wus))
+	for i, wu := range wus {
+		if d := workUnitToDomain(&wu); d != nil {
+			result[i] = *d
+		}
+	}
+	return result
+}
+
+// workUnitReaderAdapter wraps workunit.Repository to return domain.WorkUnit for cross-module compatibility.
+// TODO[ADR-0022]: remove when run.WorkUnitReader and trigger.WorkUnitReader use *workunit.WorkUnit directly.
+type workUnitReaderAdapter struct {
+	repo *workunitmod.Repository
+}
+
+func (a *workUnitReaderAdapter) GetByID(id string) (*domain.WorkUnit, error) {
+	wu, err := a.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return workUnitToDomain(wu), nil
+}
+
+// workUnitCreatorAdapter wraps workunit.Repository to accept domain.WorkUnit for cross-module compatibility.
+// TODO[ADR-0022]: remove when taskgraph.WorkUnitCreator uses *workunit.WorkUnit directly.
+type workUnitCreatorAdapter struct {
+	repo *workunitmod.Repository
+}
+
+func (a *workUnitCreatorAdapter) Create(wu *domain.WorkUnit) error {
+	return a.repo.Create(&workunitmod.WorkUnit{
+		ID:                   wu.ID,
+		TaskID:               wu.TaskID,
+		TaskGraphID:          wu.TaskGraphID,
+		Title:                wu.Title,
+		Objective:            wu.Objective,
+		AssignedAgentProfile: wu.AssignedAgentProfile,
+		Status:               workunitmod.Status(wu.Status),
+		OwnedPaths:           wu.OwnedPaths,
+		ReadPaths:            wu.ReadPaths,
+		AcceptanceCriteria:   wu.AcceptanceCriteria,
+		ValidationPlan:       wu.ValidationPlan,
+		DependsOn:            wu.DependsOn,
+	})
+}
+
+// workUnitListerAdapter wraps workunit.Repository to return domain.WorkUnit for cross-module compatibility.
+// TODO[ADR-0022]: remove when taskgraph.WorkUnitLister and orchestrator.WorkUnitLister use *workunit.WorkUnit directly.
+type workUnitListerAdapter struct {
+	repo *workunitmod.Repository
+}
+
+func (a *workUnitListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, error) {
+	wus, err := a.repo.ListByTaskGraph(graphID)
+	if err != nil {
+		return nil, err
+	}
+	return workUnitsToDomain(wus), nil
+}
+
 // agentToDomain converts a local agent.Agent to domain.Agent for cross-module compatibility.
 // TODO: remove when agentsession.AgentReader and orchestrator.AgentManager use *agent.Agent directly.
 func agentToDomain(a *agentmod.Agent) *domain.Agent {
@@ -114,7 +198,9 @@ func (a *agentManagerAdapter) FindOrCreate(ctx context.Context, profile string, 
 func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
 		func(tx *sql.Tx) runmod.TaskReader { return &taskReaderAdapter{repo: taskmod.NewRepository(tx)} },
-		func(tx *sql.Tx) runmod.WorkUnitReader { return workunitmod.NewRepository(tx) },
+		func(tx *sql.Tx) runmod.WorkUnitReader {
+			return &workUnitReaderAdapter{repo: workunitmod.NewRepository(tx)}
+		},
 		func(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error {
 			return coordination.TransitionRunWithWorkUnit(ctx, tx, run, target, input)
 		},
@@ -132,7 +218,9 @@ func WorkUnitService(db *sql.DB) *workunitmod.WorkUnitService {
 // AgentSessionService creates an AgentSessionService with standard dependencies.
 func AgentSessionService(db *sql.DB) *agentsessionmod.AgentSessionService {
 	return agentsessionmod.NewAgentSessionService(db,
-		func(tx *sql.Tx) agentsessionmod.AgentReader { return &agentReaderAdapter{repo: agentmod.NewRepository(tx)} },
+		func(tx *sql.Tx) agentsessionmod.AgentReader {
+			return &agentReaderAdapter{repo: agentmod.NewRepository(tx)}
+		},
 	)
 }
 
@@ -147,8 +235,12 @@ func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
 		func(executor dbcore.DBTX) taskgraphmod.TaskReader {
 			return &taskReaderAdapter{repo: taskmod.NewRepository(executor)}
 		},
-		func(executor dbcore.DBTX) taskgraphmod.WorkUnitCreator { return workunitmod.NewRepository(executor) },
-		func(executor dbcore.DBTX) taskgraphmod.WorkUnitLister { return workunitmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) taskgraphmod.WorkUnitCreator {
+			return &workUnitCreatorAdapter{repo: workunitmod.NewRepository(executor)}
+		},
+		func(executor dbcore.DBTX) taskgraphmod.WorkUnitLister {
+			return &workUnitListerAdapter{repo: workunitmod.NewRepository(executor)}
+		},
 	)
 }
 
@@ -189,7 +281,9 @@ func TriggerService(db *sql.DB) *triggermod.TriggerService {
 		func(executor dbcore.DBTX) triggermod.AgentSessionReader {
 			return agentsessionmod.NewRepository(executor)
 		},
-		func(executor dbcore.DBTX) triggermod.WorkUnitReader { return workunitmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) triggermod.WorkUnitReader {
+			return &workUnitReaderAdapter{repo: workunitmod.NewRepository(executor)}
+		},
 	)
 }
 
@@ -223,7 +317,7 @@ func OrchestratorService(db *sql.DB) *orchestratormod.Service {
 		PromptOrchestrator:  &promptAdapter{orch: coordination.NewPromptOrchestrator(db, promptSvc)},
 		ReviewService:       &reviewAdapter{svc: reviewSvc},
 		TriggerService:      triggerSvc,
-		WorkUnitLister:      &wuListerAdapter{db: db},
+		WorkUnitLister:      &workUnitListerAdapter{repo: workunitmod.NewRepository(db)},
 		RuntimeEventRelay:   RuntimeEventRelay,
 		NewFakeRuntime:      func() orchestratormod.Runtime { return &runtimeAdapter{r: agentmod.NewFakeRuntime()} },
 		NewGeminiRuntime:    func() orchestratormod.Runtime { return &runtimeAdapter{r: agentmod.NewGeminiRuntime()} },
@@ -338,12 +432,6 @@ func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, a
 		RunID: runID, WorkUnitID: workUnitID, TaskID: taskID,
 		AgentSessionID: agentSessionID, GateType: gateType,
 	})
-}
-
-type wuListerAdapter struct{ db *sql.DB }
-
-func (a *wuListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, error) {
-	return workunitmod.NewRepository(a.db).ListByTaskGraph(graphID)
 }
 
 type runtimeAdapter struct{ r agentmod.Runtime }

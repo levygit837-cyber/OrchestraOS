@@ -22,25 +22,25 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 	if err != nil {
 		return err
 	}
-	var wuTarget domain.WorkUnitStatus
+	var wuTarget workunitmod.Status
 	switch target {
 	case domain.RunStatusRunning:
-		wuTarget = domain.WorkUnitStatusRunning
+		wuTarget = workunitmod.StatusRunning
 	case domain.RunStatusValidating:
-		wuTarget = domain.WorkUnitStatusValidating
+		wuTarget = workunitmod.StatusValidating
 	case domain.RunStatusCompleted:
-		wuTarget = domain.WorkUnitStatusCompleted
+		wuTarget = workunitmod.StatusCompleted
 	case domain.RunStatusFailed:
-		wuTarget = domain.WorkUnitStatusFailed
+		wuTarget = workunitmod.StatusFailed
 	case domain.RunStatusCancelled:
-		wuTarget = domain.WorkUnitStatusCancelled
+		wuTarget = workunitmod.StatusCancelled
 	default:
 		return nil
 	}
 	if wu.Status == wuTarget {
 		return nil
 	}
-	if wuTarget == domain.WorkUnitStatusRunning {
+	if wuTarget == workunitmod.StatusRunning {
 		if err := dbcore.AcquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskID, "coordination.work_unit_path_lock"); err != nil {
 			return err
 		}
@@ -51,11 +51,11 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 			return err
 		}
 	}
-	if wuTarget == domain.WorkUnitStatusCompleted && len(wu.AcceptanceCriteria) == 0 && input.Justification == "" {
+	if wuTarget == workunitmod.StatusCompleted && len(wu.AcceptanceCriteria) == 0 && input.Justification == "" {
 		return apperrors.New(apperrors.CodeInvalidInput, "coordination.run_workunit_sync", "related work unit completion requires acceptance criteria or explicit justification")
 	}
 	if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(wuTarget), transition.TransitionContext(input)); err != nil {
-		if wuTarget == domain.WorkUnitStatusFailed && wu.Status == domain.WorkUnitStatusCreated {
+		if wuTarget == workunitmod.StatusFailed && wu.Status == workunitmod.StatusCreated {
 			return nil
 		}
 		return err
@@ -70,8 +70,8 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 	return dbcore.EnsureRowsAffected(res, "work unit", "coordination.run_workunit_sync.update_work_unit")
 }
 
-func workUnitEventTypeForStatus(status domain.WorkUnitStatus) string {
-	if status == domain.WorkUnitStatusRunning {
+func workUnitEventTypeForStatus(status workunitmod.Status) string {
+	if status == workunitmod.StatusRunning {
 		return "work_unit.started"
 	}
 	return "work_unit." + string(status)

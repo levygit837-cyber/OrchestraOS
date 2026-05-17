@@ -11,10 +11,10 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/migrations"
-runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
-taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
-taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	_ "github.com/lib/pq"
 )
 
@@ -324,14 +324,14 @@ func createTestWorkUnit(t *testing.T, db *sql.DB, taskID string) string {
 
 	taskGraphID := createTestTaskGraph(t, db, taskID)
 	repo := workunitmod.NewRepository(db)
-	wu := &domain.WorkUnit{
+	wu := &workunitmod.WorkUnit{
 		ID:                   uuid.New().String(),
 		TaskID:               taskID,
 		TaskGraphID:          taskGraphID,
 		Title:                "Integration Test Work Unit",
 		Objective:            "Validate event persistence",
 		AssignedAgentProfile: "default",
-		Status:               domain.WorkUnitStatusCreated,
+		Status:               workunitmod.StatusCreated,
 	}
 	if err := repo.Create(wu); err != nil {
 		t.Fatalf("Failed to create test work unit: %v", err)

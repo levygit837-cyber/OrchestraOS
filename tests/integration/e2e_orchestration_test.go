@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
@@ -180,8 +180,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final work unit: %v", err)
 	}
-	if finalWU.Status != domain.WorkUnitStatusCompleted {
-		t.Errorf("Expected work unit status %s, got %s", domain.WorkUnitStatusCompleted, finalWU.Status)
+	if finalWU.Status != workunitmod.StatusCompleted {
+		t.Errorf("Expected work unit status %s, got %s", workunitmod.StatusCompleted, finalWU.Status)
 	}
 
 	// Agent session checkpoint
@@ -413,8 +413,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final work unit: %v", err)
 	}
-	if finalWU.Status != domain.WorkUnitStatusCompleted {
-		t.Errorf("Expected work unit status %s, got %s", domain.WorkUnitStatusCompleted, finalWU.Status)
+	if finalWU.Status != workunitmod.StatusCompleted {
+		t.Errorf("Expected work unit status %s, got %s", workunitmod.StatusCompleted, finalWU.Status)
 	}
 
 	sessionRepo := agentsessionmod.NewRepository(db)

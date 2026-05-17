@@ -82,7 +82,7 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
 		Run:      run,
-		WorkUnit: wu,
+		WorkUnit: workUnitToDomain(wu),
 		// TODO: remove when prompt.PrepareAndPersistInput.Task uses *task.Task directly.
 		Task: &domain.Task{
 			ID:                   task.ID,
@@ -102,4 +102,25 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 		PromptSnapshotEventID:  input.PromptSnapshotEventID,
 		ToolsetSnapshotEventID: input.ToolsetSnapshotEventID,
 	})
+}
+
+// TODO[ADR-0022]: remove when prompt.PrepareAndPersistInput.WorkUnit uses *workunit.WorkUnit directly.
+func workUnitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
+	if wu == nil {
+		return nil
+	}
+	return &domain.WorkUnit{
+		ID:                   wu.ID,
+		TaskID:               wu.TaskID,
+		TaskGraphID:          wu.TaskGraphID,
+		Title:                wu.Title,
+		Objective:            wu.Objective,
+		AssignedAgentProfile: wu.AssignedAgentProfile,
+		Status:               domain.WorkUnitStatus(wu.Status),
+		OwnedPaths:           wu.OwnedPaths,
+		ReadPaths:            wu.ReadPaths,
+		AcceptanceCriteria:   wu.AcceptanceCriteria,
+		ValidationPlan:       wu.ValidationPlan,
+		DependsOn:            wu.DependsOn,
+	}
 }

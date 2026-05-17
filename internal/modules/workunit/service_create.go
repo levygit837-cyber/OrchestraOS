@@ -18,7 +18,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUnitInput) ([]*transition.OperationResult[*domain.WorkUnit], error) {
+func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUnitInput) ([]*transition.OperationResult[*WorkUnit], error) {
 	op := "work_unit_service.validate_create_many"
 	if len(inputs) == 0 {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "at least one work unit is required")
@@ -93,16 +93,16 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	}
 
 	repo := NewRepository(tx)
-	results := make([]*transition.OperationResult[*domain.WorkUnit], 0, len(inputs))
+	results := make([]*transition.OperationResult[*WorkUnit], 0, len(inputs))
 	for _, input := range inputs {
-		wu := &domain.WorkUnit{
+		wu := &WorkUnit{
 			ID:                   input.ID,
 			TaskID:               input.TaskID,
 			TaskGraphID:          input.TaskGraphID,
 			Title:                input.Title,
 			Objective:            input.Objective,
 			AssignedAgentProfile: input.AssignedAgentProfile,
-			Status:               domain.WorkUnitStatusCreated,
+			Status:               StatusCreated,
 			OwnedPaths:           input.OwnedPaths,
 			ReadPaths:            input.ReadPaths,
 			AcceptanceCriteria:   input.AcceptanceCriteria,
@@ -146,7 +146,7 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		if err != nil {
 			return nil, err
 		}
-		results = append(results, &transition.OperationResult[*domain.WorkUnit]{Value: wu, Event: &appendResult.Event, Duplicate: appendResult.Duplicate})
+		results = append(results, &transition.OperationResult[*WorkUnit]{Value: wu, Event: &appendResult.Event, Duplicate: appendResult.Duplicate})
 	}
 
 	if err := dbcore.CommitTx(tx, "work_unit_service.commit_create_many"); err != nil {
