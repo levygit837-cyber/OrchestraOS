@@ -26,8 +26,9 @@ import (
 //	run -> task: run.TaskReader returns *task.Task
 //	workunit -> task: workunit.TaskReader returns *task.Task
 var allowedModuleImports = map[string]map[string]bool{
-	"run":      {"task": true, "workunit": true},
-	"workunit": {"task": true},
+	"run":          {"task": true, "workunit": true},
+	"workunit":     {"task": true},
+	"agentsession": {"agent": true},
 }
 
 // leafModules must not import any other module under internal/modules/.

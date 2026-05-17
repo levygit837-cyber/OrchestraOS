@@ -219,7 +219,7 @@ func TestOrchestratorService_AgentSessionCheckpoint(t *testing.T) {
 		}
 
 		// Verify session status
-		if session.Status != domain.AgentSessionStatusStopped && session.Status != domain.AgentSessionStatusDisconnected {
+		if session.Status != agentsessionmod.StatusStopped && session.Status != agentsessionmod.StatusDisconnected {
 			t.Errorf("expected session status stopped or disconnected, got %s", session.Status)
 		}
 	}

@@ -5,11 +5,10 @@ import (
 	"database/sql"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // RequireByID retrieves an agent session by ID within a transaction, returning a not-found error if absent.
-func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*domain.AgentSession, error) {
+func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*AgentSession, error) {
 	_ = ctx
 	session, err := NewRepository(tx).GetByID(id)
 	if err != nil {

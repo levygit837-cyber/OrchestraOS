@@ -289,18 +289,18 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Create agent session
-		session := &domain.AgentSession{
+		session := &agentsessionmod.AgentSession{
 			ID:      uuid.New().String(),
 			AgentID: "agent-test-001",
 			RunID:   run.ID,
-			Status:  domain.AgentSessionStatusStarting,
+			Status:  agentsessionmod.StatusStarting,
 		}
 		if err := sessionRepo.Create(session); err != nil {
 			t.Fatalf("Failed to create agent session: %v", err)
 		}
 
 		// Transition to running
-		if err := sessionRepo.UpdateStatus(session.ID, domain.AgentSessionStatusRunning); err != nil {
+		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusRunning); err != nil {
 			t.Fatalf("Failed to update session to running: %v", err)
 		}
 
@@ -324,7 +324,7 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Transition to stopped
-		if err := sessionRepo.UpdateStatus(session.ID, domain.AgentSessionStatusStopped); err != nil {
+		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusStopped); err != nil {
 			t.Fatalf("Failed to update session to stopped: %v", err)
 		}
 
@@ -336,7 +336,7 @@ func TestAgentSessionWithRun(t *testing.T) {
 		if storedSession == nil {
 			t.Fatal("Session was not stored")
 		}
-		if storedSession.Status != domain.AgentSessionStatusStopped {
+		if storedSession.Status != agentsessionmod.StatusStopped {
 			t.Errorf("Expected status stopped, got %s", storedSession.Status)
 		}
 		if storedSession.LastHeartbeatAt == nil {

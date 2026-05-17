@@ -94,7 +94,7 @@ func (a *wuTaskReaderAdapter) GetByID(id string) (*taskmod.Task, error) {
 }
 
 // agentToDomain converts a local agent.Agent to domain.Agent for cross-module compatibility.
-// TODO: remove when agentsession.AgentReader and orchestrator.AgentManager use *agent.Agent directly.
+// TODO[ADR-0022]: remove when orchestrator.AgentManager uses *agent.Agent directly.
 func agentToDomain(a *agentmod.Agent) *domain.Agent {
 	if a == nil {
 		return nil
@@ -110,18 +110,50 @@ func agentToDomain(a *agentmod.Agent) *domain.Agent {
 	}
 }
 
-// agentReaderAdapter wraps agent.Repository to return domain.Agent for cross-module compatibility.
-// TODO: remove when agentsession.AgentReader uses *agent.Agent directly.
+// agentSessionToDomain converts a local agentsession.AgentSession to domain.AgentSession for cross-module compatibility.
+// TODO[ADR-0022]: remove when orchestrator.SessionManager uses *agentsession.AgentSession directly.
+func agentSessionToDomain(s *agentsessionmod.AgentSession) *domain.AgentSession {
+	if s == nil {
+		return nil
+	}
+	return &domain.AgentSession{
+		ID:               s.ID,
+		AgentID:          s.AgentID,
+		RunID:            s.RunID,
+		TaskID:           s.TaskID,
+		WorkUnitID:       s.WorkUnitID,
+		SandboxID:        s.SandboxID,
+		ConnectionID:     s.ConnectionID,
+		Status:           domain.AgentSessionStatus(s.Status),
+		LastHeartbeatAt:  s.LastHeartbeatAt,
+		LastCheckpointAt: s.LastCheckpointAt,
+		LastSeenEventID:  s.LastSeenEventID,
+		RecoverableState: s.RecoverableState,
+	}
+}
+
+// agentReaderAdapter wraps agent.Repository to implement agentsession.AgentReader.
+// TODO[ADR-0022]: remove when agentsession.AgentReader uses *agent.Agent directly.
 type agentReaderAdapter struct {
 	repo *agentmod.Repository
 }
 
-func (a *agentReaderAdapter) GetByID(ctx context.Context, id string) (*domain.Agent, error) {
-	agent, err := a.repo.GetByID(ctx, id)
+func (a *agentReaderAdapter) GetByID(ctx context.Context, id string) (*agentmod.Agent, error) {
+	return a.repo.GetByID(ctx, id)
+}
+
+// agentSessionReaderAdapter wraps agentsession.Repository to return domain.AgentSession for cross-module compatibility.
+// TODO[ADR-0022]: remove when trigger.AgentSessionReader uses *agentsession.AgentSession directly.
+type agentSessionReaderAdapter struct {
+	repo *agentsessionmod.Repository
+}
+
+func (a *agentSessionReaderAdapter) GetByID(id string) (*domain.AgentSession, error) {
+	session, err := a.repo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
-	return agentToDomain(agent), nil
+	return agentSessionToDomain(session), nil
 }
 
 // runToDomain converts a local run.Run to domain.Run for cross-module compatibility.
@@ -265,7 +297,7 @@ func TriggerService(db *sql.DB) *triggermod.TriggerService {
 			return &runReaderAdapter{repo: runmod.NewRepository(executor)}
 		},
 		func(executor dbcore.DBTX) triggermod.AgentSessionReader {
-			return agentsessionmod.NewRepository(executor)
+			return &agentSessionReaderAdapter{repo: agentsessionmod.NewRepository(executor)}
 		},
 		func(executor dbcore.DBTX) triggermod.WorkUnitReader {
 			return &workUnitReaderAdapter{repo: workunitmod.NewRepository(executor)}
@@ -398,15 +430,39 @@ type sessionAdapter struct {
 }
 
 func (a *sessionAdapter) Create(ctx context.Context, input orchestratormod.CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	return a.svc.Create(ctx, agentsessionmod.CreateAgentSessionInput{
+	res, err := a.svc.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: input.AgentID, RunID: input.RunID, TaskID: input.TaskID, WorkUnitID: input.WorkUnitID,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return &transition.OperationResult[*domain.AgentSession]{
+		Value:     agentSessionToDomain(res.Value),
+		Event:     res.Event,
+		Duplicate: res.Duplicate,
+	}, nil
 }
 func (a *sessionAdapter) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	return a.svc.Connect(ctx, sessionID, connectionID, sandboxID, input)
+	res, err := a.svc.Connect(ctx, sessionID, connectionID, sandboxID, input)
+	if err != nil {
+		return nil, err
+	}
+	return &transition.OperationResult[*domain.AgentSession]{
+		Value:     agentSessionToDomain(res.Value),
+		Event:     res.Event,
+		Duplicate: res.Duplicate,
+	}, nil
 }
 func (a *sessionAdapter) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	return a.svc.Stop(ctx, sessionID, input)
+	res, err := a.svc.Stop(ctx, sessionID, input)
+	if err != nil {
+		return nil, err
+	}
+	return &transition.OperationResult[*domain.AgentSession]{
+		Value:     agentSessionToDomain(res.Value),
+		Event:     res.Event,
+		Duplicate: res.Duplicate,
+	}, nil
 }
 
 type promptAdapter struct {

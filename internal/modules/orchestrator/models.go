@@ -121,6 +121,7 @@ type AgentManager interface {
 	FindOrCreate(ctx context.Context, profile string, runtimeType domain.AgentRuntimeType) (*domain.Agent, error)
 }
 
+// TODO[ADR-0022]: migrar retornos para *agentsession.AgentSession.
 type SessionManager interface {
 	Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error)
 	Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)

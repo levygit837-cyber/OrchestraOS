@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // Repository handles agent session persistence
@@ -27,7 +26,7 @@ func NewRepository(db db.DBTX) *Repository {
 }
 
 // Create inserts a new agent session
-func (r *Repository) Create(session *domain.AgentSession) error {
+func (r *Repository) Create(session *AgentSession) error {
 	if session.ID == "" {
 		session.ID = uuid.New().String()
 	}
@@ -59,13 +58,13 @@ func (r *Repository) Create(session *domain.AgentSession) error {
 }
 
 // GetByID retrieves an agent session by ID
-func (r *Repository) GetByID(id string) (*domain.AgentSession, error) {
+func (r *Repository) GetByID(id string) (*AgentSession, error) {
 	row := r.db.QueryRow(QueryGetByID, id)
 	return r.scanAgentSession(row)
 }
 
 // GetByRunID retrieves the most recent agent session for a run
-func (r *Repository) GetByRunID(runID string) (*domain.AgentSession, error) {
+func (r *Repository) GetByRunID(runID string) (*AgentSession, error) {
 	row := r.db.QueryRow(QueryGetByRunID, runID)
 	return r.scanAgentSession(row)
 }
@@ -173,8 +172,8 @@ func (r *Repository) UpdateRecoverableState(id string, state json.RawMessage) er
 
 func (r *Repository) scanAgentSession(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.AgentSession, error) {
-	var session domain.AgentSession
+}) (*AgentSession, error) {
+	var session AgentSession
 	var sandboxID, connectionID, lastSeenEventID sql.NullString
 	var recoverableState []byte
 	var createdAt, updatedAt time.Time

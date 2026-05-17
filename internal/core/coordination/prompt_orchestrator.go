@@ -86,8 +86,9 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.WorkUnit usar *workunit.WorkUnit
 		WorkUnit: workunitToDomain(wu),
 		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Task usar *task.Task diretamente.
-		Task:                   taskToDomain(task),
-		Session:                session,
+		Task: taskToDomain(task),
+		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Session usar *agentsession.AgentSession
+		Session:                agentSessionToDomain(session),
 		PromptSnapshotID:       input.PromptSnapshotID,
 		ToolsetSnapshotID:      input.ToolsetSnapshotID,
 		PromptSnapshotEventID:  input.PromptSnapshotEventID,
@@ -114,6 +115,28 @@ func workunitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
 		AcceptanceCriteria:   wu.AcceptanceCriteria,
 		ValidationPlan:       wu.ValidationPlan,
 		DependsOn:            wu.DependsOn,
+	}
+}
+
+// agentSessionToDomain converts a local agentsession.AgentSession to domain.AgentSession for cross-module compatibility.
+// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Session usar *agentsession.AgentSession.
+func agentSessionToDomain(s *agentsessionmod.AgentSession) *domain.AgentSession {
+	if s == nil {
+		return nil
+	}
+	return &domain.AgentSession{
+		ID:               s.ID,
+		AgentID:          s.AgentID,
+		RunID:            s.RunID,
+		TaskID:           s.TaskID,
+		WorkUnitID:       s.WorkUnitID,
+		SandboxID:        s.SandboxID,
+		ConnectionID:     s.ConnectionID,
+		Status:           domain.AgentSessionStatus(s.Status),
+		LastHeartbeatAt:  s.LastHeartbeatAt,
+		LastCheckpointAt: s.LastCheckpointAt,
+		LastSeenEventID:  s.LastSeenEventID,
+		RecoverableState: s.RecoverableState,
 	}
 }
 

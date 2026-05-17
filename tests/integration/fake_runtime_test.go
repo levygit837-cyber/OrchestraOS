@@ -202,18 +202,18 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 
 		// 4. Create agent session
 		agentID := "agent-integration-001"
-		session := &domain.AgentSession{
+		session := &agentsessionmod.AgentSession{
 			ID:      uuid.New().String(),
 			AgentID: agentID,
 			RunID:   run.ID,
-			Status:  domain.AgentSessionStatusStarting,
+			Status:  agentsessionmod.StatusStarting,
 		}
 		if err := sessionRepo.Create(session); err != nil {
 			t.Fatalf("Failed to create agent session: %v", err)
 		}
 
 		// Update session to running
-		if err := sessionRepo.UpdateStatus(session.ID, domain.AgentSessionStatusRunning); err != nil {
+		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusRunning); err != nil {
 			t.Fatalf("Failed to update session status: %v", err)
 		}
 
