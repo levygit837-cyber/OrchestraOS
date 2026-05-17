@@ -26,6 +26,28 @@ func TaskService(db *sql.DB) *taskmod.TaskService {
 	return taskmod.NewTaskService(db, coordination.CancelTaskDependents)
 }
 
+// workunitToDomain converts a local workunit.WorkUnit to domain.WorkUnit for cross-module compatibility.
+// TODO[ADR-0022]: remove when all consumers use *workunit.WorkUnit directly.
+func workunitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
+	if wu == nil {
+		return nil
+	}
+	return &domain.WorkUnit{
+		ID:                   wu.ID,
+		TaskID:               wu.TaskID,
+		TaskGraphID:          wu.TaskGraphID,
+		Title:                wu.Title,
+		Objective:            wu.Objective,
+		AssignedAgentProfile: wu.AssignedAgentProfile,
+		Status:               domain.WorkUnitStatus(wu.Status),
+		OwnedPaths:           wu.OwnedPaths,
+		ReadPaths:            wu.ReadPaths,
+		AcceptanceCriteria:   wu.AcceptanceCriteria,
+		ValidationPlan:       wu.ValidationPlan,
+		DependsOn:            wu.DependsOn,
+	}
+}
+
 // taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.
 // TODO[ADR-0022]: remove when orchestrator.TaskServiceReader, run.TaskReader, workunit.TaskReader
 // and prompt.PrepareAndPersistInput.Task use *task.Task directly.
@@ -47,8 +69,8 @@ func taskToDomain(t *taskmod.Task) *domain.Task {
 	}
 }
 
-// taskReaderAdapter wraps task.Repository to return domain.Task for cross-module compatibility.
-// TODO: remove when all TaskReader interfaces use *task.Task directly.
+// taskReaderAdapter wraps task.Repository to return domain.Task for taskgraph.TaskReader.
+// TODO[ADR-0022]: remove when all TaskReader interfaces use *task.Task directly.
 type taskReaderAdapter struct {
 	repo *taskmod.Repository
 }
@@ -59,6 +81,16 @@ func (a *taskReaderAdapter) GetByID(id string) (*domain.Task, error) {
 		return nil, err
 	}
 	return taskToDomain(t), nil
+}
+
+// wuTaskReaderAdapter wraps task.Repository to return *task.Task for workunit.TaskReader.
+// TODO[ADR-0022]: remove when workunit.TaskReader uses *task.Task directly.
+type wuTaskReaderAdapter struct {
+	repo *taskmod.Repository
+}
+
+func (a *wuTaskReaderAdapter) GetByID(id string) (*taskmod.Task, error) {
+	return a.repo.GetByID(id)
 }
 
 // agentToDomain converts a local agent.Agent to domain.Agent for cross-module compatibility.
@@ -149,7 +181,9 @@ func (a *agentManagerAdapter) FindOrCreate(ctx context.Context, profile string, 
 func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
 		func(tx *sql.Tx) runmod.TaskReader { return taskmod.NewRepository(tx) },
-		func(tx *sql.Tx) runmod.WorkUnitReader { return workunitmod.NewRepository(tx) },
+		func(tx *sql.Tx) runmod.WorkUnitReader {
+			return &runWorkUnitReaderAdapter{repo: workunitmod.NewRepository(tx)}
+		},
 		func(ctx context.Context, tx *sql.Tx, run *runmod.Run, target runmod.Status, input transition.TransitionInput) error {
 			// TODO[ADR-0022]: remover adapter quando coordination.TransitionRunWithWorkUnit usar *run.Run
 			return coordination.TransitionRunWithWorkUnit(ctx, tx, runToDomain(run), domain.RunStatus(target), input)
@@ -160,7 +194,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 // WorkUnitService creates a WorkUnitService with standard repository factories.
 func WorkUnitService(db *sql.DB) *workunitmod.WorkUnitService {
 	return workunitmod.NewWorkUnitService(db,
-		func(tx *sql.Tx) workunitmod.TaskReader { return &taskReaderAdapter{repo: taskmod.NewRepository(tx)} },
+		func(tx *sql.Tx) workunitmod.TaskReader { return &wuTaskReaderAdapter{repo: taskmod.NewRepository(tx)} },
 		func(tx *sql.Tx) workunitmod.TaskGraphManager { return taskgraphmod.NewRepository(tx) },
 	)
 }
@@ -185,8 +219,12 @@ func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
 		func(executor dbcore.DBTX) taskgraphmod.TaskReader {
 			return &taskReaderAdapter{repo: taskmod.NewRepository(executor)}
 		},
-		func(executor dbcore.DBTX) taskgraphmod.WorkUnitCreator { return workunitmod.NewRepository(executor) },
-		func(executor dbcore.DBTX) taskgraphmod.WorkUnitLister { return workunitmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) taskgraphmod.WorkUnitCreator {
+			return &workUnitCreatorAdapter{repo: workunitmod.NewRepository(executor)}
+		},
+		func(executor dbcore.DBTX) taskgraphmod.WorkUnitLister {
+			return &workUnitListerAdapter{repo: workunitmod.NewRepository(executor)}
+		},
 	)
 }
 
@@ -229,7 +267,9 @@ func TriggerService(db *sql.DB) *triggermod.TriggerService {
 		func(executor dbcore.DBTX) triggermod.AgentSessionReader {
 			return agentsessionmod.NewRepository(executor)
 		},
-		func(executor dbcore.DBTX) triggermod.WorkUnitReader { return workunitmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) triggermod.WorkUnitReader {
+			return &workUnitReaderAdapter{repo: workunitmod.NewRepository(executor)}
+		},
 	)
 }
 
@@ -399,7 +439,76 @@ func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, a
 type wuListerAdapter struct{ db *sql.DB }
 
 func (a *wuListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, error) {
-	return workunitmod.NewRepository(a.db).ListByTaskGraph(graphID)
+	list, err := workunitmod.NewRepository(a.db).ListByTaskGraph(graphID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.WorkUnit, len(list))
+	for i, wu := range list {
+		out[i] = *workunitToDomain(&wu)
+	}
+	return out, nil
+}
+
+// workUnitCreatorAdapter bridges taskgraph.WorkUnitCreator to workunit.Repository.
+// TODO[ADR-0022]: remove when taskgraph.WorkUnitCreator uses *workunit.WorkUnit directly.
+type workUnitCreatorAdapter struct{ repo *workunitmod.Repository }
+
+func (a *workUnitCreatorAdapter) Create(wu *domain.WorkUnit) error {
+	return a.repo.Create(&workunitmod.WorkUnit{
+		ID:                   wu.ID,
+		TaskID:               wu.TaskID,
+		TaskGraphID:          wu.TaskGraphID,
+		Title:                wu.Title,
+		Objective:            wu.Objective,
+		AssignedAgentProfile: wu.AssignedAgentProfile,
+		Status:               workunitmod.Status(wu.Status),
+		OwnedPaths:           wu.OwnedPaths,
+		ReadPaths:            wu.ReadPaths,
+		AcceptanceCriteria:   wu.AcceptanceCriteria,
+		ValidationPlan:       wu.ValidationPlan,
+		DependsOn:            wu.DependsOn,
+	})
+}
+
+// workUnitListerAdapter bridges taskgraph.WorkUnitLister to workunit.Repository.
+// TODO[ADR-0022]: remove when taskgraph.WorkUnitLister uses []workunit.WorkUnit directly.
+type workUnitListerAdapter struct{ repo *workunitmod.Repository }
+
+func (a *workUnitListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, error) {
+	list, err := a.repo.ListByTaskGraph(graphID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.WorkUnit, len(list))
+	for i, wu := range list {
+		out[i] = *workunitToDomain(&wu)
+	}
+	return out, nil
+}
+
+// runWorkUnitReaderAdapter bridges run.WorkUnitReader to workunit.Repository.
+// TODO[ADR-0022]: remove when run.WorkUnitReader uses *workunit.WorkUnit directly.
+type runWorkUnitReaderAdapter struct{ repo *workunitmod.Repository }
+
+func (a *runWorkUnitReaderAdapter) GetByID(id string) (*domain.WorkUnit, error) {
+	wu, err := a.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return workunitToDomain(wu), nil
+}
+
+// workUnitReaderAdapter bridges trigger.WorkUnitReader to workunit.Repository.
+// TODO[ADR-0022]: remove when trigger.WorkUnitReader uses *workunit.WorkUnit directly.
+type workUnitReaderAdapter struct{ repo *workunitmod.Repository }
+
+func (a *workUnitReaderAdapter) GetByID(id string) (*domain.WorkUnit, error) {
+	wu, err := a.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return workunitToDomain(wu), nil
 }
 
 type runtimeAdapter struct{ r agentmod.Runtime }

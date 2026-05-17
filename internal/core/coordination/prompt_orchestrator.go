@@ -82,8 +82,9 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
 		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Run usar *run.Run
-		Run:      runToDomain(run),
-		WorkUnit: wu,
+		Run: runToDomain(run),
+		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.WorkUnit usar *workunit.WorkUnit
+		WorkUnit: workunitToDomain(wu),
 		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Task usar *task.Task diretamente.
 		Task:                   taskToDomain(task),
 		Session:                session,
@@ -92,6 +93,28 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 		PromptSnapshotEventID:  input.PromptSnapshotEventID,
 		ToolsetSnapshotEventID: input.ToolsetSnapshotEventID,
 	})
+}
+
+// workunitToDomain converts a local workunit.WorkUnit to domain.WorkUnit for cross-module compatibility.
+// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.WorkUnit usar *workunit.WorkUnit
+func workunitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
+	if wu == nil {
+		return nil
+	}
+	return &domain.WorkUnit{
+		ID:                   wu.ID,
+		TaskID:               wu.TaskID,
+		TaskGraphID:          wu.TaskGraphID,
+		Title:                wu.Title,
+		Objective:            wu.Objective,
+		AssignedAgentProfile: wu.AssignedAgentProfile,
+		Status:               domain.WorkUnitStatus(wu.Status),
+		OwnedPaths:           wu.OwnedPaths,
+		ReadPaths:            wu.ReadPaths,
+		AcceptanceCriteria:   wu.AcceptanceCriteria,
+		ValidationPlan:       wu.ValidationPlan,
+		DependsOn:            wu.DependsOn,
+	}
 }
 
 // taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.

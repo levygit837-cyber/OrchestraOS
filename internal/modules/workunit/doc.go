@@ -18,7 +18,7 @@
 //   - core/coordination: TransitionInput, OperationResult
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
-//   - domain: WorkUnit, WorkUnitStatus
+//   - domain: EventEnvelope, EventPriority (generic types only)
 //
 // # Related Packages
 //   - task/: tasks contain work units

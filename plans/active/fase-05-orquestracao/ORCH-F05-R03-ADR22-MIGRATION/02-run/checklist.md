@@ -38,9 +38,11 @@
 
 ---
 
-## Passo 3 — Interfaces Cruzadas (Task já migrado)
+## Passo 3 — Interfaces Cruzadas
 - [ ] `run/service.go` — `TaskReader` interface usa `*task.Task` (não `*domain.Task`)
-- [ ] Adapter `taskToDomain()` removido de `run/` se existir (task já é local)
+- [ ] `run/service.go` — `WorkUnitReader` interface usa `*workunit.WorkUnit` (não `*domain.WorkUnit`)
+- [ ] `tests/architecture/module_boundaries_test.go` atualizado: adicionar `run` → `workunit`
+- [ ] Nenhum adapter `taskToDomain()` ou `workunitToDomain()` em `run/`
 
 ---
 
@@ -53,7 +55,9 @@
 
 ---
 
-## Passo 5 — Validação
+## Passo 5 — Validação de Isolamento
+- [ ] `grep -rn "internal/domain" internal/modules/run/` só retorna `EventEnvelope`/`EventPriority`
+- [ ] `grep -rn "domain\.WorkUnit" internal/modules/run/` retorna ZERO resultados
 - [ ] `go build ./...` passa
 - [ ] `go test ./...` passa
 - [ ] `./scripts/verify-contracts.sh` passa

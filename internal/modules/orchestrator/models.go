@@ -139,6 +139,7 @@ type TriggerEvaluator interface {
 	EvaluateRun(ctx context.Context, runID string) ([]*domain.Trigger, error)
 }
 
+// TODO[ADR-0022]: migrar para []workunit.WorkUnit
 type WorkUnitLister interface {
 	ListByTaskGraph(graphID string) ([]domain.WorkUnit, error)
 }

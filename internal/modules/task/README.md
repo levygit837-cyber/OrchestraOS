@@ -63,8 +63,11 @@ created → triaged → planned → scheduled → sandbox_preparing → running
 - `internal/core/statemachine`, `core/transition`, `core/serialization` (event emission)
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 
+Allowed from `internal/modules/*`:
+- NONE — task is a root module with no DI dependencies on other modules.
+
 Forbidden:
-- `internal/modules/*` (direct imports)
+- `internal/modules/*` services, repositories, or business logic imports
 - `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `run.Service` or `workunit.Service`
 - Cross-module mutations outside `core/coordination`

@@ -33,7 +33,8 @@ type PrepareRunPromptInput struct {
 }
 
 type PrepareAndPersistInput struct {
-	Run                    *domain.Run
+	Run *domain.Run
+	// TODO[ADR-0022]: migrar para *workunit.WorkUnit
 	WorkUnit               *domain.WorkUnit
 	Task                   *domain.Task
 	Session                *domain.AgentSession

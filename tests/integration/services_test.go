@@ -134,7 +134,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get work unit: %v", err)
 	}
-	if wu.Status != domain.WorkUnitStatusCompleted {
+	if wu.Status != workunitmod.StatusCompleted {
 		t.Fatalf("expected work unit completed, got %s", wu.Status)
 	}
 	session, err := agentsessionmod.NewRepository(db).GetByID(sessionResult.Value.ID)
@@ -408,7 +408,7 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get work unit: %v", err)
 	}
-	if wu.Status != domain.WorkUnitStatusCancelled {
+	if wu.Status != workunitmod.StatusCancelled {
 		t.Fatalf("expected related work unit cancelled, got %s", wu.Status)
 	}
 }

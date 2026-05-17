@@ -62,11 +62,11 @@ created → running → validating → completed
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
-- `internal/modules/workunit` (for `EventTypeForStatus` and validation helpers)
-- DI interfaces only: `TaskReader` (from `task/`), `WorkUnitReader` (from `workunit/`)
+- DI interface types: `task.Task` (for `TaskReader`), `workunit.WorkUnit` (for `WorkUnitReader`)
+  — see ADR-0026: types may be imported ONLY for DI interface return types.
 
 Forbidden:
-- `internal/modules/*` (direct imports)
+- `internal/modules/*` services, repositories, or business logic imports
 - `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `task.Service` or `workunit.Service`
 - Cross-module mutations outside `core/coordination`

@@ -52,13 +52,13 @@ func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input 
 		if transition.IsFinalStatus(string(wu.Status)) {
 			continue
 		}
-		if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(domain.WorkUnitStatusCancelled), transition.TransitionContext(input)); err != nil {
+		if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(workunitmod.StatusCancelled), transition.TransitionContext(input)); err != nil {
 			return err
 		}
-		if _, _, err := transition.AppendTransition(ctx, tx, "", "work_unit.cancelled", taskID, "", wu.ID, input.AgentID, transition.TransitionPayload(wu.Status, domain.WorkUnitStatusCancelled, input)); err != nil {
+		if _, _, err := transition.AppendTransition(ctx, tx, "", "work_unit.cancelled", taskID, "", wu.ID, input.AgentID, transition.TransitionPayload(wu.Status, workunitmod.StatusCancelled, input)); err != nil {
 			return err
 		}
-		res, err := tx.ExecContext(ctx, workunitmod.QueryUpdateStatus, wu.ID, domain.WorkUnitStatusCancelled, time.Now().UTC())
+		res, err := tx.ExecContext(ctx, workunitmod.QueryUpdateStatus, wu.ID, workunitmod.StatusCancelled, time.Now().UTC())
 		if err != nil {
 			return apperrors.Wrap(apperrors.CodePersistence, "coordination.cancel_task_dependents.update_work_unit", err)
 		}

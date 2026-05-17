@@ -1,15 +1,18 @@
 # Contracts: orchestrator
 
+> **⚠️ FUTURE RENAME:** This module will be renamed to `runner/` or `taskflow/`. The name `orchestrator` will be reserved for a future Agent Orchestrator module (`director/`). See `docs/adr/0027-orchestrator-module-naming.md`.
+
 ## Invariants
 
-1. `RunTask` is the only public method of `OrchestratorService`.
+1. `RunTask` is the only public method of the workflow engine.
 2. `RunTask` never accesses repositories directly; it uses only injected domain services.
 3. Work units are executed in topological order (DAG dependency order).
 4. Each work unit execution is isolated: its own Run, AgentSession, and Runtime instance.
-5. If a work unit fails, the orchestrator records the failure but continues with remaining independent work units in the first cut.
+5. If a work unit fails, the engine records the failure but continues with remaining independent work units in the first cut.
 6. Every significant step emits an event via the EventStore.
 7. Timeouts are enforced per work unit, not per task.
-8. The orchestrator never mutates task, run, or session state directly; it delegates to the respective services.
+8. This module never mutates task, run, or session state directly; it delegates to the respective services.
+9. This module does NOT decide which task to run or when — it only executes tasks that have already been scheduled.
 
 ---
 
@@ -60,7 +63,8 @@ Forbidden:
 - Inline SQL outside `queries.go`.
 - Business logic beyond task orchestration and coordination.
 
-Cross-module orchestration is the sole responsibility of this module.
+High-level task execution workflow is the sole responsibility of this module.
+Low-level cross-module transaction coordination belongs to `core/coordination/`.
 
 ---
 

@@ -68,8 +68,11 @@ Todo módulo **DEVE** conter exatamente estes arquivos:
 #### 2.4.1 Regras Globais (todos os módulos)
 
 ```
-1. NEVER import internal/modules/* directly.
-2. NEVER import internal/domain for entity structs (ADR-0022).
+1. NEVER import internal/modules/* for services, repositories, or business logic.
+   - ALLOWED: import types (structs, enums) from another module **only** for DI interface return types.
+   - See ADR-0026 for the complete Module Import Policy.
+2. NEVER import internal/domain for entity structs or entity enums (ADR-0022, ADR-0026).
+   - ALLOWED: import `EventEnvelope`, `EventPriority`, checkpoint types, and generic event payloads only.
 3. NEVER write SQL strings outside queries.go.
 4. NEVER call panic() — always return apperrors.Error.
 5. NEVER put business logic inside repository.go.
@@ -124,8 +127,11 @@ import _ "embed"
 // ============================================================================
 // GLOBAL RULES — apply to ALL modules in internal/modules/*
 // ============================================================================
-//   1. NEVER import internal/modules/* directly.
-//   2. NEVER import internal/domain for entity structs (ADR-0022).
+//   1. NEVER import internal/modules/* for services, repositories, or business logic.
+//      ALLOWED: import types (structs, enums) from another module ONLY for DI
+//      interface return types. See ADR-0026 for full policy.
+//   2. NEVER import internal/domain for entity structs or entity enums.
+//      ALLOWED: EventEnvelope, EventPriority, checkpoint types, generic payloads.
 //   3. NEVER write SQL strings outside queries.go.
 //   4. NEVER call panic() — always return apperrors.Error.
 //   5. NEVER put business logic inside repository.go.
@@ -156,6 +162,7 @@ import _ "embed"
 // FORBIDDEN: core/coordination (except for orchestrator module)
 //
 // For full contracts and state machine, read CONTRACTS.md in this directory.
+// For import policy, read ADR-0026.
 // For purpose and dependencies, read README.md in this directory.
 // ============================================================================
 

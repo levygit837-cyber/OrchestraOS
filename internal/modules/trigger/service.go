@@ -33,6 +33,7 @@ type AgentSessionReader interface {
 }
 
 // WorkUnitReader abstracts work-unit reads to avoid cyclic imports.
+// TODO[ADR-0022]: migrar para *workunit.WorkUnit
 type WorkUnitReader interface {
 	GetByID(id string) (*domain.WorkUnit, error)
 }

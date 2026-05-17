@@ -2,6 +2,8 @@
 
 ## Instruções
 - Marque `[x]` apenas quando o item estiver 100% concluído e verificado.
+- **Política:** Ver ADR-0026 (Module Import Policy). `internal/domain` só pode ser usado para `EventEnvelope`, `EventPriority`, e tipos genéricos. NUNCA para entity structs.
+- Marque `[x]` apenas quando o item estiver 100% concluído e verificado.
 - Se um item falhar em `go build` ou `go test`, volte para `[ ]` e corrija antes de prosseguir.
 - Pré-requisitos: A01 (task) 🟢, A02 (run) 🟢, A03 (workunit) 🟢.
 
