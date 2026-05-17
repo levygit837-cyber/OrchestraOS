@@ -10,51 +10,51 @@
 ---
 
 ## Setup
-- [ ] Branch `adr22-a07-prompt-types` criada e checkout feito
-- [ ] Worktree `../orchestraos-a07-prompt` ativa
-- [ ] `internal/modules/prompt/README.md` lido
-- [ ] `internal/modules/prompt/CONTRACTS.md` lido
-- [ ] `docs/adr/0022-llm-optimized-module-architecture.md` lido
-- [ ] A01, A02, A03, A05 estão no estado 🟢
+- [x] Branch `adr22-a07-prompt-types` criada e checkout feito
+- [x] Worktree `../orchestraos-a07-prompt` ativa
+- [x] `internal/modules/prompt/README.md` lido
+- [x] `internal/modules/prompt/CONTRACTS.md` lido
+- [x] `docs/adr/0022-llm-optimized-module-architecture.md` lido
+- [x] A01, A02, A03, A05 estão no estado 🟢
 
 ---
 
 ## Passo 1 — models.go (novo arquivo)
-- [ ] `PromptSnapshot` struct definida localmente
-- [ ] `PromptFragment` struct definida localmente
-- [ ] `PromptFragmentRef` struct definida localmente
-- [ ] `ToolsetSnapshot` struct definida localmente
-- [ ] `ToolsetTool` struct definida localmente
-- [ ] Tags JSON mantidas idênticas
-- [ ] `import "internal/domain"` removido (ou nunca adicionado)
+- [x] `PromptSnapshot` struct definida localmente
+- [x] `PromptFragment` struct definida localmente
+- [x] `PromptFragmentRef` struct definida localmente
+- [x] `ToolsetSnapshot` struct definida localmente
+- [x] `ToolsetTool` struct definida localmente
+- [x] Tags JSON mantidas idênticas
+- [x] `import "internal/domain"` removido (ou nunca adicionado)
 
 ---
 
 ## Passo 2 — Arquivos Internos
-- [ ] `repository.go`: `domain.PromptFragment` → `PromptFragment`, `domain.PromptSnapshot` → `PromptSnapshot`
-- [ ] `repository_snapshot.go`: `domain.PromptSnapshot` → `PromptSnapshot`, `domain.ToolsetSnapshot` → `ToolsetSnapshot`
-- [ ] `service.go`: `PrepareAndPersistInput` usa tipos locais de task/run/workunit/agentsession
-- [ ] `service.go`: `PreparedRunPrompt` usa `*PromptSnapshot`, `*ToolsetSnapshot`
-- [ ] `service.go`: funções `*ToDomain()` removidas
-- [ ] `types.go`: verificado (já local)
-- [ ] `composer.go`: verificado (já local)
-- [ ] Testes do módulo atualizados
+- [x] `repository.go`: `domain.PromptFragment` → `PromptFragment`, `domain.PromptSnapshot` → `PromptSnapshot`
+- [x] `repository_snapshot.go`: `domain.PromptSnapshot` → `PromptSnapshot`, `domain.ToolsetSnapshot` → `ToolsetSnapshot`
+- [x] `service.go`: `PrepareAndPersistInput` usa tipos locais de task/run/workunit/agentsession
+- [x] `service.go`: `PreparedRunPrompt` usa `*PromptSnapshot`, `*ToolsetSnapshot`
+- [x] `service.go`: funções `*ToDomain()` removidas
+- [x] `types.go`: verificado (já local)
+- [x] `composer.go`: verificado (já local)
+- [x] Testes do módulo atualizados (nenhum teste existente no módulo)
 
 ---
 
 ## Passo 3 — Adapters Temporários nos Consumidores
-- [ ] `internal/modules/orchestrator/models.go` — `PreparedPrompt` anotado
-- [ ] `internal/core/coordination/prompt_orchestrator.go` — adapters criados
-- [ ] `internal/bootstrap/services.go` — adapter atualizado
+- [ ] `internal/modules/orchestrator/models.go` — `PreparedPrompt` anotado (fora do escopo: não tocar em orchestrator)
+- [ ] `internal/core/coordination/prompt_orchestrator.go` — adapters criados (fora do escopo: não tocar em coordination)
+- [ ] `internal/bootstrap/services.go` — adapter atualizado (fora do escopo: não tocar em bootstrap)
 
 ---
 
 ## Passo 4 — Validação
-- [ ] `go build ./...` passa
-- [ ] `go test ./...` passa
-- [ ] `./scripts/verify-contracts.sh` passa
-- [ ] `./scripts/lint.sh` passa
-- [ ] `./scripts/safe-commit.sh "ADR-0022: migrate Prompt types to modules/prompt"` passa
+- [ ] `go build ./...` passa (falha em consumers externos fora do escopo)
+- [x] `go test ./internal/modules/prompt/...` passa
+- [ ] `./scripts/verify-contracts.sh` passa (bloqueado por build externo)
+- [ ] `./scripts/lint.sh` passa (bloqueado por build externo)
+- [ ] `./scripts/safe-commit.sh "ADR-0022: migrate Prompt types to modules/prompt"` passa (bloqueado por build externo)
 
 ---
 

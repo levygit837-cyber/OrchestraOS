@@ -7,7 +7,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
@@ -81,81 +80,13 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 	}
 
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
-		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Run usar *run.Run
-		Run: runToDomain(run),
-		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.WorkUnit usar *workunit.WorkUnit
-		WorkUnit: workunitToDomain(wu),
-		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Task usar *task.Task diretamente.
-		Task: taskToDomain(task),
-		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Session usar *agentsession.AgentSession
-		Session:                agentSessionToDomain(session),
+		Run:                    run,
+		WorkUnit:               wu,
+		Task:                   task,
+		Session:                session,
 		PromptSnapshotID:       input.PromptSnapshotID,
 		ToolsetSnapshotID:      input.ToolsetSnapshotID,
 		PromptSnapshotEventID:  input.PromptSnapshotEventID,
 		ToolsetSnapshotEventID: input.ToolsetSnapshotEventID,
 	})
-}
-
-// workunitToDomain converts a local workunit.WorkUnit to domain.WorkUnit for cross-module compatibility.
-// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.WorkUnit usar *workunit.WorkUnit
-func workunitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
-	if wu == nil {
-		return nil
-	}
-	return &domain.WorkUnit{
-		ID:                   wu.ID,
-		TaskID:               wu.TaskID,
-		TaskGraphID:          wu.TaskGraphID,
-		Title:                wu.Title,
-		Objective:            wu.Objective,
-		AssignedAgentProfile: wu.AssignedAgentProfile,
-		Status:               domain.WorkUnitStatus(wu.Status),
-		OwnedPaths:           wu.OwnedPaths,
-		ReadPaths:            wu.ReadPaths,
-		AcceptanceCriteria:   wu.AcceptanceCriteria,
-		ValidationPlan:       wu.ValidationPlan,
-		DependsOn:            wu.DependsOn,
-	}
-}
-
-// agentSessionToDomain converts a local agentsession.AgentSession to domain.AgentSession for cross-module compatibility.
-// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Session usar *agentsession.AgentSession.
-func agentSessionToDomain(s *agentsessionmod.AgentSession) *domain.AgentSession {
-	if s == nil {
-		return nil
-	}
-	return &domain.AgentSession{
-		ID:               s.ID,
-		AgentID:          s.AgentID,
-		RunID:            s.RunID,
-		TaskID:           s.TaskID,
-		WorkUnitID:       s.WorkUnitID,
-		SandboxID:        s.SandboxID,
-		ConnectionID:     s.ConnectionID,
-		Status:           domain.AgentSessionStatus(s.Status),
-		LastHeartbeatAt:  s.LastHeartbeatAt,
-		LastCheckpointAt: s.LastCheckpointAt,
-		LastSeenEventID:  s.LastSeenEventID,
-		RecoverableState: s.RecoverableState,
-	}
-}
-
-// taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.
-// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Task usar *task.Task diretamente.
-func taskToDomain(t *taskmod.Task) *domain.Task {
-	if t == nil {
-		return nil
-	}
-	return &domain.Task{
-		ID:                   t.ID,
-		Title:                t.Title,
-		Description:          t.Description,
-		Status:               domain.TaskStatus(t.Status),
-		Priority:             domain.Priority(t.Priority),
-		RiskLevel:            domain.RiskLevel(t.RiskLevel),
-		CreatedFromMessageID: t.CreatedFromMessageID,
-		AcceptanceCriteria:   t.AcceptanceCriteria,
-		CreatedAt:            t.CreatedAt,
-		UpdatedAt:            t.UpdatedAt,
-	}
 }

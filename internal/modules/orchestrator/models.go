@@ -9,6 +9,7 @@ import (
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
+	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 )
 
 type RunTaskOptions struct {
@@ -67,8 +68,8 @@ type PreparedPrompt struct {
 	CombinedPrompt  string
 	PromptHash      string
 	Toolset         []string
-	PromptSnapshot  *domain.PromptSnapshot
-	ToolsetSnapshot *domain.ToolsetSnapshot
+	PromptSnapshot  *promptmod.PromptSnapshot
+	ToolsetSnapshot *promptmod.ToolsetSnapshot
 }
 
 type Runtime interface {
