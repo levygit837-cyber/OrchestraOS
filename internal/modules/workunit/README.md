@@ -62,10 +62,11 @@ created → planned → scheduled → blocked → running → validating → com
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
-- DI interfaces only: `TaskReader` (from `task/`), `TaskGraphManager` (from `taskgraph/`)
+- DI interface types: `task.Task` (for `TaskReader`), `taskgraph.TaskGraph` (for `TaskGraphManager`)
+  — see ADR-0026: types may be imported ONLY for DI interface return types.
 
 Forbidden:
-- `internal/modules/*` (direct imports)
+- `internal/modules/*` services, repositories, or business logic imports
 - `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `task.Service` or `taskgraph.Service`
 - Cross-module mutations outside `core/coordination`

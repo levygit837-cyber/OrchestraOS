@@ -67,8 +67,11 @@ RuntimeConfig → Runtime.Start → Runtime.Execute → Runtime.Stop
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 
+Allowed from `internal/modules/*`:
+- NONE — agent is a leaf module with no DI dependencies on other modules.
+
 Forbidden:
-- `internal/modules/*` (direct imports)
+- `internal/modules/*` services, repositories, or business logic imports
 - `internal/core/coordination` (reserved for orchestrator module)
 - Business logic beyond runtime execution, planning, and agent management.
 

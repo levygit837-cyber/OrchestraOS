@@ -63,10 +63,11 @@ State Flow:
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
-- DI interfaces only: `TaskReader` (from `task/`), `WorkUnitReader` (from `workunit/`), `RunReader` (from `run/`), `AgentSessionReader` (from `agentsession/`)
+- DI interface types: `task.Task`, `workunit.WorkUnit`, `run.Run`, `agentsession.AgentSession`
+  — see ADR-0026: types may be imported ONLY for DI interface return types.
 
 Forbidden:
-- `internal/modules/*` (direct imports)
+- `internal/modules/*` services, repositories, or business logic imports
 - `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of service logic from other modules.
 

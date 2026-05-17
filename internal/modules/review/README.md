@@ -54,8 +54,11 @@ Critical invariants:
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 
+- DI interface types: `run.Run`, `workunit.WorkUnit`, `task.Task`, `agentsession.AgentSession`
+  — see ADR-0026: types may be imported ONLY for DI interface return types.
+
 Forbidden:
-- `internal/modules/*` (direct imports)
+- `internal/modules/*` services, repositories, or business logic imports
 - `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of service logic from other modules.
 

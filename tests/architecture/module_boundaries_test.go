@@ -9,17 +9,29 @@ import (
 	"testing"
 )
 
-// allowedModuleImports define which cross-module imports are legitimate.
-// Keys are the importing module; values are the imported modules.
-// TODO[ADR-0022]: run imports task only for TaskReader DI interface (returns *task.Task).
-// Remove when task types are fully decoupled or when TaskReader uses a local struct.
+// allowedModuleImports defines which cross-module type imports are legitimate
+// for DI (Dependency Injection) interfaces.
+//
+// Policy (ADR-0026):
+//   - Modules MAY import types (structs, enums) from another module ONLY for
+//     DI interface return types (e.g., TaskReader.GetByID() -> *task.Task).
+//   - Modules MUST NEVER import services, repositories, or business logic
+//     from another module.
+//   - This map tracks the ALLOWED compile-time dependencies.
+//   - When a migration adds a new DI interface that returns a type from module B,
+//     add the entry here and document it in the migration plan.
+//
+// Current allowed imports:
+//   run -> task: run.TaskReader returns *task.Task
 var allowedModuleImports = map[string]map[string]bool{
 	"run": {"task": true},
 }
 
 // leafModules must not import any other module under internal/modules/.
+// These modules have no DI dependencies on other domain modules.
 var leafModules = map[string]bool{
 	"agent": true,
+	"task":  true,
 }
 
 func TestModuleBoundaries(t *testing.T) {
@@ -64,7 +76,13 @@ func TestModuleBoundaries(t *testing.T) {
 
 					allowed, ok := allowedModuleImports[modName]
 					if !ok || !allowed[importedMod] {
-						t.Errorf("module %q imports %q, which is not in the allowed list. Cross-module imports are forbidden. Use internal/core/coordination/ or internal/services/ for cross-module coordination", modName, importedMod)
+						t.Errorf(
+							"module %q imports %q, which is not in the allowed list. "+
+							"Cross-module imports are allowed ONLY for DI interface return types (ADR-0026). "+
+							"If this import is for a DI interface type, add it to allowedModuleImports and document in the migration plan. "+
+							"If this import is for a service/repository/business logic, refactor to use DI or move to core/coordination.",
+							modName, importedMod,
+						)
 					}
 				}
 			}

@@ -3,8 +3,11 @@ package review
 import _ "embed"
 
 // GLOBAL RULES (apply to ALL modules — do NOT remove):
-//   1. NEVER import internal/modules/* directly.
-//   2. NEVER import internal/domain for entity structs.
+//   1. NEVER import internal/modules/* for services, repositories, or business logic.
+//      ALLOWED: import types (structs, enums) from another module ONLY for DI
+//      interface return types. See ADR-0026 for full policy.
+//   2. NEVER import internal/domain for entity structs or entity enums.
+//      ALLOWED: EventEnvelope, EventPriority, checkpoint types, generic payloads.
 //   3. NEVER write SQL outside queries.go.
 //   4. NEVER call panic() — return apperrors.Error.
 //   5. NEVER put business logic in repository.go.

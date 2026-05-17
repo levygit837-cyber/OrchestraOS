@@ -11,7 +11,7 @@
 
 ## Contexto
 
-O módulo `workunit` gerencia unidades de trabalho dentro de um TaskGraph. Atualmente usa **alias** para o status:
+O módulo `workunit` gerencia unidades de trabalho dentro de um TaskGraph. Um commit anterior (`99e860e`) **reverteu** uma migração parcial, deixando o módulo com aliases de domain:
 
 ```go
 package workunit
@@ -21,7 +21,9 @@ import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 type Status = domain.WorkUnitStatus
 ```
 
-Todos os arquivos do módulo usam `domain.WorkUnit` e `domain.WorkUnitStatus`.
+O struct `WorkUnit` foi **removido** de `models.go` e todos os arquivos do módulo usam `domain.WorkUnit`.
+
+**Política de importação (ADR-0026):** WorkUnit deve definir seus próprios tipos locais. Nenhum outro módulo deve usar `domain.WorkUnit`.
 
 **Pré-requisitos:**
 - A01 (task) 🟢 — `TaskReader` interface já usa `*task.Task`
@@ -43,13 +45,19 @@ Todos os arquivos do módulo usam `domain.WorkUnit` e `domain.WorkUnitStatus`.
 
 | Arquivo | Import de domain | O que usa |
 |---------|-----------------|-----------|
-| `workunit/models.go` | `domain.WorkUnitStatus` | alias `Status` |
-| `workunit/repository.go` | `domain.WorkUnit` | CRUD |
+| Arquivo | Import de domain | O que usa |
+|---------|-----------------|-----------|
+| `workunit/models.go` | `domain.WorkUnitStatus` | alias `Status` (deve virar tipo local) |
+| `workunit/repository.go` | `domain.WorkUnit` | CRUD (deve usar `*WorkUnit` local) |
 | `workunit/service.go` | `domain.WorkUnit`, `domain.WorkUnitStatus`, `domain.Task`, `domain.TaskGraph` | `TaskReader`, `TaskGraphManager` interfaces |
 | `workunit/service_create.go` | `domain.WorkUnit` | `CreateMany` |
 | `workunit/fetch.go` | `domain.WorkUnit` | `RequireByID` |
 | `workunit/events.go` | `domain.WorkUnitStatus` | `EventTypeForStatus` |
 | `workunit/validation.go` | `domain.WorkUnitStatus` | validações |
+
+**Nota sobre interfaces cruzadas:**
+- `TaskReader` já usa `*task.Task` (A01 completo) ✅
+- `TaskGraphManager` ainda usa `*domain.TaskGraph` (A04 ainda não iniciado). Manter com adapter/anotação `// TODO[ADR-0022]`.
 
 ---
 
@@ -57,10 +65,15 @@ Todos os arquivos do módulo usam `domain.WorkUnit` e `domain.WorkUnitStatus`.
 
 ### Passo 1: Criar tipos locais em models.go
 
+**IMPORTANTE:** O commit `99e860e` removeu o `WorkUnit` struct. É necessário **recriar** o struct local.
+
 ```go
 package workunit
 
+// NENHUM import de "internal/domain" neste arquivo.
+
 type Status string
+
 const (
     StatusCreated         Status = "created"
     StatusPlanned         Status = "planned"
