@@ -483,9 +483,10 @@ func (a *promptAdapter) PrepareRunPrompt(ctx context.Context, input orchestrator
 	}, nil
 }
 
+// TODO[ADR-0022]: reviewAdapter now passes through review.Review directly - no conversion needed
 type reviewAdapter struct{ svc *reviewmod.ReviewService }
 
-func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType domain.ValidationGate) (*transition.OperationResult[*domain.Review], error) {
+func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType reviewmod.ValidationGate) (*transition.OperationResult[*reviewmod.Review], error) {
 	return a.svc.Create(ctx, reviewmod.CreateReviewInput{
 		RunID: runID, WorkUnitID: workUnitID, TaskID: taskID,
 		AgentSessionID: agentSessionID, GateType: gateType,

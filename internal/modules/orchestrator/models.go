@@ -5,6 +5,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
 )
 
 type RunTaskOptions struct {
@@ -133,7 +134,7 @@ type PromptPreparer interface {
 }
 
 type ReviewManager interface {
-	Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType domain.ValidationGate) (*transition.OperationResult[*domain.Review], error)
+	Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType reviewmod.ValidationGate) (*transition.OperationResult[*reviewmod.Review], error)
 }
 
 type TriggerEvaluator interface {
