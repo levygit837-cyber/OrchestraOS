@@ -63,6 +63,8 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 - `internal/core/coordination` (ONLY module allowed to import this package)
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 - `internal/modules/review`: DI interface return type `*review.Review` in ReviewManager (ADR-0026)
+- `internal/modules/taskgraph`: DI interface return type `*taskgraph.TaskGraph` in TaskGraphManager (ADR-0026)
+- `internal/modules/workunit`: DI interface return type `[]workunit.WorkUnit` in WorkUnitLister (ADR-0026)
 - `internal/modules/*` services (via DI interfaces, never direct repository imports)
 
 Forbidden:

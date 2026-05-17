@@ -233,8 +233,8 @@
             position: fixed;
             inset: 0;
             z-index: 100;
-            background: rgba(7, 7, 7, 0.35);
-            backdrop-filter: blur(12px) saturate(1.1);
+            background: rgba(7, 7, 7, 0.7);
+            backdrop-filter: blur(4px);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.25s ease;
@@ -264,8 +264,8 @@
             position: fixed;
             inset: 0;
             z-index: 110;
-            background: rgba(7, 7, 7, 0.25);
-            backdrop-filter: blur(16px) saturate(1.2);
+            background: rgba(7, 7, 7, 0.85);
+            backdrop-filter: blur(8px);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -321,8 +321,8 @@
             position: fixed;
             inset: 0;
             z-index: 110;
-            background: rgba(7, 7, 7, 0.25);
-            backdrop-filter: blur(16px) saturate(1.2);
+            background: rgba(7, 7, 7, 0.85);
+            backdrop-filter: blur(8px);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -646,15 +646,15 @@
 
     <!-- ==================== SESSION VIEWER OVERLAY ==================== -->
     <div id="session-overlay" class="session-overlay" onclick="if(event.target===this)closeSessionViewer()">
-        <div class="session-content hud-panel rounded-xl overflow-hidden flex flex-col" style="background: rgba(20, 20, 20, 0.72); backdrop-filter: blur(20px) saturate(1.3);">
+        <div class="session-content hud-panel rounded-xl overflow-hidden flex flex-col">
             <!-- Header -->
-            <div class="h-14 border-b border-[#292524]/40 flex items-center px-5 justify-between shrink-0" style="background: rgba(10, 10, 10, 0.45);">
+            <div class="h-14 border-b border-[#292524]/50 flex items-center px-5 justify-between bg-[#0A0A0A]/60 shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center border border-accent/20">
+                    <div class="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center border border-accent/20">
                         <svg class="w-4 h-4 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
                     </div>
                     <div>
-                        <h3 class="text-sm font-semibold text-white tracking-tight" id="session-viewer-title">Codex-Builder</h3>
+                        <h3 class="text-sm font-semibold text-white tracking-tight" id="session-viewer-title">Codex-Builder — Session</h3>
                         <p class="text-[10px] font-mono text-textSec" id="session-viewer-subtitle">session-042 • running • 2h 14m</p>
                     </div>
                 </div>
@@ -667,44 +667,16 @@
                 </div>
             </div>
             <!-- Tabs -->
-            <div class="flex items-center gap-1 px-5 border-b border-[#292524]/30 shrink-0" style="background: rgba(10, 10, 10, 0.3);">
-                <button onclick="switchSessionTab('chat')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors tab-active flex items-center gap-1.5" data-tab="chat">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                    Chat
-                </button>
-                <button onclick="switchSessionTab('checkpoints')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors flex items-center gap-1.5" data-tab="checkpoints">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                    Checkpoints
-                </button>
-                <button onclick="switchSessionTab('prompts')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors flex items-center gap-1.5" data-tab="prompts">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    Prompts
-                </button>
-                <button onclick="switchSessionTab('artifacts')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors flex items-center gap-1.5" data-tab="artifacts">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    Artifacts
-                </button>
+            <div class="flex items-center gap-1 px-5 border-b border-[#292524]/30 shrink-0">
+                <button onclick="switchSessionTab('activity')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors tab-active" data-tab="activity">Activity</button>
+                <button onclick="switchSessionTab('checkpoints')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors" data-tab="checkpoints">Checkpoints</button>
+                <button onclick="switchSessionTab('prompts')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors" data-tab="prompts">Prompts</button>
+                <button onclick="switchSessionTab('artifacts')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors" data-tab="artifacts">Artifacts</button>
+                <button onclick="switchSessionTab('intervene')" class="session-tab px-3 py-2.5 text-[11px] font-medium text-textSec hover:text-white transition-colors" data-tab="intervene">Intervene</button>
             </div>
             <!-- Content -->
-            <div id="session-viewer-content" class="flex-1 overflow-y-auto" style="background: rgba(7, 7, 7, 0.2);">
+            <div id="session-viewer-content" class="flex-1 overflow-y-auto p-5">
                 <!-- Populated by JS -->
-            </div>
-            <!-- Chat Input Bar (only visible on chat tab) -->
-            <div id="session-chat-input" class="border-t border-[#292524]/40 px-5 py-3 shrink-0" style="background: rgba(10, 10, 10, 0.5);">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20 shrink-0">
-                        <svg class="w-4 h-4 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    </div>
-                    <input type="text" id="session-chat-input-field" placeholder="Message Codex-Builder..." class="flex-1 bg-transparent text-sm text-white placeholder-textSec/50 focus:outline-none font-sans" autocomplete="off" />
-                    <button onclick="sendSessionMessage()" class="w-8 h-8 rounded-lg bg-accent/20 hover:bg-accent/30 flex items-center justify-center text-accentLight transition-colors border border-accent/20">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3 mt-1.5 ml-11">
-                    <span class="text-[9px] font-mono text-textSec/50">Shift + Enter for new line</span>
-                    <span class="w-1 h-1 rounded-full bg-textSec/20"></span>
-                    <span class="text-[9px] font-mono text-textSec/50">Enter to send</span>
-                </div>
             </div>
         </div>
     </div>
@@ -1044,102 +1016,27 @@
             }
         };
 
-        const sessionChatMessages = {
-            'agent-1': [
-                // === SYSTEM BOOT ===
-                { id: 'msg-001', role: 'agent', type: 'text', content: '**Session session-042** initialized for work unit **wu-002** — *Implementar envelope*.\n\n**Objective:** Wrap standard API responses with context metadata.\n**Priority:** P0\n**Validation Gate:** soft (pending)\n**Sandbox:** `orch-sandbox-7a3f` on branch `feat/t-099-event-envelope`', time: '10:24:00' },
-                { id: 'msg-002', role: 'agent', type: 'thinking', content: 'Decomposing the task...\n\n1. The envelope needs to carry **context metadata** — this means source, trace, and correlation IDs\n2. Must be backward-compatible with existing API responses\n3. Middleware integration required for automatic wrapping\n4. Unit tests must cover serialization round-trips\n\nI\'ll start by scaffolding the project structure, then define the core types.', time: '10:24:05' },
-                
-                // === CHECKPOINT 1 ===
-                { id: 'msg-003', role: 'agent', type: 'checkpoint', content: '✓ **checkpoint-001** reached — Initialize project structure\n\n**Completed:**\n• Created `internal/envelope/` package directory\n• Added `go.mod` dependency on `google.golang.org/protobuf`\n• Scaffolded test file `envelope_test.go`\n\n**Pending:**\n• Define core structs\n• Implement middleware\n• Write comprehensive tests', time: '10:25:14' },
-                
-                // === TOOL REQUEST 1 ===
-                { id: 'msg-004', role: 'agent', type: 'tool_request', content: '🔧 **Tool Request**: `read_file` on `internal/domain/event.go`\n\n**Input:** Read existing event domain types to understand the current payload structure\n**Risk:** low — read-only operation', time: '10:25:22' },
-                { id: 'msg-005', role: 'user', type: 'text', content: 'Approved.', time: '10:25:24' },
-                { id: 'msg-006', role: 'agent', type: 'code', content: '```go\n// internal/domain/event.go\npackage domain\n\nimport "time"\n\ntype EventType string\n\nconst (\n    EventTypeUserCreated    EventType = "user.created"\n    EventTypeUserUpdated    EventType = "user.updated"\n    EventTypeTaskAssigned   EventType = "task.assigned"\n    EventTypeTaskCompleted  EventType = "task.completed"\n)\n\ntype Event struct {\n    ID        string    `json:"id"`\n    Type      EventType `json:"type"`\n    Payload   []byte    `json:"payload"`\n    CreatedAt time.Time `json:"created_at"`\n}\n\nfunc (e Event) Validate() error {\n    if e.ID == "" {\n        return fmt.Errorf("event id is required")\n    }\n    if e.Type == "" {\n        return fmt.Errorf("event type is required")\n    }\n    return nil\n}\n```', time: '10:25:30' },
-                
-                // === TOOL REQUEST 2 ===
-                { id: 'msg-007', role: 'agent', type: 'tool_request', content: '🔧 **Tool Request**: `file_write` on `internal/envelope/envelope.go`\n\n**Input:** Create the EventEnvelope and Metadata types with full JSON serialization support\n**Risk:** medium — creating new file in sandbox', time: '10:25:45' },
-                { id: 'msg-008', role: 'user', type: 'text', content: 'Approved. Go ahead.', time: '10:25:52' },
-                
-                // === CODE OUTPUT 1 ===
-                { id: 'msg-009', role: 'agent', type: 'code', content: '```go\n// internal/envelope/envelope.go\npackage envelope\n\nimport (\n    "encoding/json"\n    "fmt"\n    "time"\n\n    "github.com/google/uuid"\n)\n\n// EventEnvelope wraps any payload with standard metadata\ntype EventEnvelope struct {\n    ID            string    `json:"id"`\n    Type          string    `json:"type"`\n    Version       string    `json:"version"`\n    Payload       json.RawMessage `json:"payload"`\n    Metadata      Metadata  `json:"metadata"`\n    Timestamp     time.Time `json:"timestamp"`\n    CorrelationID string    `json:"correlation_id"`\n    TraceID       string    `json:"trace_id"`\n}\n\n// Metadata carries context about the event origin\ntype Metadata struct {\n    Source      string            `json:"source"`\n    SourceVersion string          `json:"source_version"`\n    TraceID     string            `json:"trace_id"`\n    SpanID      string            `json:"span_id"`\n    Tags        map[string]string `json:"tags,omitempty"`\n}\n\n// New creates a new envelope with generated IDs and timestamp\nfunc New(eventType string, payload any) (*EventEnvelope, error) {\n    raw, err := json.Marshal(payload)\n    if err != nil {\n        return nil, fmt.Errorf("marshal payload: %w", err)\n    }\n    return &EventEnvelope{\n        ID:        uuid.New().String(),\n        Type:      eventType,\n        Version:   "1.0.0",\n        Payload:   raw,\n        Timestamp: time.Now().UTC(),\n        Metadata: Metadata{\n            Source: "orchestraos",\n            Tags:   make(map[string]string),\n        },\n    }, nil\n}\n\n// UnmarshalPayload unmarshals the payload into the given target\nfunc (e *EventEnvelope) UnmarshalPayload(target any) error {\n    return json.Unmarshal(e.Payload, target)\n}\n```', time: '10:26:10' },
-                
-                // === RUN 1 FAILED ===
-                { id: 'msg-010', role: 'agent', type: 'run_result', content: '❌ **Run attempt 1 failed** — timeout after 5m\n\n```\n$ go test ./internal/envelope/... -v -timeout 5m\n=== RUN   TestEventEnvelope\n=== PAUSE TestEventEnvelope\n=== RUN   TestMetadata\n=== PAUSE TestMetadata\n=== CONT  TestEventEnvelope\n    envelope_test.go:23: envelope_test.go:23: compilation error:\n        envelope.go:42: undefined: uuid\n        envelope.go:8:2: package github.com/google/uuid is not in std\n\ntimeout: test ran longer than 5m0s\nFAIL\tgithub.com/orchestraos/internal/envelope\t300.042s\n```\n\n**Diagnosis:** Missing `go get` for uuid dependency. The linter also timed out because it tried to resolve imports before the module was ready.', time: '10:28:44' },
-                
-                // === FIX ATTEMPT ===
-                { id: 'msg-011', role: 'agent', type: 'thinking', content: 'Two issues to fix:\n1. Missing `github.com/google/uuid` dependency — I should either add it or use the standard library\n2. The linter timeout is too aggressive for initial dependency resolution\n\nI\'ll switch to `crypto/rand` for ID generation to avoid external deps, and restructure the imports.', time: '10:28:50' },
-                
-                // === TOOL REQUEST 3 ===
-                { id: 'msg-012', role: 'agent', type: 'tool_request', content: '🔧 **Tool Request**: `bash` — `go mod tidy`\n\n**Input:** Resolve and download all module dependencies\n**Risk:** low — standard module maintenance', time: '10:29:05' },
-                { id: 'msg-013', role: 'user', type: 'text', content: 'Approved.', time: '10:29:08' },
-                { id: 'msg-014', role: 'agent', type: 'code', content: '```\n$ go mod tidy\ngo: finding module for package github.com/google/uuid\ngo: downloading github.com/google/uuid v1.6.0\ngo: found github.com/google/uuid v1.6.0 in go.mod\ngo: downloading github.com/stretchr/testify v1.9.0\ngo: downloading gopkg.in/yaml.v3 v3.0.1\n```', time: '10:29:15' },
-                
-                // === RUN 2 FAILED ===
-                { id: 'msg-015', role: 'agent', type: 'run_result', content: '❌ **Run attempt 2 failed** — linter error on envelope.go\n\n```\n$ golangci-lint run ./internal/envelope/...\nenvelope.go:42:6: undefined: uuid (typecheck)\nenvelope.go:45:3: fieldalignment: struct with 96 pointer bytes could be 64 (govet)\nenvelope.go:12:2: imported and not used: "fmt" (unused)\n\n3 issues found.\n```\n\n**Diagnosis:** The `uuid` import was removed during the `go mod tidy` but the code still references it. Also have an unused import and struct alignment issue.', time: '10:31:02' },
-                
-                { id: 'msg-016', role: 'user', type: 'text', content: 'Try using a simple hex-encoded random ID instead of uuid. That should eliminate the external dep entirely.', time: '10:31:10' },
-                
-                { id: 'msg-017', role: 'agent', type: 'thinking', content: 'Good suggestion. I\'ll replace `github.com/google/uuid` with `crypto/rand` + `encoding/hex`. This keeps the envelope self-contained and eliminates the external dependency. I also need to fix the unused `fmt` import and run `fieldalignment` fix.', time: '10:31:15' },
-                
-                // === CHECKPOINT 2 ===
-                { id: 'msg-018', role: 'agent', type: 'checkpoint', content: '✓ **checkpoint-002** reached — Define base event types\n\n**Completed:**\n• EventType enum mapped from domain layer\n• Payload interface with JSON RawMessage\n• Metadata struct with OpenTelemetry-compatible trace fields\n\n**Blockers:**\n• ~~Need clarification on retry policy~~ — resolved, using soft gate\n\n**Risks:**\n• Schema may evolve — version field added for forward compatibility', time: '10:32:00' },
-                
-                // === CODE OUTPUT 2 ===
-                { id: 'msg-019', role: 'agent', type: 'code', content: '```go\n// internal/envelope/envelope.go (revised)\npackage envelope\n\nimport (\n    "crypto/rand"\n    "encoding/hex"\n    "encoding/json"\n    "time"\n)\n\ntype EventEnvelope struct {\n    ID            string            `json:"id"`\n    Type          string            `json:"type"`\n    Version       string            `json:"version"`\n    Payload       json.RawMessage   `json:"payload"`\n    Metadata      Metadata          `json:"metadata"`\n    Timestamp     time.Time         `json:"timestamp"`\n    CorrelationID string            `json:"correlation_id"`\n    TraceID       string            `json:"trace_id"`\n}\n\ntype Metadata struct {\n    Source        string            `json:"source"`\n    SourceVersion string            `json:"source_version"`\n    TraceID       string            `json:"trace_id"`\n    SpanID        string            `json:"span_id"`\n    Tags          map[string]string `json:"tags,omitempty"`\n}\n\nfunc generateID() string {\n    b := make([]byte, 16)\n    rand.Read(b)\n    return hex.EncodeToString(b)\n}\n\nfunc New(eventType string, payload any) (*EventEnvelope, error) {\n    raw, err := json.Marshal(payload)\n    if err != nil {\n        return nil, err\n    }\n    return &EventEnvelope{\n        ID:        generateID(),\n        Type:      eventType,\n        Version:   "1.0.0",\n        Payload:   raw,\n        Timestamp: time.Now().UTC(),\n        Metadata: Metadata{\n            Source: "orchestraos",\n            Tags:   make(map[string]string),\n        },\n    }, nil\n}\n\nfunc (e *EventEnvelope) UnmarshalPayload(target any) error {\n    return json.Unmarshal(e.Payload, target)\n}\n\nfunc (e *EventEnvelope) Validate() error {\n    if e.ID == "" {\n        return errors.New("envelope id is required")\n    }\n    if e.Type == "" {\n        return errors.New("envelope type is required")\n    }\n    if e.Timestamp.IsZero() {\n        return errors.New("timestamp is required")\n    }\n    return nil\n}\n```', time: '10:32:45' },
-                
-                // === TEST OUTPUT ===
-                { id: 'msg-020', role: 'agent', type: 'code', content: '```\n$ go test ./internal/envelope/... -v\n=== RUN   TestEventEnvelope_New\n=== RUN   TestEventEnvelope_New/creates_envelope_with_generated_id\n=== RUN   TestEventEnvelope_New/sets_timestamp_to_utc\n=== RUN   TestEventEnvelope_New/marshals_payload_correctly\n=== PAUSE TestEventEnvelope_New/creates_envelope_with_generated_id\n=== PAUSE TestEventEnvelope_New/sets_timestamp_to_utc\n=== PAUSE TestEventEnvelope_New/marshals_payload_correctly\n=== CONT  TestEventEnvelope_New/creates_envelope_with_generated_id\n=== CONT  TestEventEnvelope_New/sets_timestamp_to_utc\n=== CONT  TestEventEnvelope_New/marshals_payload_correctly\n--- PASS: TestEventEnvelope_New (0.002s)\n    --- PASS: TestEventEnvelope_New/creates_envelope_with_generated_id (0.001s)\n    --- PASS: TestEventEnvelope_New/sets_timestamp_to_utc (0.000s)\n    --- PASS: TestEventEnvelope_New/marshals_payload_correctly (0.001s)\n=== RUN   TestEventEnvelope_UnmarshalPayload\n=== RUN   TestEventEnvelope_UnmarshalPayload/round_trip_preserved\n--- PASS: TestEventEnvelope_UnmarshalPayload (0.001s)\n    --- PASS: TestEventEnvelope_UnmarshalPayload/round_trip_preserved (0.001s)\n=== RUN   TestEventEnvelope_Validate\n=== RUN   TestEventEnvelope_Validate/missing_id_fails\n=== RUN   TestEventEnvelope_Validate/missing_type_fails\n--- PASS: TestEventEnvelope_Validate (0.001s)\n    --- PASS: TestEventEnvelope_Validate/missing_id_fails (0.000s)\n    --- PASS: TestEventEnvelope_Validate/missing_type_fails (0.000s)\nPASS\nok  \tgithub.com/orchestraos/internal/envelope\t0.045s\ncoverage: 87.3% of statements\n```', time: '10:33:20' },
-                
-                // === CHECKPOINT 3 ===
-                { id: 'msg-021', role: 'agent', type: 'checkpoint', content: '✓ **checkpoint-003** reached — Core envelope implementation complete\n\n**Completed:**\n• EventEnvelope struct with 8 fields\n• Metadata with OpenTelemetry trace context\n• ID generation via crypto/rand (no external deps)\n• Validation layer (id, type, timestamp)\n• 87.3% test coverage\n\n**Pending:**\n• HTTP middleware for automatic wrapping\n• Benchmark tests for serialization\n• Documentation update', time: '10:33:30' },
-                
-                // === MIDDLEWARE ===
-                { id: 'msg-022', role: 'agent', type: 'tool_request', content: '🔧 **Tool Request**: `file_write` on `internal/envelope/middleware.go`\n\n**Input:** Create HTTP middleware that wraps all JSON responses in EventEnvelope automatically\n**Risk:** medium — affects all API responses', time: '10:33:45' },
-                { id: 'msg-023', role: 'user', type: 'text', content: 'Approved. Make sure it only wraps successful responses (2xx).', time: '10:33:50' },
-                
-                { id: 'msg-024', role: 'agent', type: 'code', content: '```go\n// internal/envelope/middleware.go\npackage envelope\n\nimport (\n    "bytes"\n    "encoding/json"\n    "net/http"\n)\n\n// Middleware wraps successful JSON responses in EventEnvelope\ntype Middleware struct {\n    next http.Handler\n}\n\nfunc NewMiddleware(next http.Handler) *Middleware {\n    return &Middleware{next: next}\n}\n\nfunc (m *Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {\n    rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}\n    m.next.ServeHTTP(rw, r)\n    \n    if rw.statusCode >= 200 && rw.statusCode < 300 && rw.isJSON {\n        envelope, _ := New("api.response", json.RawMessage(rw.body.Bytes()))\n        envelope.CorrelationID = r.Header.Get("X-Correlation-ID")\n        envelope.Metadata.TraceID = r.Header.Get("X-Trace-ID")\n        envelope.Metadata.Tags["path"] = r.URL.Path\n        envelope.Metadata.Tags["method"] = r.Method\n        \n        w.Header().Set("Content-Type", "application/json")\n        json.NewEncoder(w).Encode(envelope)\n    }\n}\n\ntype responseWriter struct {\n    http.ResponseWriter\n    statusCode int\n    body       bytes.Buffer\n    isJSON     bool\n}\n\nfunc (rw *responseWriter) WriteHeader(code int) {\n    rw.statusCode = code\n    rw.ResponseWriter.WriteHeader(code)\n}\n\nfunc (rw *responseWriter) Write(b []byte) (int, error) {\n    rw.body.Write(b)\n    if rw.Header().Get("Content-Type") == "application/json" {\n        rw.isJSON = true\n    }\n    return rw.ResponseWriter.Write(b)\n}\n```', time: '10:34:15' },
-                
-                // === GIT COMMIT ===
-                { id: 'msg-025', role: 'agent', type: 'code', content: '```\n$ git status\nOn branch feat/t-099-event-envelope\nChanges to be committed:\n  (use "git restore --staged <file>..." to unstage)\n        new file:   internal/envelope/envelope.go\n        new file:   internal/envelope/envelope_test.go\n        new file:   internal/envelope/middleware.go\n        modified:   go.mod\n        modified:   go.sum\n\n$ git add -A && git commit -m "feat(envelope): implement EventEnvelope with middleware\n\n- Add EventEnvelope and Metadata structs\n- Implement auto-generated IDs via crypto/rand\n- Add HTTP middleware for automatic response wrapping\n- Achieve 87.3% test coverage\n- Remove external uuid dependency\n\nRelates to: wu-002"\n[feat/t-099-event-envelope 7a3f2c8] feat(envelope): implement EventEnvelope with middleware\n 5 files changed, 312 insertions(+), 4 deletions(-)\n```', time: '10:34:45' },
-                
-                // === FINAL STATUS ===
-                { id: 'msg-026', role: 'agent', type: 'text', content: '✅ **Work unit wu-002 completed successfully**\n\n**Summary:**\n• 3 run attempts (2 failures resolved, 1 success)\n• 3 checkpoints reached\n• 5 files changed, 312 insertions\n• 87.3% test coverage\n• 0 linting errors\n• Committed to `feat/t-099-event-envelope`\n\n**Artifacts generated:**\n• `envelope.go` — core implementation\n• `envelope_test.go` — test suite (9 subtests)\n• `middleware.go` — HTTP middleware\n• Coverage report: 87.3%\n\nAwaiting validation gate review.', time: '10:35:00' }
-            ],
-            'agent-2': [
-                { id: 'rb-001', role: 'agent', type: 'text', content: '**Review-Bot** initialized. Standing by for review requests.\n\nCurrent assignment: *Awaiting wu-002 completion for security review*\nCapabilities: StaticAnalysis, GitRead, Playwright', time: '10:20:00' },
-                { id: 'rb-002', role: 'agent', type: 'thinking', content: 'Scanning repository for existing security patterns...\n\nFound 12 existing security rules in `.security/rules.yml`. Ready to apply them when wu-002 is submitted.', time: '10:20:30' },
-                { id: 'rb-003', role: 'agent', type: 'checkpoint', content: '✓ **checkpoint-rb-001** — Pre-review scan complete\n\n**Completed:**\n• Repository security baseline captured\n• Dependency vulnerability scan: 0 critical, 2 low (dev-only)\n• Secret detection: clean\n\n**Ready for:**\n• Code review on wu-002\n• E2E validation on wu-004', time: '10:21:00' },
-                { id: 'rb-004', role: 'user', type: 'text', content: 'Start reviewing wu-002 envelope implementation when ready.', time: '10:21:30' },
-                { id: 'rb-005', role: 'agent', type: 'text', content: 'Acknowledged. I\'ll begin static analysis of `internal/envelope/` as soon as Codex-Builder marks wu-002 complete.', time: '10:21:35' }
-            ]
-        };
-
         const sessionHistory = {
             'agent-1': {
                 checkpoints: [
-                    { id: 'checkpoint-001', seq: 1, time: '10:25:14', goal: 'Initialize project structure', completed: ['Created internal/envelope/ package', 'Added protobuf dependency', 'Scaffolded envelope_test.go'], todos: ['Define core structs', 'Implement middleware', 'Write comprehensive tests'], blockers: [], risks: ['Module resolution may take time on first run'], files: { read: [], modified: ['go.mod', 'internal/envelope/envelope_test.go'] } },
-                    { id: 'checkpoint-002', seq: 2, time: '10:32:00', goal: 'Define base event types', completed: ['EventType enum mapped', 'Payload interface with RawMessage', 'Metadata with OTel trace fields'], todos: ['Validate serialization', 'Benchmark marshaling'], blockers: [], risks: ['Schema may evolve — version field added'], files: { read: ['internal/domain/event.go', 'docs/events.md'], modified: ['internal/envelope/envelope.go'] } },
-                    { id: 'checkpoint-003', seq: 3, time: '10:33:30', goal: 'Core envelope implementation complete', completed: ['EventEnvelope struct (8 fields)', 'Metadata with trace context', 'crypto/rand ID generation', 'Validation layer', '87.3% test coverage'], todos: ['HTTP middleware', 'Benchmark tests', 'Documentation'], blockers: [], risks: [], files: { read: ['internal/envelope/envelope.go'], modified: ['internal/envelope/envelope.go', 'internal/envelope/envelope_test.go'] } },
-                    { id: 'checkpoint-004', seq: 4, time: '10:34:30', goal: 'HTTP middleware integration', completed: ['Auto-wrap 2xx JSON responses', 'Correlation-ID propagation', 'Trace context injection', 'Path/method tagging'], todos: ['Integration test with real handler', 'Performance benchmark'], blockers: [], risks: ['May double-encode already-wrapped responses'], files: { read: [], modified: ['internal/envelope/middleware.go'] } }
+                    { id: 'checkpoint-001', seq: 1, time: '10:25:14', goal: 'Initialize project structure', completed: ['schema.sql created', 'migration script written'], todos: ['Run migration', 'Verify tables'], blockers: [], risks: [], files: { read: [], modified: ['schema.sql', 'migrations/001.sql'] } },
+                    { id: 'checkpoint-002', seq: 2, time: '10:28:30', goal: 'Define base event types', completed: ['EventType enum', 'Payload interface'], todos: ['Add validation', 'Write tests'], blockers: ['Need clarification on retry policy'], risks: ['Schema may change'], files: { read: ['docs/events.md'], modified: ['types/event.go'] } },
+                    { id: 'checkpoint-003', seq: 3, time: '10:32:16', goal: 'Implement envelope struct', completed: ['EventEnvelope struct', 'Metadata fields'], todos: ['Add middleware integration', 'Write unit tests'], blockers: [], risks: [], files: { read: ['internal/domain/event.go'], modified: ['envelope/envelope.go'] } }
+                ],
+                activities: [
+                    { time: '10:32:16', type: 'checkpoint', msg: 'Reached checkpoint-003: envelope struct defined' },
+                    { time: '10:32:15', type: 'tool_request', msg: 'Requested file_write on events.go' },
+                    { time: '10:31:45', type: 'log', msg: '[INFO] Compiling envelope package...' },
+                    { time: '10:31:02', type: 'run_end', msg: 'Run attempt 2 failed: linter error on events.go' },
+                    { time: '10:30:14', type: 'run_start', msg: 'Starting run attempt 3 for wu-002' },
+                    { time: '10:28:44', type: 'run_end', msg: 'Run attempt 1 failed: timeout after 5m' },
+                    { time: '10:25:14', type: 'checkpoint', msg: 'Reached checkpoint-001: project structure initialized' },
+                    { time: '10:24:00', type: 'session_start', msg: 'Session session-042 started' }
                 ],
                 artifacts: [
-                    { id: 'art-001', type: 'diff', name: 'envelope.go.diff', size: '4.8 KB', desc: 'Core EventEnvelope and Metadata implementation' },
-                    { id: 'art-002', type: 'test_report', name: 'envelope_test.json', size: '8.2 KB', desc: '9 subtests, 87.3% coverage' },
-                    { id: 'art-003', type: 'log_bundle', name: 'run-101-through-103.logs', size: '24 KB', desc: 'All 3 run attempts with full compiler output' },
-                    { id: 'art-004', type: 'coverage', name: 'coverage.html', size: '156 KB', desc: 'Interactive HTML coverage report' },
-                    { id: 'art-005', type: 'benchmark', name: 'bench.txt', size: '2.1 KB', desc: 'BenchmarkMarshal-8  523ns/op  128B/op  3allocs/op' },
-                    { id: 'art-006', type: 'security_scan', name: 'gosec-report.json', size: '1.4 KB', desc: '0 issues found — clean bill' }
-                ]
-            },
-            'agent-2': {
-                checkpoints: [
-                    { id: 'checkpoint-rb-001', seq: 1, time: '10:21:00', goal: 'Pre-review security scan', completed: ['Security baseline captured', 'Dependency scan: 0 critical', 'Secret detection: clean'], todos: ['Review wu-002 code', 'E2E validation on wu-004'], blockers: ['Waiting for wu-002 completion'], risks: [], files: { read: ['.security/rules.yml'], modified: [] } }
-                ],
-                artifacts: [
-                    { id: 'art-rb-001', type: 'security_scan', name: 'baseline-scan.json', size: '3.2 KB', desc: 'Repository security baseline' },
-                    { id: 'art-rb-002', type: 'dependency_graph', name: 'deps.svg', size: '12 KB', desc: 'Dependency graph visualization' }
+                    { id: 'art-001', type: 'diff', name: 'schema.sql diff', size: '1.2 KB' },
+                    { id: 'art-002', type: 'test_report', name: 'envelope_test.json', size: '4.5 KB' },
+                    { id: 'art-003', type: 'log_bundle', name: 'run-101.logs', size: '12 KB' }
                 ]
             }
         };
@@ -1513,23 +1410,17 @@
 
         // ==================== SESSION VIEWER ====================
         let currentSessionAgentId = null;
-        let currentSessionTab = 'chat';
+        let currentSessionTab = 'activity';
 
         window.openSessionViewer = function(agentId) {
             currentSessionAgentId = agentId;
             const agent = nodesData[agentId];
             if (!agent || agent.type !== 'agent') return;
-            document.getElementById('session-viewer-title').textContent = agent.name;
+            document.getElementById('session-viewer-title').textContent = `${agent.name} — Session`;
             const s = agent.session;
             document.getElementById('session-viewer-subtitle').textContent = s && s.id ? `${s.id} • ${s.status} • ${agent.sessionDuration}` : 'No active session';
             sessionOverlay.classList.add('active');
-            switchSessionTab('chat');
-            setTimeout(() => {
-                const chatContainer = document.getElementById('session-viewer-content');
-                if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-                const input = document.getElementById('session-chat-input-field');
-                if (input) input.focus();
-            }, 50);
+            switchSessionTab('activity');
         }
         window.closeSessionViewer = function() {
             sessionOverlay.classList.remove('active');
@@ -1540,17 +1431,7 @@
             document.querySelectorAll('.session-tab').forEach(t => {
                 t.classList.toggle('tab-active', t.dataset.tab === tab);
             });
-            const chatInput = document.getElementById('session-chat-input');
-            if (chatInput) {
-                chatInput.style.display = tab === 'chat' ? 'block' : 'none';
-            }
             renderSessionTab(tab);
-            if (tab === 'chat') {
-                setTimeout(() => {
-                    const chatContainer = document.getElementById('session-viewer-content');
-                    if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-                }, 50);
-            }
         }
         function renderSessionTab(tab) {
             const history = currentSessionAgentId ? sessionHistory[currentSessionAgentId] : null;
@@ -1560,67 +1441,17 @@
             }
             let html = '';
 
-            if (tab === 'chat') {
-                const messages = currentSessionAgentId ? (sessionChatMessages[currentSessionAgentId] || []) : [];
+            if (tab === 'activity') {
                 html = `
-                    <div class="flex flex-col gap-4 p-5 pb-2">
-                        ${messages.length === 0 ? `
-                            <div class="flex flex-col items-center justify-center py-12 text-center opacity-50">
-                                <div class="w-12 h-12 rounded-full border border-dashed border-textSec flex items-center justify-center mb-3">
-                                    <svg class="w-5 h-5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                                </div>
-                                <p class="text-sm font-medium text-textPri">No messages yet</p>
-                                <p class="text-[11px] text-textSec mt-1">Start a conversation with this agent.</p>
-                            </div>
-                        ` : messages.map(m => {
-                            const isAgent = m.role === 'agent';
-                            const isUser = m.role === 'user';
-                            let bubbleClass = '';
-                            let icon = '';
-                            if (m.type === 'thinking') {
-                                bubbleClass = 'border-l-2 border-l-accent/50 bg-accent/5';
-                                icon = '<svg class="w-3.5 h-3.5 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>';
-                            } else if (m.type === 'checkpoint') {
-                                bubbleClass = 'border-l-2 border-l-semantic-success/50 bg-semantic-success/5';
-                                icon = '<svg class="w-3.5 h-3.5 text-semantic-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
-                            } else if (m.type === 'tool_request') {
-                                bubbleClass = 'border-l-2 border-l-semantic-warning/50 bg-semantic-warning/5';
-                                icon = '<svg class="w-3.5 h-3.5 text-semantic-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
-                            } else if (m.type === 'run_result') {
-                                bubbleClass = 'border-l-2 border-l-semantic-error/50 bg-semantic-error/5';
-                                icon = '<svg class="w-3.5 h-3.5 text-semantic-error" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
-                            } else if (m.type === 'code') {
-                                bubbleClass = 'border-l-2 border-l-accent/50 bg-[#0A0A0A]/80';
-                                icon = '<svg class="w-3.5 h-3.5 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>';
-                            } else {
-                                bubbleClass = isAgent ? 'border-l-2 border-l-accent/30 bg-[#0A0A0A]/50' : 'border-l-2 border-l-textSec/30 bg-[#1C1C1C]/50';
-                                icon = isAgent ? '<svg class="w-3.5 h-3.5 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>' : '<svg class="w-3.5 h-3.5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
-                            }
-                            const contentHtml = m.type === 'code' 
-                                ? `<pre class="text-[11px] font-mono text-textPri overflow-x-auto mt-1.5 leading-relaxed">${m.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`
-                                : (() => {
-                                    let html = m.content;
-                                    html = html.replace(new RegExp('\\*\\*(.*?)\\*\\*', 'g'), '<strong class="text-white">$1</strong>');
-                                    html = html.replace(new RegExp('\\*(.*?)\\*', 'g'), '<em class="text-textSec">$1</em>');
-                                    html = html.replace(new RegExp('`(.*?)`', 'g'), '<code class="text-[10px] font-mono bg-[#292524]/50 px-1 py-0.5 rounded text-accentLight">$1</code>');
-                                    html = html.replace(new RegExp('```(\\w*)', 'g'), '');
-                                    html = html.replace(new RegExp('```', 'g'), '');
-                                    return `<div class="text-[12px] text-textPri leading-relaxed whitespace-pre-wrap">${html}</div>`;
-                                })();
+                    <div class="space-y-2">
+                        ${history.activities.map(a => {
+                            const color = a.type === 'checkpoint' ? 'text-semantic-success' : a.type === 'tool_request' ? 'text-semantic-warning' : a.type === 'run_end' ? 'text-semantic-error' : 'text-textSec';
+                            const icon = a.type === 'checkpoint' ? 'CHK' : a.type === 'tool_request' ? 'TOOL' : a.type === 'run_start' ? 'RUN' : a.type === 'run_end' ? 'RUN' : 'LOG';
                             return `
-                            <div class="flex gap-3 ${isUser ? 'flex-row-reverse' : ''}">
-                                <div class="w-7 h-7 rounded-lg ${isAgent ? 'bg-accent/15 border border-accent/20' : 'bg-[#292524]/60 border border-[#44403C]/40'} flex items-center justify-center shrink-0 mt-0.5">
-                                    ${icon}
-                                </div>
-                                <div class="flex-1 min-w-0 max-w-[85%]">
-                                    <div class="flex items-center gap-2 mb-1 ${isUser ? 'justify-end' : ''}">
-                                        <span class="text-[10px] font-semibold ${isAgent ? 'text-accentLight' : 'text-textSec'}">${isAgent ? (currentSessionAgentId && nodesData[currentSessionAgentId] ? nodesData[currentSessionAgentId].name : 'Agent') : 'You'}</span>
-                                        <span class="text-[9px] font-mono text-textSec/50">${m.time}</span>
-                                    </div>
-                                    <div class="rounded-lg px-3.5 py-2.5 ${bubbleClass}">
-                                        ${contentHtml}
-                                    </div>
-                                </div>
+                            <div class="flex items-start gap-3 px-3 py-2 rounded hover:bg-bgHover/20 transition-colors">
+                                <span class="text-[9px] font-mono text-textSec/50 shrink-0 mt-0.5">${a.time}</span>
+                                <span class="text-[9px] font-mono ${color} shrink-0">[${icon}]</span>
+                                <span class="text-xs text-textPri">${a.msg}</span>
                             </div>`;
                         }).join('')}
                     </div>
@@ -1719,7 +1550,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-xs text-textPri truncate">${art.name}</p>
-                                    <p class="text-[10px] text-textSec">${art.type} • ${art.size}${art.desc ? ' — ' + art.desc : ''}</p>
+                                    <p class="text-[10px] text-textSec">${art.type} • ${art.size}</p>
                                 </div>
                             </div>
                         `).join('')}
@@ -1754,53 +1585,6 @@
             }
             sessionViewerContent.innerHTML = html;
         }
-        window.sendSessionMessage = function() {
-            const input = document.getElementById('session-chat-input-field');
-            if (!input || !input.value.trim()) return;
-            const content = input.value.trim();
-            const messages = currentSessionAgentId ? (sessionChatMessages[currentSessionAgentId] || []) : [];
-            const now = new Date();
-            const time = now.toISOString().split('T')[1].split('.')[0];
-            messages.push({
-                id: `msg-${Date.now()}`,
-                role: 'user',
-                type: 'text',
-                content: content,
-                time: time
-            });
-            input.value = '';
-            renderSessionTab('chat');
-            setTimeout(() => {
-                const chatContainer = document.getElementById('session-viewer-content');
-                if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-            }, 50);
-            // Simulate agent thinking response
-            setTimeout(() => {
-                messages.push({
-                    id: `msg-${Date.now()}`,
-                    role: 'agent',
-                    type: 'thinking',
-                    content: 'Processing your message...',
-                    time: time
-                });
-                renderSessionTab('chat');
-                setTimeout(() => {
-                    const chatContainer = document.getElementById('session-viewer-content');
-                    if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-                }, 50);
-            }, 800);
-        }
-
-        // Handle Enter key in session chat input
-        document.addEventListener('keydown', (e) => {
-            if (e.target.id === 'session-chat-input-field') {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendSessionMessage();
-                }
-            }
-        });
-
         window.injectPrompt = function() {
             const input = document.getElementById('inject-prompt-input');
             if (!input || !input.value.trim()) return;

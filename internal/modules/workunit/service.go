@@ -15,8 +15,8 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 // TaskReader abstracts task reads to avoid cyclic imports.
@@ -27,10 +27,10 @@ type TaskReader interface {
 // TaskGraphManager abstracts task-graph operations to avoid cyclic imports.
 // TODO[ADR-0022]: migrar para *taskgraph.TaskGraph quando A04 for concluido
 type TaskGraphManager interface {
-	GetActiveByTask(taskID string) (*domain.TaskGraph, error)
-	GetByID(id string) (*domain.TaskGraph, error)
+	GetActiveByTask(taskID string) (*taskgraphmod.TaskGraph, error)
+	GetByID(id string) (*taskgraphmod.TaskGraph, error)
 	NextVersion(taskID string) (int, error)
-	Create(graph *domain.TaskGraph) error
+	Create(graph *taskgraphmod.TaskGraph) error
 }
 
 type WorkUnitService struct {

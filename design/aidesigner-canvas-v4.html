@@ -4,930 +4,301 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OrchestraOS — Canvas v4</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        bgMain: '#0A0A0A',
-                        bgPanel: '#141414',
-                        bgHover: '#1C1C1C',
-                        bgCanvas: '#070707',
-                        textPri: '#E7E5E4',
-                        textSec: '#78716C',
-                        accent: '#F59E0B',
-                        accentLight: '#FBBF24',
-                        semantic: {
-                            success: '#22C55E',
-                            error: '#EF4444',
-                            warning: '#F97316',
-                            info: '#A8A29E'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    boxShadow: {
-                        'glow': '0 0 20px rgba(245,158,11,0.18)',
-                        'glow-active': '0 0 35px rgba(245,158,11,0.35)',
-                        'glow-panel': '0 8px 32px -8px rgba(0,0,0,0.7)',
-                        'inner-border': 'inset 0 0 0 1px rgba(68,64,60,0.12)',
-                        'inner-border-accent': 'inset 0 0 0 1px rgba(245,158,11,0.5)',
-                        'float': '0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(68,64,60,0.08)'
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'dash': 'dash 1s linear infinite',
-                        'slide-up': 'slideUp 0.3s ease-out',
-                        'slide-down': 'slideDown 0.3s ease-out',
-                        'fade-in': 'fadeIn 0.2s ease-out',
-                        'morph': 'morph 0.5s ease-out',
-                        'particle-flow': 'particleFlow 1s ease-out forwards',
-                    },
-                    keyframes: {
-                        dash: {
-                            '0%': { strokeDashoffset: '24' },
-                            '100%': { strokeDashoffset: '0' },
-                        },
-                        slideUp: {
-                            '0%': { transform: 'translateY(10px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        },
-                        slideDown: {
-                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        },
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        morph: {
-                            '0%': { transform: 'scale(0.8)', opacity: '0' },
-                            '50%': { transform: 'scale(1.05)' },
-                            '100%': { transform: 'scale(1)', opacity: '1' },
-                        },
-                        particleFlow: {
-                            '0%': { transform: 'translate(0, 0)', opacity: '1' },
-                            '100%': { transform: 'translate(var(--tx), var(--ty))', opacity: '0' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #080808;
+            --bg-panel: #0C0C0C;
+            --bg-hover: #121212;
+            --border: #1C1C1C;
+            --border-light: #292524;
+            --text: #A8A29E;
+            --text-dim: #57534E;
+            --text-bright: #E7E5E4;
+            --accent: #F59E0B;
+            --accent-dim: #92400E;
+            --green: #22C55E;
+            --green-dim: #14532D;
+            --red: #EF4444;
+            --red-dim: #7F1D1D;
+            --blue: #3B82F6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', sans-serif;
-            background: #070707;
-            color: #E7E5E4;
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.6;
+            height: 100dvh;
+            overflow: hidden;
         }
-        .grid-bg {
-            background-image:
-                linear-gradient(rgba(68, 64, 60, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(68, 64, 60, 0.06) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        .hud-panel {
-            background: rgba(20, 20, 20, 0.88);
-            backdrop-filter: blur(16px) saturate(1.2);
-            -webkit-backdrop-filter: blur(16px) saturate(1.2);
-            border: 1px solid rgba(68, 64, 60, 0.2);
-            box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
-        }
+        ::selection { background: var(--accent-dim); color: var(--text-bright); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 0; }
 
-        /* ZONA 1 */
-        .zone-1-flow {
+        .app { display: flex; height: 100dvh; flex-direction: column; }
+        .header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 16px 24px;
-            overflow-x: auto;
-        }
-        .flow-arrow {
-            width: 24px;
-            height: 24px;
-            color: #44403C;
+            justify-content: space-between;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
             flex-shrink: 0;
         }
-        .flow-arrow.active {
-            color: #F59E0B;
-            animation: pulse 1.5s infinite;
-        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-title { font-weight: 600; color: var(--text-bright); font-size: 14px; letter-spacing: -0.3px; }
+        .header-title span { color: var(--accent); }
+        .header-sub { color: var(--text-dim); font-size: 11px; }
 
-        /* UserMessage Card */
-        .user-message-card {
-            min-width: 280px;
-            max-width: 400px;
-            border-radius: 12px;
-            padding: 14px 16px;
-            background: rgba(20, 20, 20, 0.9);
-            border: 1px solid rgba(68, 64, 60, 0.25);
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        .user-message-card.active {
-            border-color: rgba(245, 158, 11, 0.5);
-            box-shadow: 0 0 20px rgba(245,158,11,0.1);
-        }
-        .user-message-card.processing::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #F59E0B, transparent);
-            animation: shimmer 1.5s infinite;
-        }
-
-        /* Orchestrator Hub */
-        .orchestrator-hub {
-            min-width: 220px;
-            border-radius: 16px;
-            padding: 16px 20px;
-            background: rgba(20, 20, 20, 0.95);
-            border: 1px solid rgba(68, 64, 60, 0.3);
-            position: relative;
-            transition: all 0.4s ease;
-        }
-        .orchestrator-hub.state-decomposing {
-            border-color: rgba(245, 158, 11, 0.6);
-            box-shadow: 0 0 30px rgba(245,158,11,0.15), inset 0 0 0 1px rgba(245,158,11,0.2);
-        }
-        .orchestrator-hub.state-spawning {
-            border-color: rgba(34, 197, 94, 0.4);
-            box-shadow: 0 0 30px rgba(34,197,94,0.1);
-        }
-        .orchestrator-hub.state-intervening {
-            border-color: rgba(249, 115, 22, 0.6);
-            box-shadow: 0 0 30px rgba(249,115,22,0.2);
-            animation: pulse-border 2s infinite;
-        }
-
-        /* Task Card */
-        .task-card {
-            min-width: 260px;
-            border-radius: 14px;
-            padding: 16px 20px;
-            background: rgba(20, 20, 20, 0.95);
-            border: 1px solid rgba(68, 64, 60, 0.3);
-            position: relative;
-        }
-        .task-card.state-active {
-            border-color: rgba(245, 158, 11, 0.5);
-            animation: morph 0.5s ease-out;
-        }
-
-        /* ZONA 2 - DAG */
-        .dag-level {
-            display: flex;
-            justify-content: center;
-            gap: 32px;
-            margin-bottom: 48px;
-            position: relative;
-        }
-        .dag-level::after {
-            content: '';
-            position: absolute;
-            bottom: -32px;
-            left: 50%;
-            width: 1px;
-            height: 32px;
-            background: rgba(68, 64, 60, 0.3);
-        }
-        .dag-level:last-child::after {
-            display: none;
-        }
-        .wu-node {
-            width: 180px;
-            border-radius: 12px;
-            padding: 14px;
-            background: rgba(20, 20, 20, 0.9);
-            border: 1px solid rgba(68, 64, 60, 0.25);
-            position: relative;
-            transition: all 0.3s ease;
+        .tabs { display: flex; gap: 0; }
+        .tab {
+            padding: 4px 12px;
+            font-size: 12px;
             cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            border-bottom: 1px solid transparent;
+            transition: all 0.15s;
         }
-        .wu-node:hover {
-            transform: translateY(-3px);
-            border-color: rgba(245, 158, 11, 0.3);
-        }
-        .wu-node.status-done {
-            border-color: rgba(34, 197, 94, 0.4);
-            border-left: 3px solid #22C55E;
-        }
-        .wu-node.status-running {
-            border-color: rgba(245, 158, 11, 0.5);
-            border-left: 3px solid #FBBF24;
-            box-shadow: 0 0 15px rgba(245,158,11,0.1);
-        }
-        .wu-node.status-pending {
-            border-left: 3px solid #44403C;
-            opacity: 0.7;
-        }
-        .wu-node.status-failed {
-            border-color: rgba(239, 68, 68, 0.4);
-            border-left: 3px solid #EF4444;
-        }
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-        /* DAG Edges */
-        .dag-edge {
-            position: absolute;
-            stroke: rgba(68, 64, 60, 0.4);
-            stroke-width: 1.5;
-            fill: none;
-            transition: stroke 0.3s ease;
-        }
-        .dag-edge.active {
-            stroke: rgba(245, 158, 11, 0.6);
-            stroke-dasharray: 6 3;
-            animation: dash 1s linear infinite;
-        }
-        .dag-edge.done {
-            stroke: rgba(34, 197, 94, 0.4);
-        }
+        .main { flex: 1; display: flex; overflow: hidden; }
+        .content { flex: 1; overflow-y: auto; padding: 0; }
 
-        /* ZONA 3 - Execution Stripes */
-        .execution-stripe {
+        .log-entry {
             display: flex;
-            align-items: stretch;
-            gap: 0;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 8px;
-            background: rgba(20, 20, 20, 0.85);
-            border: 1px solid rgba(68, 64, 60, 0.2);
-            transition: all 0.3s ease;
-            animation: slideUp 0.4s ease-out;
+            gap: 12px;
+            padding: 3px 16px;
+            border-left: 2px solid transparent;
+            transition: background 0.1s;
         }
-        .execution-stripe:hover {
-            border-color: rgba(245, 158, 11, 0.3);
+        .log-entry:hover { background: var(--bg-hover); }
+        .log-timestamp {
+            color: var(--text-dim);
+            font-size: 11px;
+            white-space: nowrap;
+            min-width: 70px;
+            padding-top: 1px;
         }
-        .stripe-section {
-            padding: 12px 16px;
-            border-right: 1px solid rgba(68, 64, 60, 0.15);
+        .log-type {
+            color: var(--accent);
+            font-size: 11px;
+            min-width: 130px;
+            white-space: nowrap;
+        }
+        .log-type.type-intake { color: var(--blue); }
+        .log-type.type-task { color: var(--green); }
+        .log-type.type-run { color: var(--text); }
+        .log-type.type-session { color: var(--accent); }
+        .log-type.type-error { color: var(--red); }
+        .log-msg { color: var(--text-bright); }
+        .log-msg .dim { color: var(--text); }
+        .log-msg .bright { color: var(--text-bright); font-weight: 500; }
+
+        .sep { border-top: 1px solid var(--border); margin: 8px 16px; }
+        .sep-label {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-width: 120px;
-        }
-        .stripe-section:last-child {
-            border-right: none;
-        }
-        .stripe-wu {
-            background: rgba(245, 158, 11, 0.05);
-        }
-        .stripe-run {
-            background: rgba(251, 191, 36, 0.05);
-        }
-        .stripe-session {
-            background: rgba(34, 197, 94, 0.05);
-        }
-        .stripe-sandbox {
-            background: rgba(168, 162, 158, 0.05);
-            flex: 1;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            color: var(--text-dim);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        /* Sandbox Container */
-        .sandbox-container {
-            border: 1px dashed rgba(68, 64, 60, 0.3);
-            border-radius: 8px;
-            padding: 8px 12px;
-            position: relative;
+        .dag-container {
+            padding: 8px 16px 16px;
+            font-size: 13px;
+            line-height: 1.8;
+            overflow-x: auto;
         }
-        .sandbox-container.state-creating {
-            border-style: dashed;
-            border-color: rgba(245, 158, 11, 0.4);
-            animation: pulse-border 2s infinite;
-        }
-        .sandbox-container.state-running {
-            border-style: solid;
-            border-color: rgba(245, 158, 11, 0.4);
-        }
-        .sandbox-container.state-completed {
-            border-style: solid;
-            border-color: rgba(34, 197, 94, 0.4);
-        }
+        .dag-line { white-space: pre; font-family: 'JetBrains Mono', monospace; }
+        .dag-status-done { color: var(--green); }
+        .dag-status-running { color: var(--accent); }
+        .dag-status-pending { color: var(--text-dim); }
+        .dag-status-failed { color: var(--red); }
+        .dag-id { color: var(--text-dim); }
+        .dag-title { color: var(--text-bright); font-weight: 500; }
 
-        /* Particles */
-        .particle {
-            position: absolute;
+        .active-strip {
+            display: flex;
+            gap: 16px;
+            padding: 8px 16px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-panel);
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+        .active-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            border: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: border-color 0.15s;
+            white-space: nowrap;
+        }
+        .active-item:hover { border-color: var(--accent); }
+        .active-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            pointer-events: none;
-            z-index: 100;
+            background: var(--accent);
+            animation: pulse-dot 2s infinite;
         }
-        .particle.heartbeat {
-            background: #22C55E;
-            box-shadow: 0 0 8px rgba(34,197,94,0.5);
-        }
-        .particle.tool-request {
-            background: #F97316;
-            box-shadow: 0 0 8px rgba(249,115,22,0.5);
-        }
-        .particle.checkpoint {
-            background: #22C55E;
-            box-shadow: 0 0 12px rgba(34,197,94,0.6);
-        }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .active-name { color: var(--text-bright); font-size: 12px; }
+        .active-meta { color: var(--text-dim); font-size: 11px; }
 
-        /* Level connector lines */
-        .level-connector {
-            position: absolute;
-            background: rgba(68, 64, 60, 0.2);
-            z-index: 0;
+        .input-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-panel);
+            flex-shrink: 0;
         }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        .input-prompt { color: var(--accent); font-weight: 600; }
+        .input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-bright);
+            font-family: inherit;
+            font-size: 13px;
         }
-        @keyframes pulse-border {
-            0%, 100% { border-color: rgba(245, 158, 11, 0.3); }
-            50% { border-color: rgba(245, 158, 11, 0.7); }
-        }
+        .input-field::placeholder { color: var(--text-dim); }
 
-        /* Scrollbars */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(68, 64, 60, 0.4); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(68, 64, 60, 0.6); }
-
-        /* Tooltip */
-        .tooltip {
-            position: absolute;
-            background: rgba(10, 10, 10, 0.95);
-            border: 1px solid rgba(68, 64, 60, 0.3);
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 11px;
-            pointer-events: none;
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
             opacity: 0;
-            transition: opacity 0.15s ease;
-            z-index: 1000;
-            white-space: nowrap;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 50;
         }
-        .tooltip.visible {
-            opacity: 1;
+        .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 420px;
+            max-width: 90vw;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-light);
+            transform: translateX(100%);
+            transition: transform 0.25s ease;
+            z-index: 51;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
+        .drawer.open { transform: translateX(0); }
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .drawer-title { color: var(--text-bright); font-weight: 600; font-size: 13px; }
+        .drawer-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            padding: 2px 6px;
+        }
+        .drawer-close:hover { color: var(--text-bright); }
+        .drawer-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
+        .drawer-section { margin-bottom: 16px; }
+        .drawer-label {
+            color: var(--text-dim);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .drawer-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+        .drawer-key { color: var(--text); }
+        .drawer-val { color: var(--text-bright); }
+        .drawer-val.status-running { color: var(--accent); }
+        .drawer-val.status-done { color: var(--green); }
+
+        .code-block {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            font-size: 12px;
+            line-height: 1.7;
+            overflow-x: auto;
+            white-space: pre;
+            color: var(--text-bright);
+        }
+
+        .btn-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+        .btn {
+            flex: 1;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 12px;
+            border: 1px solid var(--border-light);
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn:hover { border-color: var(--accent); color: var(--text-bright); }
+        .btn.primary { border-color: var(--accent); color: var(--accent); }
+        .btn.primary:hover { background: var(--accent-dim); color: var(--text-bright); }
+        .btn.danger { border-color: var(--red); color: var(--red); }
+        .btn.danger:hover { background: var(--red-dim); }
     </style>
 </head>
-<body class="h-[100dvh] w-screen overflow-hidden bg-bgCanvas text-textPri relative">
-
-    <!-- Tooltip -->
-    <div id="tooltip" class="tooltip"></div>
-
-    <!-- ==================== TOP HUD ==================== -->
-    <div class="absolute top-0 left-0 right-0 h-12 z-50 flex items-center justify-between px-5 pointer-events-none">
-        <div class="flex items-center gap-3 pointer-events-auto">
-            <div class="hud-panel rounded-lg px-3 py-2 flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-md bg-gradient-to-br from-accentLight to-accent flex items-center justify-center shadow-glow">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-bgMain"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-                </div>
-                <span class="font-bold text-sm text-white tracking-tight">Orchestra<span class="text-accentLight">OS</span></span>
-                <span class="text-[10px] font-mono text-textSec/70 uppercase tracking-widest">Canvas v4</span>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <div class="header-title">Orchestra<span>OS</span></div>
+                <div class="header-sub">Canvas v4 — Terminal</div>
+            </div>
+            <div class="tabs">
+                <button class="tab active" onclick="setView('flow')">Flow</button>
+                <button class="tab" onclick="setView('dag')">DAG</button>
+                <button class="tab" onclick="setView('log')">Log</button>
+                <button class="tab" onclick="setView('failures')">Failures</button>
             </div>
         </div>
-        <div class="flex items-center gap-2 pointer-events-auto">
-            <div class="hud-panel rounded-lg px-2 py-1.5 flex items-center gap-1">
-                <button class="px-2 py-0.5 rounded text-[10px] font-medium bg-accent/15 text-accentLight border border-accent/20" onclick="setFilter('flow')">Flow</button>
-                <button class="px-2 py-0.5 rounded text-[10px] font-medium text-textSec hover:text-white hover:bg-bgHover/50 transition-colors" onclick="setFilter('dag')">DAG</button>
-                <button class="px-2 py-0.5 rounded text-[10px] font-medium text-textSec hover:text-white hover:bg-bgHover/50 transition-colors" onclick="setFilter('active')">Active</button>
-                <button class="px-2 py-0.5 rounded text-[10px] font-medium text-textSec hover:text-white hover:bg-bgHover/50 transition-colors" onclick="setFilter('failures')">Failures</button>
-            </div>
+        <div class="main">
+            <div class="content" id="main-content"></div>
         </div>
-    </div>
-
-    <!-- ==================== MAIN CANVAS (3 ZONES) ==================== -->
-    <div class="absolute inset-0 pt-12 pb-0 flex flex-col grid-bg">
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- ZONA 1: INPUT → ORQUESTRAÇÃO          -->
-        <!-- ═══════════════════════════════════════ -->
-        <div id="zone-1" class="shrink-0 border-b border-[#292524]/30 bg-[#0A0A0A]/40 backdrop-blur-sm">
-            <div class="px-4 py-3">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-[9px] font-mono text-accentLight/60 uppercase tracking-widest">Zona 1</span>
-                    <span class="text-[10px] font-semibold text-textSec uppercase tracking-wider">Input → Orquestração</span>
-                </div>
-                <div class="zone-1-flow" id="zone-1-content">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- ZONA 2: TASK GRAPH DAG                -->
-        <!-- ═══════════════════════════════════════ -->
-        <div id="zone-2" class="flex-1 overflow-y-auto border-b border-[#292524]/30 relative" style="min-height: 280px;">
-            <div class="px-4 py-3">
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="text-[9px] font-mono text-accentLight/60 uppercase tracking-widest">Zona 2</span>
-                    <span class="text-[10px] font-semibold text-textSec uppercase tracking-wider">Task Graph DAG</span>
-                    <span class="ml-auto text-[10px] font-mono text-textSec/50" id="dag-stats">6 WUs • 3 levels</span>
-                </div>
-                <div id="zone-2-content" class="relative min-h-[300px]">
-                    <!-- SVG layer for edges -->
-                    <svg id="dag-edges" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>
-                    <!-- DAG levels populated by JS -->
-                    <div id="dag-levels" class="relative z-10"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- ZONA 3: EXECUÇÃO ATIVA                -->
-        <!-- ═══════════════════════════════════════ -->
-        <div id="zone-3" class="shrink-0 bg-[#0A0A0A]/60 backdrop-blur-sm" style="max-height: 26vh; min-height: 140px;">
-            <div class="px-4 py-3">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-[9px] font-mono text-accentLight/60 uppercase tracking-widest">Zona 3</span>
-                    <span class="text-[10px] font-semibold text-textSec uppercase tracking-wider">Execução Ativa</span>
-                    <span class="ml-auto text-[10px] font-mono text-textSec/50" id="active-stats">2 faixas ativas</span>
-                </div>
-                <div id="zone-3-content" class="space-y-2 overflow-y-auto" style="max-height: calc(26vh - 60px);">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ==================== BOTTOM INPUT BAR ==================== -->
-    <div class="shrink-0 h-14 bg-[#070707]/90 border-t border-[#292524]/30 flex items-center justify-center z-50">
-        <div class="hud-panel rounded-xl flex items-center gap-3 px-4 py-2.5 pointer-events-auto">
-            <div class="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center shrink-0 border border-accent/20">
-                <svg class="w-4 h-4 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <input type="text" id="canvas-input" placeholder="Descreva sua tarefa, ideia ou objetivo..." class="flex-1 bg-transparent text-sm text-white placeholder-textSec/50 focus:outline-none font-sans" autocomplete="off" />
-            <button class="w-8 h-8 rounded-lg bg-accent/20 hover:bg-accent/30 flex items-center justify-center text-accentLight transition-colors border border-accent/20">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-            </button>
+        <div class="active-strip" id="active-strip"></div>
+        <div class="input-bar">
+            <span class="input-prompt">&gt;</span>
+            <input type="text" class="input-field" id="cmd-input" placeholder="Descreva sua tarefa, ideia ou objetivo..." autocomplete="off" />
+            <span class="input-prompt" style="color:var(--text-dim);">&#8629;</span>
         </div>
     </div>
-
-    <script>
-
-    // ==================== MOCK DATA — FLUXO REAL COMPLETO ====================
-    const flowData = {
-        userMessage: {
-            id: 'msg-0421',
-            source: 'chat',
-            author: 'Você',
-            text: 'Implementar um sistema de event envelope para padronizar as mensagens entre os agentes. Precisa suportar context metadata, timestamps e correlation IDs.',
-            attachments: ['docs/events-spec.md'],
-            timestamp: '10:23:45',
-            status: 'accepted' // typing | submitted | processing | accepted | clarifying
-        },
-        intake: {
-            status: 'completed',
-            normalizedIntent: 'Criar sistema de EventEnvelope com metadata, timestamps e correlation IDs',
-            routing: 'orchestrator.primary'
-        },
-        orchestrator: {
-            status: 'monitoring', // idle | analyzing | decomposing | scheduling | spawning | monitoring | intervening
-            stateText: 'Monitoring execution',
-            progress: 67,
-            activeAction: 'Observing 2 active sessions',
-            pendingApprovals: 1
-        },
-        task: {
-            id: 'task-099',
-            title: 'Event Envelope',
-            description: 'Implementar sistema de envelope de eventos para padronização de mensagens entre agentes',
-            status: 'in_progress',
-            priority: 'P0',
-            riskLevel: 'medium',
-            fromMessageId: 'msg-0421',
-            criteriaTotal: 6,
-            criteriaCompleted: 3,
-            wuTotal: 6,
-            wuCompleted: 2,
-            wuRunning: 2,
-            wuPending: 2
-        },
-        taskGraph: {
-            id: 'tg-099-001',
-            version: 1,
-            plannerStrategy: 'semantic_decomposition',
-            levels: [
-                // Nível 0 — Raiz
-                [
-                    { id: 'wu-001', title: 'Criar schema base', objective: 'Definir SQL migration para payload de eventos', status: 'completed', assignedProfile: 'code_worker', criteria: ['SQL file generated', 'Keys checked'], completion: 100 }
-                ],
-                // Nível 1 — Paralelo! (3 WUs independentes)
-                [
-                    { id: 'wu-002', title: 'Implementar envelope', objective: 'Wrap API responses com context metadata', status: 'running', assignedProfile: 'code_worker', criteria: ['Go structs defined', 'Middleware updated', 'Unit tests attached'], completion: 67, runAttempts: 3 },
-                    { id: 'wu-003', title: 'Adicionar middleware', objective: 'Add logging e auth middleware ao router', status: 'pending', assignedProfile: 'code_worker', criteria: ['Middleware chain defined', 'Auth checks implemented'], completion: 0 },
-                    { id: 'wu-005', title: 'Setup CI pipeline', objective: 'Configurar GitHub Actions para testes', status: 'completed', assignedProfile: 'code_worker', criteria: ['Workflow file created'], completion: 100 }
-                ],
-                // Nível 2 — Depende de wu-002 e wu-003
-                [
-                    { id: 'wu-004', title: 'Validar E2E', objective: 'Run playwright suite em staging', status: 'pending', assignedProfile: 'reviewer', criteria: ['All smoke tests pass'], completion: 0 },
-                    { id: 'wu-006', title: 'Documentar API', objective: 'Gerar OpenAPI spec e docs', status: 'pending', assignedProfile: 'reviewer', criteria: ['OpenAPI spec generated', 'Docs deployed'], completion: 0 }
-                ]
-            ],
-            edges: [
-                { from: 'wu-001', to: 'wu-002', type: 'blocks' },
-                { from: 'wu-001', to: 'wu-003', type: 'blocks' },
-                { from: 'wu-002', to: 'wu-004', type: 'blocks' },
-                { from: 'wu-003', to: 'wu-004', type: 'blocks' },
-                { from: 'wu-002', to: 'wu-006', type: 'blocks' },
-                { from: 'wu-003', to: 'wu-006', type: 'blocks' },
-                { from: 'wu-001', to: 'wu-005', type: 'independent' }
-            ]
-        },
-        executions: [
-            {
-                workUnitId: 'wu-002',
-                workUnitTitle: 'Implementar envelope',
-                runs: [
-                    { id: 'run-101', attempt: 1, status: 'failed', duration: '5m 02s', reason: 'timeout after 5m', logs: 'go test timeout...' },
-                    { id: 'run-102', attempt: 2, status: 'failed', duration: '2m 18s', reason: 'linter error on events.go', logs: 'undefined: uuid...' },
-                    { id: 'run-103', attempt: 3, status: 'running', duration: '2m 14s', reason: null, logs: 'go test ./... PASS' }
-                ],
-                activeRunId: 'run-103',
-                session: {
-                    id: 'session-042',
-                    agentName: 'Codex-Builder',
-                    agentProfile: 'code_worker',
-                    status: 'running',
-                    heartbeat: '2s ago',
-                    lastCheckpoint: 'cp-003',
-                    sandbox: {
-                        id: 'sandbox-7a3f',
-                        container: 'orch-sandbox-7a3f',
-                        branch: 'feat/t-099-event-envelope',
-                        worktree: '/tmp/orch/sb-7a3f',
-                        cpu: '45%',
-                        memory: '128MB'
-                    }
-                }
-            },
-            {
-                workUnitId: 'wu-003',
-                workUnitTitle: 'Adicionar middleware',
-                runs: [
-                    { id: 'run-201', attempt: 1, status: 'running', duration: '1m 30s', reason: null, logs: 'compiling...' }
-                ],
-                activeRunId: 'run-201',
-                session: {
-                    id: 'session-043',
-                    agentName: 'Review-Bot',
-                    agentProfile: 'reviewer',
-                    status: 'running',
-                    heartbeat: '5s ago',
-                    lastCheckpoint: 'cp-001',
-                    sandbox: {
-                        id: 'sandbox-8b2e',
-                        container: 'orch-sandbox-8b2e',
-                        branch: 'feat/t-099-event-envelope',
-                        worktree: '/tmp/orch/sb-8b2e',
-                        cpu: '23%',
-                        memory: '96MB'
-                    }
-                }
-            }
-        ],
-        toolRequests: [
-            { id: 'tr-001', agent: 'Codex-Builder', tool: 'file_write', target: 'events.go', risk: 'medium', status: 'pending_approval' }
-        ]
-    };
-
-    // ==================== RENDER ZONA 1: INPUT → ORQUESTRAÇÃO ====================
-    function renderZone1() {
-        const container = document.getElementById('zone-1-content');
-        const d = flowData;
-
-        const msgStatusClass = d.userMessage.status === 'accepted' ? 'active' : '';
-        const orchStateClass = `state-${d.orchestrator.status}`;
-        const taskStateClass = d.task.status === 'in_progress' ? 'state-active' : '';
-
-        container.innerHTML = `
-            <!-- UserMessage -->
-            <div class="user-message-card ${msgStatusClass}" id="user-msg-card">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-                        <svg class="w-3.5 h-3.5 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    </div>
-                    <span class="text-[11px] font-semibold text-white">${d.userMessage.author}</span>
-                    <span class="text-[9px] font-mono text-textSec/50 ml-auto">${d.userMessage.timestamp}</span>
-                </div>
-                <p class="text-[12px] text-textPri leading-relaxed line-clamp-2">${d.userMessage.text}</p>
-                ${d.userMessage.attachments.length > 0 ? `
-                    <div class="flex items-center gap-1.5 mt-2">
-                        <svg class="w-3 h-3 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                        <span class="text-[10px] text-textSec">${d.userMessage.attachments[0]}</span>
-                    </div>
-                ` : ''}
-                <div class="mt-2 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-accentLight"></span>
-                    <span class="text-[9px] font-mono text-accentLight uppercase">${d.userMessage.status}</span>
-                </div>
-            </div>
-
-            <!-- Arrow -->
-            <svg class="flow-arrow active" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-
-            <!-- Intake -->
-            <div class="flex flex-col items-center gap-1 px-2">
-                <div class="w-10 h-10 rounded-lg bg-[#1C1C1C] border border-[#292524]/50 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                </div>
-                <span class="text-[9px] font-mono text-textSec uppercase">Intake</span>
-                <span class="text-[9px] font-mono text-semantic-success">✓ Done</span>
-            </div>
-
-            <!-- Arrow -->
-            <svg class="flow-arrow active" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-
-            <!-- Orchestrator Hub -->
-            <div class="orchestrator-hub ${orchStateClass}" id="orch-hub">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center border border-accent/20">
-                        <svg class="w-4 h-4 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold text-white">Orchestrator</p>
-                        <p class="text-[9px] font-mono text-accentLight">${d.orchestrator.stateText}</p>
-                    </div>
-                </div>
-                <div class="w-full bg-[#1C1C1C] rounded-full h-1.5 mb-2">
-                    <div class="bg-accentLight h-full rounded-full transition-all duration-500" style="width: ${d.orchestrator.progress}%"></div>
-                </div>
-                <div class="flex items-center justify-between text-[9px] font-mono">
-                    <span class="text-textSec">${d.orchestrator.activeAction}</span>
-                    ${d.orchestrator.pendingApprovals > 0 ? `
-                        <span class="px-1.5 py-0.5 rounded bg-semantic-warning/15 text-semantic-warning border border-semantic-warning/20">${d.orchestrator.pendingApprovals} approval</span>
-                    ` : ''}
-                </div>
-            </div>
-
-            <!-- Arrow -->
-            <svg class="flow-arrow active" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-
-            <!-- Task Card -->
-            <div class="task-card ${taskStateClass}" id="task-card">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-[10px] font-mono bg-accent/10 text-accentLight px-1.5 py-0.5 rounded border border-accent/20">${d.task.id}</span>
-                    <span class="text-[9px] font-mono text-semantic-error bg-semantic-error/10 px-1.5 py-0.5 rounded border border-semantic-error/20">${d.task.priority}</span>
-                </div>
-                <p class="text-sm font-semibold text-white mb-1">${d.task.title}</p>
-                <p class="text-[11px] text-textSec mb-2 line-clamp-1">${d.task.description}</p>
-                <div class="flex items-center gap-3 text-[10px] font-mono text-textSec mb-2">
-                    <span>${d.task.wuCompleted}/${d.task.wuTotal} WUs</span>
-                    <span class="w-1 h-1 rounded-full bg-textSec/30"></span>
-                    <span>${d.task.criteriaCompleted}/${d.task.criteriaTotal} criteria</span>
-                </div>
-                <div class="w-full bg-[#1C1C1C] rounded-full h-1.5">
-                    <div class="bg-accentLight h-full rounded-full" style="width: ${Math.round((d.task.wuCompleted / d.task.wuTotal) * 100)}%"></div>
-                </div>
-            </div>
-        `;
-    }
-
-    // ==================== RENDER ZONA 2: TASK GRAPH DAG ====================
-    function renderZone2() {
-        const levelsContainer = document.getElementById('dag-levels');
-        const edgesSvg = document.getElementById('dag-edges');
-        const d = flowData.taskGraph;
-
-        // Render levels
-        let html = '';
-        d.levels.forEach((level, levelIdx) => {
-            html += `<div class="dag-level" data-level="${levelIdx}">`;
-            level.forEach(wu => {
-                const statusClass = `status-${wu.status}`;
-                const statusIcon = wu.status === 'completed' ? '✓' : wu.status === 'running' ? '▶' : wu.status === 'failed' ? '✕' : '○';
-                const statusColor = wu.status === 'completed' ? 'text-semantic-success' : wu.status === 'running' ? 'text-accentLight' : wu.status === 'failed' ? 'text-semantic-error' : 'text-textSec';
-
-                html += `
-                    <div class="wu-node ${statusClass}" data-wu-id="${wu.id}" onclick="selectWU('${wu.id}')">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-[9px] font-mono text-textSec/60">${wu.id}</span>
-                            <span class="text-[10px] ${statusColor}">${statusIcon}</span>
-                        </div>
-                        <p class="text-xs font-semibold text-white mb-1">${wu.title}</p>
-                        <p class="text-[10px] text-textSec line-clamp-2 mb-2">${wu.objective}</p>
-                        <div class="flex items-center gap-1.5">
-                            <div class="flex-1 bg-[#1C1C1C] rounded-full h-1">
-                                <div class="${wu.status === 'completed' ? 'bg-semantic-success' : 'bg-accentLight'} h-full rounded-full" style="width: ${wu.completion}%"></div>
-                            </div>
-                            <span class="text-[9px] font-mono text-textSec/60">${wu.completion}%</span>
-                        </div>
-                        ${wu.runAttempts ? `
-                            <div class="mt-2 pt-2 border-t border-[#292524]/30">
-                                <span class="text-[9px] font-mono text-textSec">${wu.runAttempts} attempt${wu.runAttempts > 1 ? 's' : ''}</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            });
-            html += '</div>';
-        });
-        levelsContainer.innerHTML = html;
-
-        // Update stats
-        const totalWUs = d.levels.flat().length;
-        const totalLevels = d.levels.length;
-        document.getElementById('dag-stats').textContent = `${totalWUs} WUs • ${totalLevels} levels`;
-
-        // Draw edges (simplified — straight lines for now)
-        setTimeout(() => drawDAGEdges(), 100);
-    }
-
-    function drawDAGEdges() {
-        const svg = document.getElementById('dag-edges');
-        const d = flowData.taskGraph;
-        const container = document.getElementById('dag-levels');
-        const containerRect = container.getBoundingClientRect();
-
-        let svgHtml = '';
-        d.edges.forEach(edge => {
-            const fromEl = document.querySelector(`[data-wu-id="${edge.from}"]`);
-            const toEl = document.querySelector(`[data-wu-id="${edge.to}"]`);
-            if (!fromEl || !toEl) return;
-
-            const fromRect = fromEl.getBoundingClientRect();
-            const toRect = toEl.getBoundingClientRect();
-
-            const x1 = fromRect.left + fromRect.width / 2 - containerRect.left;
-            const y1 = fromRect.bottom - containerRect.top;
-            const x2 = toRect.left + toRect.width / 2 - containerRect.left;
-            const y2 = toRect.top - containerRect.top;
-
-            const midY = (y1 + y2) / 2;
-            const path = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
-
-            const fromWU = d.levels.flat().find(w => w.id === edge.from);
-            const edgeClass = fromWU && fromWU.status === 'completed' ? 'done' : '';
-
-            svgHtml += `<path d="${path}" class="dag-edge ${edgeClass}" />`;
-        });
-
-        svg.innerHTML = svgHtml;
-        svg.setAttribute('viewBox', `0 0 ${containerRect.width} ${containerRect.height}`);
-    }
-
-    // ==================== RENDER ZONA 3: EXECUÇÃO ATIVA ====================
-    function renderZone3() {
-        const container = document.getElementById('zone-3-content');
-        const d = flowData;
-
-        if (d.executions.length === 0) {
-            container.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-8 text-center opacity-40">
-                    <div class="w-10 h-10 rounded-full border border-dashed border-textSec flex items-center justify-center mb-2">
-                        <svg class="w-4 h-4 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    </div>
-                    <p class="text-xs font-medium text-textPri">Nenhuma execução ativa</p>
-                    <p class="text-[10px] text-textSec">Aguardando WorkUnits prontos...</p>
-                </div>
-            `;
-            document.getElementById('active-stats').textContent = '0 faixas';
-            return;
-        }
-
-        let html = '';
-        d.executions.forEach(exec => {
-            const activeRun = exec.runs.find(r => r.id === exec.activeRunId);
-            const s = exec.session;
-
-            html += `
-                <div class="execution-stripe">
-                    <!-- WU Section -->
-                    <div class="stripe-section stripe-wu" style="min-width: 140px;">
-                        <span class="text-[9px] font-mono text-textSec/60 mb-0.5">${exec.workUnitId}</span>
-                        <p class="text-xs font-semibold text-white">${exec.workUnitTitle}</p>
-                        <span class="text-[9px] font-mono text-accentLight mt-1">▶ Running</span>
-                    </div>
-
-                    <!-- Run Section -->
-                    <div class="stripe-section stripe-run" style="min-width: 100px;">
-                        <span class="text-[9px] font-mono text-textSec/60 mb-0.5">${activeRun.id}</span>
-                        <p class="text-xs font-semibold text-white">Attempt ${activeRun.attempt}</p>
-                        <span class="text-[9px] font-mono text-textSec mt-1">${activeRun.duration}</span>
-                    </div>
-
-                    <!-- Session Section -->
-                    <div class="stripe-section stripe-session" style="min-width: 140px;">
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded bg-accent/15 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-white">${s.agentName}</p>
-                                <p class="text-[9px] font-mono text-textSec">${s.id}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1.5 mt-1.5">
-                            <span class="w-1 h-1 rounded-full bg-semantic-success animate-pulse"></span>
-                            <span class="text-[9px] font-mono text-textSec">${s.heartbeat}</span>
-                        </div>
-                    </div>
-
-                    <!-- Sandbox Section -->
-                    <div class="stripe-section stripe-sandbox">
-                        <div class="sandbox-container state-${s.status}">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] font-mono text-textSec/60">🔒 ${s.sandbox.id}</span>
-                                <span class="text-[9px] font-mono text-textSec">CPU ${s.sandbox.cpu} • Mem ${s.sandbox.memory}</span>
-                            </div>
-                            <div class="flex items-center gap-3 text-[10px] font-mono text-textSec">
-                                <span class="text-accentLight">${s.sandbox.branch}</span>
-                                <span class="truncate max-w-[200px]">${s.sandbox.worktree}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-        document.getElementById('active-stats').textContent = `${d.executions.length} faixa${d.executions.length > 1 ? 's' : ''}`;
-    }
-
-    // ==================== INTERACTIONS ====================
-    function selectWU(wuId) {
-        // Highlight the WU
-        document.querySelectorAll('.wu-node').forEach(n => n.classList.remove('ring-2', 'ring-accent/50'));
-        const el = document.querySelector(`[data-wu-id="${wuId}"]`);
-        if (el) el.classList.add('ring-2', 'ring-accent/50');
-
-        // Scroll to execution stripe if active
-        // TODO: implement inspector panel
-    }
-
-    function setFilter(filter) {
-        // Update button states
-        document.querySelectorAll('#zone-1 .hud-panel button').forEach(btn => {
-            btn.classList.toggle('bg-accent/15', btn.textContent.toLowerCase().includes(filter));
-            btn.classList.toggle('text-accentLight', btn.textContent.toLowerCase().includes(filter));
-            btn.classList.toggle('border-accent/20', btn.textContent.toLowerCase().includes(filter));
-            btn.classList.toggle('text-textSec', !btn.textContent.toLowerCase().includes(filter));
-        });
-
-        // Apply filter logic
-        if (filter === 'dag') {
-            document.getElementById('zone-1').style.display = 'none';
-            document.getElementById('zone-3').style.display = 'none';
-            document.getElementById('zone-2').style.flex = '1';
-        } else if (filter === 'active') {
-            document.getElementById('zone-1').style.display = 'none';
-            document.getElementById('zone-2').style.display = 'none';
-            document.getElementById('zone-3').style.maxHeight = 'none';
-            document.getElementById('zone-3').style.flex = '1';
-        } else if (filter === 'failures') {
-            // Show only failed WUs
-            document.querySelectorAll('.wu-node').forEach(n => {
-                const isFailed = n.classList.contains('status-failed');
-                n.style.opacity = isFailed ? '1' : '0.2';
-            });
-        } else {
-            // flow — show all
-            document.getElementById('zone-1').style.display = '';
-            document.getElementById('zone-2').style.display = '';
-            document.getElementById('zone-3').style.display = '';
-            document.getElementById('zone-2').style.flex = '1';
-            document.getElementById('zone-3').style.maxHeight = '35vh';
-            document.getElementById('zone-3').style.flex = '';
-            document.querySelectorAll('.wu-node').forEach(n => n.style.opacity = '1');
-        }
-    }
-
-    // ==================== TOOLTIP ====================
-    const tooltip = document.getElementById('tooltip');
-    document.addEventListener('mouseover', (e) => {
-        const trigger = e.target.closest('[data-tooltip]');
-        if (trigger) {
-            tooltip.textContent = trigger.dataset.tooltip;
-            tooltip.classList.add('visible');
-            const rect = trigger.getBoundingClientRect();
-            tooltip.style.left = rect.left + 'px';
-            tooltip.style.top = (rect.bottom + 4) + 'px';
-        }
-    });
-    document.addEventListener('mouseout', (e) => {
-        if (e.target.closest('[data-tooltip]')) {
-            tooltip.classList.remove('visible');
-        }
-    });
-
-    // ==================== INIT ====================
-    window.addEventListener('load', () => {
-        renderZone1();
-        renderZone2();
-        renderZone3();
-
-        // Redraw edges on resize
-        window.addEventListener('resize', () => {
-            drawDAGEdges();
-        });
-    });
-    </script>
-</body>
-</html>
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+    <div class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span class="drawer-title" id="drawer-title">Session</span>
+            <button class="drawer-close" onclick="closeDrawer()">&#10005;</button>
+        </div>
+        <div class="drawer-body" id="drawer-body"></div>
+        <div class="btn-row" id="drawer-actions"></div>
+    </div>

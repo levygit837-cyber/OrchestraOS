@@ -350,11 +350,11 @@ func createTestTaskGraph(t *testing.T, db *sql.DB, taskID string) string {
 	if existing != nil {
 		return existing.ID
 	}
-	graph := &domain.TaskGraph{
+	graph := &taskgraphmod.TaskGraph{
 		ID:              uuid.New().String(),
 		TaskID:          taskID,
 		Version:         1,
-		Status:          domain.TaskGraphStatusActive,
+		Status:          taskgraphmod.StatusActive,
 		PlannerStrategy: "integration_test",
 		Rationale:       "Integration test graph",
 		CreatedBy:       "integration_test",

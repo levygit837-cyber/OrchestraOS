@@ -5,14 +5,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 func TestPlannerValidator_ValidPlan(t *testing.T) {
 	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
-		WorkUnits: []domain.WorkUnit{
+		WorkUnits: []taskgraphmod.PlanWorkUnit{
 			{
 				ID:                   uuid.New().String(),
 				Title:                "Work Unit 1",
@@ -45,7 +45,7 @@ func TestPlannerValidator_CycleDetected(t *testing.T) {
 
 	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
-		WorkUnits: []domain.WorkUnit{
+		WorkUnits: []taskgraphmod.PlanWorkUnit{
 			{
 				ID:                   wu1ID,
 				Title:                "Work Unit 1",
@@ -88,7 +88,7 @@ func TestPlannerValidator_CycleDetected(t *testing.T) {
 func TestPlannerValidator_InvalidProfile(t *testing.T) {
 	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
-		WorkUnits: []domain.WorkUnit{
+		WorkUnits: []taskgraphmod.PlanWorkUnit{
 			{
 				ID:                   uuid.New().String(),
 				Title:                "Work Unit 1",
@@ -114,16 +114,16 @@ func TestPlannerValidator_CountBounds(t *testing.T) {
 	// Empty plan
 	emptyPlan := &taskgraphmod.GraphPlan{
 		GraphID:   uuid.New().String(),
-		WorkUnits: []domain.WorkUnit{},
+		WorkUnits: []taskgraphmod.PlanWorkUnit{},
 	}
 	if err := bootstrap.ValidateGraphPlan(emptyPlan); err == nil {
 		t.Fatal("expected error for empty plan, got nil")
 	}
 
 	// Too many work units
-	var tooMany []domain.WorkUnit
+	var tooMany []taskgraphmod.PlanWorkUnit
 	for i := 0; i < 11; i++ {
-		tooMany = append(tooMany, domain.WorkUnit{
+		tooMany = append(tooMany, taskgraphmod.PlanWorkUnit{
 			ID:                   uuid.New().String(),
 			Title:                "Work Unit",
 			Objective:            "Objective",
@@ -145,7 +145,7 @@ func TestPlannerValidator_CountBounds(t *testing.T) {
 func TestPlannerValidator_MissingDependency(t *testing.T) {
 	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
-		WorkUnits: []domain.WorkUnit{
+		WorkUnits: []taskgraphmod.PlanWorkUnit{
 			{
 				ID:                   uuid.New().String(),
 				Title:                "Work Unit 1",
@@ -173,7 +173,7 @@ func TestPlannerValidator_DependencyOrder(t *testing.T) {
 
 	plan := &taskgraphmod.GraphPlan{
 		GraphID: uuid.New().String(),
-		WorkUnits: []domain.WorkUnit{
+		WorkUnits: []taskgraphmod.PlanWorkUnit{
 			{
 				ID:                   wu1ID,
 				Title:                "Work Unit 1",
@@ -201,11 +201,11 @@ func TestPlannerValidator_DependencyOrder(t *testing.T) {
 }
 
 func TestPlannerPrompt_Render(t *testing.T) {
-	task := &domain.Task{
+	task := &taskmod.Task{
 		Title:              "Test Task",
 		Description:        "A task for testing",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"Criterion A", "Criterion B"},
 	}
 

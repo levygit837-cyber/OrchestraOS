@@ -443,7 +443,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decompose task graph: %v", err)
 	}
-	if result.Graph.Status != domain.TaskGraphStatusActive || result.Graph.Version != 1 {
+	if result.Graph.Status != taskgraphmod.StatusActive || result.Graph.Version != 1 {
 		t.Fatalf("expected active graph version 1, got %+v", result.Graph)
 	}
 	if len(result.WorkUnits) != 2 {
@@ -504,7 +504,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("replace active graph: %v", err)
 	}
-	if replanned.Graph.Version != 2 || replanned.Graph.Status != domain.TaskGraphStatusActive {
+	if replanned.Graph.Version != 2 || replanned.Graph.Status != taskgraphmod.StatusActive {
 		t.Fatalf("expected active graph version 2, got %+v", replanned.Graph)
 	}
 	graphs, err := graphService.ListByTask(ctx, taskResult.Value.ID)
@@ -514,10 +514,10 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	activeCount := 0
 	supersededCount := 0
 	for _, graph := range graphs {
-		if graph.Status == domain.TaskGraphStatusActive {
+		if graph.Status == taskgraphmod.StatusActive {
 			activeCount++
 		}
-		if graph.Status == domain.TaskGraphStatusSuperseded {
+		if graph.Status == taskgraphmod.StatusSuperseded {
 			supersededCount++
 		}
 	}
