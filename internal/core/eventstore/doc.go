@@ -20,5 +20,5 @@
 //
 // # Related Packages
 //   - modules/event/: service layer that wraps Store with business rules
-//   - core/coordination/: appends transition events via Store
+//   - core/transition/: appends transition events via Store
 package eventstore

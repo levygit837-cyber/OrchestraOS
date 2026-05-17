@@ -15,7 +15,7 @@
 //
 // # Dependencies
 //   - core/db: transaction helpers
-//   - core/coordination: TransitionInput, OperationResult
+//   - core/transition: TransitionInput, OperationResult
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
 //   - domain: EventEnvelope, EventPriority (generic types only)

@@ -232,8 +232,8 @@ func (s *RunService) transition(ctx context.Context, runID string, target Status
 	return &transition.OperationResult[*Run]{Value: run, Event: event, Duplicate: duplicate}, nil
 }
 
-// UpdateRunProjection updates the runs table projection. Exported temporarily
-// for coordination packages migrating per ADR-0028; callers should prefer
+// UpdateRunProjection updates the runs table projection. Exported for cross-module
+// use (e.g. orchestrator cascade/timeout logic); callers should prefer
 // Repository.UpdateStatus or the run service transition methods.
 func UpdateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status Status, result *Result, failureReason *string) error {
 	now := time.Now().UTC()

@@ -1,4 +1,4 @@
-package coordination
+package orchestrator
 
 import (
 	"context"
@@ -14,11 +14,14 @@ import (
 )
 
 // CancelTaskDependents cancels all non-terminal runs and work units belonging to a task.
+// Located in the orchestrator module because it coordinates across run and workunit modules.
+// task cannot import run (run already imports task for TaskReader), so this cross-module
+// logic lives in the orchestrator which is the designated cross-module coordinator.
 func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error {
 	runRepo := runmod.NewRepository(tx)
 	runs, err := runRepo.ListByTask(taskID)
 	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "coordination.cancel_task_dependents.list_runs", err)
+		return apperrors.Wrap(apperrors.CodePersistence, "orchestrator.cancel_task_dependents.list_runs", err)
 	}
 	for _, run := range runs {
 		if transition.IsFinalStatus(string(run.Status)) {
@@ -39,7 +42,7 @@ func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input 
 	wuRepo := workunitmod.NewRepository(tx)
 	workUnits, err := wuRepo.ListByTask(taskID)
 	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "coordination.cancel_task_dependents.list_work_units", err)
+		return apperrors.Wrap(apperrors.CodePersistence, "orchestrator.cancel_task_dependents.list_work_units", err)
 	}
 	for _, wu := range workUnits {
 		if transition.IsFinalStatus(string(wu.Status)) {
@@ -53,9 +56,9 @@ func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input 
 		}
 		res, err := tx.ExecContext(ctx, workunitmod.QueryUpdateStatus, wu.ID, workunitmod.StatusCancelled, time.Now().UTC())
 		if err != nil {
-			return apperrors.Wrap(apperrors.CodePersistence, "coordination.cancel_task_dependents.update_work_unit", err)
+			return apperrors.Wrap(apperrors.CodePersistence, "orchestrator.cancel_task_dependents.update_work_unit", err)
 		}
-		if err := dbcore.EnsureRowsAffected(res, "work unit", "coordination.cancel_task_dependents.update_work_unit"); err != nil {
+		if err := dbcore.EnsureRowsAffected(res, "work unit", "orchestrator.cancel_task_dependents.update_work_unit"); err != nil {
 			return err
 		}
 	}

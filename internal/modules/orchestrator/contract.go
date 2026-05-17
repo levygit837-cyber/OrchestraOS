@@ -23,12 +23,11 @@ import (
 // MODULE-SPECIFIC RULES (orchestrator only):
 //   - RunTask must be deterministic and fully auditable via events.
 //   - Work units are executed sequentially in the first cut.
-//   - This is the ONLY module allowed to import core/coordination.
 //
 // ALLOWED core/* imports:
 //   - core/apperrors, core/db, core/validation, core/event
 //   - core/statemachine, core/transition, core/serialization
-//   - core/coordination (exclusive permission)
+//   - core/transition (shared types)
 // FORBIDDEN core/* imports:
 //   - None (orchestrator has broad permissions, but still must not abuse them)
 //

@@ -12,7 +12,6 @@ import (
 // allowedCoordinationImporters lists packages that are allowed to import modules.
 // All other packages under internal/ must not import internal/modules/* directly.
 var allowedCoordinationImporters = []string{
-	"internal/core/coordination",
 	"internal/bootstrap",
 	"cmd",
 }

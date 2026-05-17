@@ -30,7 +30,7 @@ import _ "embed"
 //   - core/apperrors, core/db, core/validation, core/event
 //   - core/statemachine, core/transition, core/serialization
 // FORBIDDEN core/* imports:
-//   - core/coordination (reserved for orchestrator module only)
+//   - core/transition (shared types)
 //
 // For full contracts, read CONTRACTS.md in this directory.
 
