@@ -19,6 +19,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // TaskReader abstracts task reads to avoid cyclic imports.
@@ -29,7 +30,7 @@ type TaskReader interface {
 
 // WorkUnitReader abstracts work-unit reads to avoid cyclic imports.
 type WorkUnitReader interface {
-	GetByID(id string) (*domain.WorkUnit, error)
+	GetByID(id string) (*workunitmod.WorkUnit, error)
 }
 
 type RunService struct {
@@ -293,7 +294,7 @@ func (s *RunService) requireTaskByID(tx *sql.Tx, id string) (*taskmod.Task, erro
 	return task, nil
 }
 
-func (s *RunService) requireWorkUnitByID(tx *sql.Tx, id string) (*domain.WorkUnit, error) {
+func (s *RunService) requireWorkUnitByID(tx *sql.Tx, id string) (*workunitmod.WorkUnit, error) {
 	wu, err := s.newWorkUnitReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "workunit.get", err)

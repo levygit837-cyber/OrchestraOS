@@ -182,7 +182,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
 		func(tx *sql.Tx) runmod.TaskReader { return taskmod.NewRepository(tx) },
 		func(tx *sql.Tx) runmod.WorkUnitReader {
-			return &runWorkUnitReaderAdapter{repo: workunitmod.NewRepository(tx)}
+			return workunitmod.NewRepository(tx)
 		},
 		func(ctx context.Context, tx *sql.Tx, run *runmod.Run, target runmod.Status, input transition.TransitionInput) error {
 			// TODO[ADR-0022]: remover adapter quando coordination.TransitionRunWithWorkUnit usar *run.Run
@@ -485,18 +485,6 @@ func (a *workUnitListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUn
 		out[i] = *workunitToDomain(&wu)
 	}
 	return out, nil
-}
-
-// runWorkUnitReaderAdapter bridges run.WorkUnitReader to workunit.Repository.
-// TODO[ADR-0022]: remove when run.WorkUnitReader uses *workunit.WorkUnit directly.
-type runWorkUnitReaderAdapter struct{ repo *workunitmod.Repository }
-
-func (a *runWorkUnitReaderAdapter) GetByID(id string) (*domain.WorkUnit, error) {
-	wu, err := a.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return workunitToDomain(wu), nil
 }
 
 // workUnitReaderAdapter bridges trigger.WorkUnitReader to workunit.Repository.

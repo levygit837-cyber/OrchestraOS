@@ -8,69 +8,71 @@
 ---
 
 ## Setup
-- [ ] Branch `adr22-a02-run-types` criada e checkout feito
-- [ ] Worktree `../orchestraos-a02-run` ativa
-- [ ] `internal/modules/run/README.md` lido
-- [ ] `internal/modules/run/CONTRACTS.md` lido
-- [ ] `docs/adr/0022-llm-optimized-module-architecture.md` lido
-- [ ] A01 (task) está no estado 🟢 (commitado em `main` ou branch base)
+- [x] Branch `agent-a02/run-types-migration` criada e checkout feito
+- [x] Worktree `../orchestraos-adr22-a02-run` ativa
+- [x] `internal/modules/run/README.md` lido
+- [x] `internal/modules/run/CONTRACTS.md` lido
+- [x] `docs/adr/0022-llm-optimized-module-architecture.md` lido
+- [x] A01 (task) está no estado 🟢 (commitado em `main` ou branch base)
+- [x] A03 (workunit) está no estado 🟢 (mergeado em `master` via PR #15, commit `8b8e5af`)
 
 ---
 
 ## Passo 1 — models.go
-- [ ] `Run` struct definida localmente (copiada de domain/types.go)
-- [ ] `Status` enum definido localmente (`type Status string` + constantes)
-- [ ] `Result` enum definido localmente (`type Result string` + constantes)
-- [ ] Tags JSON mantidas idênticas às originais
-- [ ] Prefixo do pacote removido (`domain.RunStatus` → `Status`)
-- [ ] `import "internal/domain"` removido de `models.go`
+- [x] `Run` struct definida localmente (copiada de domain/types.go)
+- [x] `Status` enum definido localmente (`type Status string` + constantes)
+- [x] `Result` enum definido localmente (`type Result string` + constantes)
+- [x] Tags JSON mantidas idênticas às originais
+- [x] Prefixo do pacote removido (`domain.RunStatus` → `Status`)
+- [x] `import "internal/domain"` removido de `models.go`
 
 ---
 
 ## Passo 2 — Arquivos Internos
-- [ ] `repository.go`: `*domain.Run` → `*Run`, `[]domain.Run` → `[]Run`
-- [ ] `service.go`: `domain.RunStatus` → `Status`, `domain.RunResult` → `Result`, `domain.Run` → `Run`
-- [ ] `service_retry.go`: `domain.RunStatus` → `Status`
-- [ ] `fetch.go`: retorno `*domain.Run` → `*Run`
-- [ ] `events.go`: `domain.RunStatus` → `Status`, `domain.RunResult` → `Result`
-- [ ] `queries.go` verificado (não referencia tipos de domain)
-- [ ] Testes do módulo run atualizados (`run/*_test.go`)
+- [x] `repository.go`: `*domain.Run` → `*Run`, `[]domain.Run` → `[]Run`
+- [x] `service.go`: `domain.RunStatus` → `Status`, `domain.RunResult` → `Result`, `domain.Run` → `Run`
+- [x] `service_retry.go`: `domain.RunStatus` → `Status`
+- [x] `fetch.go`: retorno `*domain.Run` → `*Run`
+- [x] `events.go`: `domain.RunStatus` → `Status`, `domain.RunResult` → `Result`
+- [x] `queries.go` verificado (não referencia tipos de domain)
+- [x] Testes do módulo run atualizados (`run/*_test.go`) — nenhum teste existente, todos os testes do projeto passam
 
 ---
 
 ## Passo 3 — Interfaces Cruzadas
-- [ ] `run/service.go` — `TaskReader` interface usa `*task.Task` (não `*domain.Task`)
-- [ ] `run/service.go` — `WorkUnitReader` interface usa `*workunit.WorkUnit` (não `*domain.WorkUnit`)
-- [ ] `tests/architecture/module_boundaries_test.go` atualizado: adicionar `run` → `workunit`
-- [ ] Nenhum adapter `taskToDomain()` ou `workunitToDomain()` em `run/`
+- [x] `run/service.go` — `TaskReader` interface usa `*task.Task` (não `*domain.Task`)
+- [x] `run/service.go` — `WorkUnitReader` interface usa `*workunit.WorkUnit` (não `*domain.WorkUnit`)
+- [x] `tests/architecture/module_boundaries_test.go` atualizado: adicionar `run` → `workunit`
+- [x] Nenhum adapter `taskToDomain()` ou `workunitToDomain()` em `run/`
 
 ---
 
 ## Passo 4 — Adapters Temporários nos Consumidores
-- [ ] `internal/modules/orchestrator/models.go` — `RunLifecycleManager` anotado `// TODO[ADR-0022]: ...`
-- [ ] `internal/modules/orchestrator/service.go` — adapters inline para `domain.RunStatus` anotados
-- [ ] `internal/modules/trigger/models.go` — `RunReader` anotado `// TODO[ADR-0022]: ...`
-- [ ] `internal/core/coordination/*` — adapters criados com `// TODO[ADR-0022]: ...`
-- [ ] `internal/bootstrap/services.go` — run adapter atualizado com `// TODO[ADR-0022]: ...`
+- [x] `internal/modules/orchestrator/models.go` — `RunLifecycleManager` anotado `// TODO[ADR-0022]: ...` (já existente)
+- [x] `internal/modules/orchestrator/service.go` — adapters inline para `domain.RunStatus` anotados (já existente)
+- [x] `internal/modules/trigger/models.go` — `RunReader` anotado `// TODO[ADR-0022]: ...` (já existente)
+- [x] `internal/core/coordination/*` — adapters criados com `// TODO[ADR-0022]: ...` (já existente)
+- [x] `internal/bootstrap/services.go` — run adapter atualizado com `// TODO[ADR-0022]: ...` — `runWorkUnitReaderAdapter` removido; `workunit.Repository` conectado diretamente
 
 ---
 
 ## Passo 5 — Validação de Isolamento
-- [ ] `grep -rn "internal/domain" internal/modules/run/` só retorna `EventEnvelope`/`EventPriority`
-- [ ] `grep -rn "domain\.WorkUnit" internal/modules/run/` retorna ZERO resultados
-- [ ] `go build ./...` passa
-- [ ] `go test ./...` passa
-- [ ] `./scripts/verify-contracts.sh` passa
-- [ ] `./scripts/lint.sh` passa
-- [ ] `./scripts/safe-commit.sh "ADR-0022: migrate Run types to modules/run"` passa
+- [x] `grep -rn "internal/domain" internal/modules/run/` só retorna `EventEnvelope`/`EventPriority`
+- [x] `grep -rn "domain\.WorkUnit" internal/modules/run/` retorna ZERO resultados
+- [x] `go build ./...` passa
+- [x] `go test ./...` passa
+- [x] `./scripts/verify-contracts.sh` passa
+- [x] `./scripts/lint.sh` passa
+- [x] `./scripts/safe-commit.sh "ADR-0022: migrate Run module WorkUnitReader to use *workunit.WorkUnit directly"` passa
 
 ---
 
 ## Status
 - **Agente:** A02
 - **Módulo:** run
-- **Início:** ___
-- **Término:** ___
-- **Build:** ___
-- **Testes:** ___
-- **Commit:** ___
+- **Início:** 2026-05-17
+- **Término:** 2026-05-17
+- **Build:** ✅
+- **Testes:** ✅
+- **Commit:** `3d432cc`
+- **PR:** #16 — https://github.com/levygit837-cyber/OrchestraOS/pull/16
