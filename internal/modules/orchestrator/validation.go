@@ -3,7 +3,7 @@ package orchestrator
 import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 )
 
 // ValidateRunTaskOptions validates the options for RunTask.
@@ -92,16 +92,16 @@ func ValidateTaskID(taskID string) error {
 	return validation.RequiredUUID(taskID, "task_id", "orchestrator.validate_task_id")
 }
 
-// ConvertRuntimeType converts a string to domain.AgentRuntimeType.
-func ConvertRuntimeType(runtimeType string) domain.AgentRuntimeType {
+// ConvertRuntimeType converts a string to agent.RuntimeType.
+func ConvertRuntimeType(runtimeType string) agentmod.RuntimeType {
 	switch runtimeType {
 	case RuntimeTypeFake:
-		return domain.AgentRuntimeTypeFake
+		return agentmod.RuntimeTypeFake
 	case RuntimeTypeGemini:
-		return domain.AgentRuntimeTypeGemini
+		return agentmod.RuntimeTypeGemini
 	case RuntimeTypeCodexCLI:
-		return domain.AgentRuntimeTypeCodexCLI
+		return agentmod.RuntimeTypeCodexCLI
 	default:
-		return domain.AgentRuntimeTypeFake
+		return agentmod.RuntimeTypeFake
 	}
 }

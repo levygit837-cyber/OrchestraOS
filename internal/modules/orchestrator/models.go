@@ -5,8 +5,12 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
@@ -104,11 +108,10 @@ type RuntimeStatus struct {
 	LastHeartbeat int64
 }
 
-// TODO[ADR-0022]: migrar para *task.Task
 type TaskServiceReader interface {
-	GetByID(ctx context.Context, id string) (*domain.Task, error)
-	Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error)
-	Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error)
+	GetByID(ctx context.Context, id string) (*taskmod.Task, error)
+	Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error)
+	Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error)
 }
 
 type TaskGraphManager interface {
@@ -116,21 +119,19 @@ type TaskGraphManager interface {
 	Decompose(ctx context.Context, input DecomposeInput) (*DecomposeResult, error)
 }
 
-// TODO[ADR-0022]: migrar para *run.Run quando run module desacoplar de domain.Run
 type RunLifecycleManager interface {
-	Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*domain.Run], error)
-	Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+	Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*runmod.Run], error)
+	Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
 }
 
 type AgentManager interface {
-	FindOrCreate(ctx context.Context, profile string, runtimeType domain.AgentRuntimeType) (*domain.Agent, error)
+	FindOrCreate(ctx context.Context, profile string, runtimeType agentmod.RuntimeType) (*agentmod.Agent, error)
 }
 
-// TODO[ADR-0022]: migrar retornos para *agentsession.AgentSession.
 type SessionManager interface {
-	Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error)
-	Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
-	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
+	Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
+	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
 }
 
 type PromptPreparer interface {
@@ -145,7 +146,6 @@ type TriggerEvaluator interface {
 	EvaluateRun(ctx context.Context, runID string) ([]*triggermod.Trigger, error)
 }
 
-// TODO[ADR-0022]: migrar para []workunit.WorkUnit
 type WorkUnitLister interface {
-	ListByTaskGraph(graphID string) ([]domain.WorkUnit, error)
+	ListByTaskGraph(graphID string) ([]workunitmod.WorkUnit, error)
 }

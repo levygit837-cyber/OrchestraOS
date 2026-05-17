@@ -26,28 +26,6 @@ func TaskService(db *sql.DB) *taskmod.TaskService {
 	return taskmod.NewTaskService(db, coordination.CancelTaskDependents)
 }
 
-// workunitToDomain converts a local workunit.WorkUnit to domain.WorkUnit for cross-module compatibility.
-// TODO[ADR-0022]: remove when all consumers use *workunit.WorkUnit directly.
-func workunitToDomain(wu *workunitmod.WorkUnit) *domain.WorkUnit {
-	if wu == nil {
-		return nil
-	}
-	return &domain.WorkUnit{
-		ID:                   wu.ID,
-		TaskID:               wu.TaskID,
-		TaskGraphID:          wu.TaskGraphID,
-		Title:                wu.Title,
-		Objective:            wu.Objective,
-		AssignedAgentProfile: wu.AssignedAgentProfile,
-		Status:               domain.WorkUnitStatus(wu.Status),
-		OwnedPaths:           wu.OwnedPaths,
-		ReadPaths:            wu.ReadPaths,
-		AcceptanceCriteria:   wu.AcceptanceCriteria,
-		ValidationPlan:       wu.ValidationPlan,
-		DependsOn:            wu.DependsOn,
-	}
-}
-
 // planWorkUnitToDomain converts a taskgraph PlanWorkUnit to a workunit.WorkUnit.
 // TODO[ADR-0022]: remove when orchestrator and bootstrap use local types directly.
 func planWorkUnitToDomain(pwu *taskgraphmod.PlanWorkUnit) *workunitmod.WorkUnit {
@@ -90,68 +68,7 @@ func workUnitToPlan(wu *workunitmod.WorkUnit) taskgraphmod.PlanWorkUnit {
 	}
 }
 
-// taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.
-// TODO[ADR-0022]: remove when orchestrator.TaskServiceReader, run.TaskReader, workunit.TaskReader
-// and prompt.PrepareAndPersistInput.Task use *task.Task directly.
-func taskToDomain(t *taskmod.Task) *domain.Task {
-	if t == nil {
-		return nil
-	}
-	return &domain.Task{
-		ID:                   t.ID,
-		Title:                t.Title,
-		Description:          t.Description,
-		Status:               domain.TaskStatus(t.Status),
-		Priority:             domain.Priority(t.Priority),
-		RiskLevel:            domain.RiskLevel(t.RiskLevel),
-		CreatedFromMessageID: t.CreatedFromMessageID,
-		AcceptanceCriteria:   t.AcceptanceCriteria,
-		CreatedAt:            t.CreatedAt,
-		UpdatedAt:            t.UpdatedAt,
-	}
-}
-
-// agentToDomain converts a local agent.Agent to domain.Agent for cross-module compatibility.
-// TODO[ADR-0022]: remove when orchestrator.AgentManager uses *agent.Agent directly.
-func agentToDomain(a *agentmod.Agent) *domain.Agent {
-	if a == nil {
-		return nil
-	}
-	return &domain.Agent{
-		ID:                     a.ID,
-		Name:                   a.Name,
-		Profile:                a.Profile,
-		Capabilities:           a.Capabilities,
-		AllowedTools:           a.AllowedTools,
-		DefaultPromptFragments: a.DefaultPromptFragments,
-		RuntimeType:            domain.AgentRuntimeType(a.RuntimeType),
-	}
-}
-
-// agentSessionToDomain converts a local agentsession.AgentSession to domain.AgentSession for cross-module compatibility.
-// TODO[ADR-0022]: remove when orchestrator.SessionManager uses *agentsession.AgentSession directly.
-func agentSessionToDomain(s *agentsessionmod.AgentSession) *domain.AgentSession {
-	if s == nil {
-		return nil
-	}
-	return &domain.AgentSession{
-		ID:               s.ID,
-		AgentID:          s.AgentID,
-		RunID:            s.RunID,
-		TaskID:           s.TaskID,
-		WorkUnitID:       s.WorkUnitID,
-		SandboxID:        s.SandboxID,
-		ConnectionID:     s.ConnectionID,
-		Status:           domain.AgentSessionStatus(s.Status),
-		LastHeartbeatAt:  s.LastHeartbeatAt,
-		LastCheckpointAt: s.LastCheckpointAt,
-		LastSeenEventID:  s.LastSeenEventID,
-		RecoverableState: s.RecoverableState,
-	}
-}
-
 // agentReaderAdapter wraps agent.Repository to implement agentsession.AgentReader.
-// TODO[ADR-0022]: remove when agentsession.AgentReader uses *agent.Agent directly.
 type agentReaderAdapter struct {
 	repo *agentmod.Repository
 }
@@ -169,31 +86,6 @@ func (a *agentSessionReaderAdapter) GetByID(id string) (*agentsessionmod.AgentSe
 	return a.repo.GetByID(id)
 }
 
-// runToDomain converts a local run.Run to domain.Run for cross-module compatibility.
-// TODO[ADR-0022]: remover quando coordination.TransitionRunWithWorkUnit, orchestrator.RunLifecycleManager
-// e trigger.RunReader usarem *run.Run diretamente.
-func runToDomain(r *runmod.Run) *domain.Run {
-	if r == nil {
-		return nil
-	}
-	var result *domain.RunResult
-	if r.Result != nil {
-		rr := domain.RunResult(*r.Result)
-		result = &rr
-	}
-	return &domain.Run{
-		ID:            r.ID,
-		TaskID:        r.TaskID,
-		WorkUnitID:    r.WorkUnitID,
-		Status:        domain.RunStatus(r.Status),
-		Attempt:       r.Attempt,
-		StartedAt:     r.StartedAt,
-		FinishedAt:    r.FinishedAt,
-		Result:        result,
-		FailureReason: r.FailureReason,
-	}
-}
-
 // runReaderAdapter wraps run.Repository to return *run.Run for trigger module.
 type runReaderAdapter struct {
 	repo *runmod.Repository
@@ -203,20 +95,6 @@ func (a *runReaderAdapter) GetByID(id string) (*runmod.Run, error) {
 	return a.repo.GetByID(id)
 }
 
-// agentManagerAdapter wraps agent.AgentService to implement orchestrator.AgentManager with domain.Agent.
-// TODO: remove when orchestrator.AgentManager uses agent.RuntimeType and *agent.Agent directly.
-type agentManagerAdapter struct {
-	svc *agentmod.AgentService
-}
-
-func (a *agentManagerAdapter) FindOrCreate(ctx context.Context, profile string, runtimeType domain.AgentRuntimeType) (*domain.Agent, error) {
-	agent, err := a.svc.FindOrCreate(ctx, profile, agentmod.RuntimeType(runtimeType))
-	if err != nil {
-		return nil, err
-	}
-	return agentToDomain(agent), nil
-}
-
 // RunService creates a RunService with standard repository factories.
 func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
@@ -224,10 +102,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 		func(tx *sql.Tx) runmod.WorkUnitReader {
 			return workunitmod.NewRepository(tx)
 		},
-		func(ctx context.Context, tx *sql.Tx, run *runmod.Run, target runmod.Status, input transition.TransitionInput) error {
-			// TODO[ADR-0022]: remover adapter quando coordination.TransitionRunWithWorkUnit usar *run.Run
-			return coordination.TransitionRunWithWorkUnit(ctx, tx, runToDomain(run), domain.RunStatus(target), input)
-		},
+		coordination.TransitionRunWithWorkUnit,
 	)
 }
 
@@ -363,59 +238,49 @@ func OrchestratorService(db *sql.DB) *orchestratormod.Service {
 
 	return orchestratormod.NewService(orchestratormod.Dependencies{
 		DB:                  db,
-		TaskService:         &taskAdapter{db: db, svc: TaskService(db)},
+		TaskService:         &taskServiceAdapter{db: db, svc: TaskService(db)},
 		TaskGraphService:    &taskGraphAdapter{db: db, svc: taskGraphSvc},
 		RunService:          &runAdapter{svc: runSvc},
-		AgentService:        &agentManagerAdapter{svc: agentSvc},
+		AgentService:        agentSvc,
 		AgentSessionService: &sessionAdapter{svc: sessionSvc},
 		PromptOrchestrator:  &promptAdapter{orch: coordination.NewPromptOrchestrator(db, promptSvc)},
 		ReviewService:       &reviewAdapter{svc: reviewSvc},
 		TriggerService:      triggerSvc,
-		WorkUnitLister:      &wuListerAdapter{db: db},
+		WorkUnitLister:      workunitmod.NewRepository(db),
 		RuntimeEventRelay:   RuntimeEventRelay,
 		NewFakeRuntime:      func() orchestratormod.Runtime { return &runtimeAdapter{r: agentmod.NewFakeRuntime()} },
 		NewGeminiRuntime:    func() orchestratormod.Runtime { return &runtimeAdapter{r: agentmod.NewGeminiRuntime()} },
 	})
 }
 
-// --- Adapters (bridge module types → orchestrator-local interfaces per ADR 0022) ---
+// --- Adapters (bridge input types between module services and orchestrator interfaces) ---
 
-// taskAdapter wraps task.TaskService to implement orchestrator.TaskServiceReader with domain.Task.
-// TODO[ADR-0022]: remove when orchestrator.TaskServiceReader uses *task.Task directly.
-type taskAdapter struct {
+// taskServiceAdapter bridges task.TaskService to orchestrator.TaskServiceReader.
+// Converts input/output structs; entity types are already native.
+type taskServiceAdapter struct {
 	db  *sql.DB
 	svc *taskmod.TaskService
 }
 
-func (a *taskAdapter) GetByID(ctx context.Context, id string) (*domain.Task, error) {
-	_ = ctx
-	t, err := taskmod.NewRepository(a.db).GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return taskToDomain(t), nil
+func (a *taskServiceAdapter) GetByID(ctx context.Context, id string) (*taskmod.Task, error) {
+	return taskmod.NewRepository(a.db).GetByID(id)
 }
-func (a *taskAdapter) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
-	res, err := a.svc.Complete(ctx, taskID, input)
-	if err != nil {
-		return nil, err
-	}
-	return &transition.OperationResult[*domain.Task]{
-		Value:     taskToDomain(res.Value),
-		Event:     res.Event,
-		Duplicate: res.Duplicate,
-	}, nil
+func (a *taskServiceAdapter) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error) {
+	return a.svc.Complete(ctx, taskID, input)
 }
-func (a *taskAdapter) Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
-	res, err := a.svc.Fail(ctx, taskID, input)
-	if err != nil {
-		return nil, err
-	}
-	return &transition.OperationResult[*domain.Task]{
-		Value:     taskToDomain(res.Value),
-		Event:     res.Event,
-		Duplicate: res.Duplicate,
-	}, nil
+func (a *taskServiceAdapter) Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error) {
+	return a.svc.Fail(ctx, taskID, input)
+}
+
+// runAdapter bridges run.RunService to orchestrator.RunLifecycleManager.
+// Converts orchestrator.CreateRunInput to run.CreateRunInput; returns *run.Run natively.
+type runAdapter struct{ svc *runmod.RunService }
+
+func (a *runAdapter) Create(ctx context.Context, input orchestratormod.CreateRunInput) (*transition.OperationResult[*runmod.Run], error) {
+	return a.svc.Create(ctx, runmod.CreateRunInput{TaskID: input.TaskID, WorkUnitID: input.WorkUnitID})
+}
+func (a *runAdapter) Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error) {
+	return a.svc.Start(ctx, runID, input)
 }
 
 type taskGraphAdapter struct {
@@ -440,69 +305,30 @@ func (a *taskGraphAdapter) Decompose(ctx context.Context, input orchestratormod.
 	return &orchestratormod.DecomposeResult{Graph: res.Graph, WorkUnits: workUnits}, nil
 }
 
-type runAdapter struct{ svc *runmod.RunService }
-
-func (a *runAdapter) Create(ctx context.Context, input orchestratormod.CreateRunInput) (*transition.OperationResult[*domain.Run], error) {
-	res, err := a.svc.Create(ctx, runmod.CreateRunInput{TaskID: input.TaskID, WorkUnitID: input.WorkUnitID})
-	if err != nil {
-		return nil, err
-	}
-	return &transition.OperationResult[*domain.Run]{
-		Value:     runToDomain(res.Value),
-		Event:     res.Event,
-		Duplicate: res.Duplicate,
-	}, nil
-}
-func (a *runAdapter) Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	res, err := a.svc.Start(ctx, runID, input)
-	if err != nil {
-		return nil, err
-	}
-	return &transition.OperationResult[*domain.Run]{
-		Value:     runToDomain(res.Value),
-		Event:     res.Event,
-		Duplicate: res.Duplicate,
-	}, nil
-}
-
 type sessionAdapter struct {
 	svc *agentsessionmod.AgentSessionService
 }
 
-func (a *sessionAdapter) Create(ctx context.Context, input orchestratormod.CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	res, err := a.svc.Create(ctx, agentsessionmod.CreateAgentSessionInput{
+func (a *sessionAdapter) Create(ctx context.Context, input orchestratormod.CreateAgentSessionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error) {
+	return a.svc.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: input.AgentID, RunID: input.RunID, TaskID: input.TaskID, WorkUnitID: input.WorkUnitID,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &transition.OperationResult[*domain.AgentSession]{
-		Value:     agentSessionToDomain(res.Value),
-		Event:     res.Event,
-		Duplicate: res.Duplicate,
-	}, nil
 }
-func (a *sessionAdapter) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	res, err := a.svc.Connect(ctx, sessionID, connectionID, sandboxID, input)
-	if err != nil {
-		return nil, err
-	}
-	return &transition.OperationResult[*domain.AgentSession]{
-		Value:     agentSessionToDomain(res.Value),
-		Event:     res.Event,
-		Duplicate: res.Duplicate,
-	}, nil
+func (a *sessionAdapter) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error) {
+	return a.svc.Connect(ctx, sessionID, connectionID, sandboxID, input)
 }
-func (a *sessionAdapter) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	res, err := a.svc.Stop(ctx, sessionID, input)
-	if err != nil {
-		return nil, err
-	}
-	return &transition.OperationResult[*domain.AgentSession]{
-		Value:     agentSessionToDomain(res.Value),
-		Event:     res.Event,
-		Duplicate: res.Duplicate,
-	}, nil
+func (a *sessionAdapter) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error) {
+	return a.svc.Stop(ctx, sessionID, input)
+}
+
+// reviewAdapter bridges review.ReviewService to orchestrator.ReviewManager.
+type reviewAdapter struct{ svc *reviewmod.ReviewService }
+
+func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType reviewmod.ValidationGate) (*transition.OperationResult[*reviewmod.Review], error) {
+	return a.svc.Create(ctx, reviewmod.CreateReviewInput{
+		RunID: runID, WorkUnitID: workUnitID, TaskID: taskID,
+		AgentSessionID: agentSessionID, GateType: gateType,
+	})
 }
 
 type promptAdapter struct {
@@ -521,29 +347,6 @@ func (a *promptAdapter) PrepareRunPrompt(ctx context.Context, input orchestrator
 		PromptHash: res.PromptHash, Toolset: res.Toolset,
 		PromptSnapshot: res.PromptSnapshot, ToolsetSnapshot: res.ToolsetSnapshot,
 	}, nil
-}
-
-type reviewAdapter struct{ svc *reviewmod.ReviewService }
-
-func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType reviewmod.ValidationGate) (*transition.OperationResult[*reviewmod.Review], error) {
-	return a.svc.Create(ctx, reviewmod.CreateReviewInput{
-		RunID: runID, WorkUnitID: workUnitID, TaskID: taskID,
-		AgentSessionID: agentSessionID, GateType: gateType,
-	})
-}
-
-type wuListerAdapter struct{ db *sql.DB }
-
-func (a *wuListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, error) {
-	list, err := workunitmod.NewRepository(a.db).ListByTaskGraph(graphID)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]domain.WorkUnit, len(list))
-	for i, wu := range list {
-		out[i] = *workunitToDomain(&wu)
-	}
-	return out, nil
 }
 
 // workUnitReaderAdapter bridges trigger.WorkUnitReader to workunit.Repository.

@@ -153,7 +153,7 @@ var runStartCmd = &cobra.Command{
 			if err != nil {
 				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("runtime relay failed: %w", err))
 			}
-			if finalStatus != domain.RunStatusCompleted {
+			if finalStatus != runmod.StatusCompleted {
 				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("runtime finished with unexpected status: %s", finalStatus))
 			}
 		}

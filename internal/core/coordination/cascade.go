@@ -9,13 +9,11 @@ import (
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // CancelTaskDependents cancels all non-terminal runs and work units belonging to a task.
-// TODO[ADR-0022]: usar run.StatusCancelled e run.ResultForStatus quando run module for totalmente desacoplado.
 func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error {
 	runRepo := runmod.NewRepository(tx)
 	runs, err := runRepo.ListByTask(taskID)
@@ -26,19 +24,14 @@ func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input 
 		if transition.IsFinalStatus(string(run.Status)) {
 			continue
 		}
-		if err := statemachine.CanTransition(statemachine.AggregateRun, string(run.Status), string(domain.RunStatusCancelled), transition.TransitionContext(input)); err != nil {
+		if err := statemachine.CanTransition(statemachine.AggregateRun, string(run.Status), string(runmod.StatusCancelled), transition.TransitionContext(input)); err != nil {
 			return err
 		}
-		if _, _, err := transition.AppendTransition(ctx, tx, "", "run.cancelled", taskID, run.ID, run.WorkUnitID, input.AgentID, transition.TransitionPayload(run.Status, domain.RunStatusCancelled, input)); err != nil {
+		if _, _, err := transition.AppendTransition(ctx, tx, "", "run.cancelled", taskID, run.ID, run.WorkUnitID, input.AgentID, transition.TransitionPayload(run.Status, runmod.StatusCancelled, input)); err != nil {
 			return err
 		}
 		result := runmod.ResultForStatus(runmod.StatusCancelled)
-		var domainResult *domain.RunResult
-		if result != nil {
-			dr := domain.RunResult(*result)
-			domainResult = &dr
-		}
-		if err := UpdateRunProjection(ctx, tx, run.ID, domain.RunStatusCancelled, domainResult, nil); err != nil {
+		if err := UpdateRunProjection(ctx, tx, run.ID, runmod.StatusCancelled, result, nil); err != nil {
 			return err
 		}
 	}
