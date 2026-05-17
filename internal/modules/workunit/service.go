@@ -19,6 +19,7 @@ import (
 )
 
 // TaskReader abstracts task reads to avoid cyclic imports.
+// TODO[ADR-0022]: migrar para *task.Task
 type TaskReader interface {
 	GetByID(id string) (*domain.Task, error)
 }
@@ -205,4 +206,3 @@ func (s *WorkUnitService) requireTaskByID(tx *sql.Tx, id string) (*domain.Task, 
 	}
 	return task, nil
 }
-

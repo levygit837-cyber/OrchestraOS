@@ -99,6 +99,7 @@ type RuntimeStatus struct {
 	LastHeartbeat int64
 }
 
+// TODO[ADR-0022]: migrar para *task.Task
 type TaskServiceReader interface {
 	GetByID(ctx context.Context, id string) (*domain.Task, error)
 	Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error)
