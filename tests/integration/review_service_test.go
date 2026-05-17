@@ -11,7 +11,7 @@ import (
 
 func TestReviewServiceCreateAndGet(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -47,7 +47,7 @@ func TestReviewServiceCreateAndGet(t *testing.T) {
 
 func TestReviewServiceStartAndSubmitVerdict(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -118,7 +118,7 @@ func TestReviewServiceStartAndSubmitVerdict(t *testing.T) {
 
 func TestReviewServiceVerdictImmutable(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -162,7 +162,7 @@ func TestReviewServiceVerdictImmutable(t *testing.T) {
 
 func TestReviewServiceListPending(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -230,7 +230,7 @@ func TestReviewServiceListPending(t *testing.T) {
 
 func TestReviewServiceListByTask(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -266,7 +266,7 @@ func TestReviewServiceListByTask(t *testing.T) {
 
 func TestReviewServiceInvalidGateType(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -289,7 +289,7 @@ func TestReviewServiceInvalidGateType(t *testing.T) {
 
 func TestReviewServiceInvalidVerdict(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -323,7 +323,7 @@ func TestReviewServiceInvalidVerdict(t *testing.T) {
 
 func TestReviewServiceStartRequiresPending(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)
@@ -353,7 +353,7 @@ func TestReviewServiceStartRequiresPending(t *testing.T) {
 
 func TestReviewServiceRejectsDuplicateActiveReview(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskID := createTestTask(t, db)

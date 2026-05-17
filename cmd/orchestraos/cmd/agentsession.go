@@ -153,11 +153,11 @@ func init() {
 	agentSessionCreateCmd.Flags().String("agent-id", "", "Agent ID (required)")
 	agentSessionCreateCmd.Flags().String("connection-id", "", "Connection ID")
 	agentSessionCreateCmd.Flags().String("sandbox-id", "", "Sandbox ID")
-	agentSessionCreateCmd.MarkFlagRequired("run-id")
-	agentSessionCreateCmd.MarkFlagRequired("agent-id")
+	_ = agentSessionCreateCmd.MarkFlagRequired("run-id")
+	_ = agentSessionCreateCmd.MarkFlagRequired("agent-id")
 
 	agentSessionStatusCmd.Flags().String("status", "", "New status (required)")
-	agentSessionStatusCmd.MarkFlagRequired("status")
+	_ = agentSessionStatusCmd.MarkFlagRequired("status")
 
 	agentSessionCmd.AddCommand(agentSessionCreateCmd)
 	agentSessionCmd.AddCommand(agentSessionGetCmd)

@@ -70,7 +70,7 @@ func (r *Repository) ListActive(ctx context.Context) ([]*domain.Trigger, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list active triggers: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var triggers []*domain.Trigger
 	for rows.Next() {
@@ -89,7 +89,7 @@ func (r *Repository) ListByRun(ctx context.Context, runID string) ([]*domain.Tri
 	if err != nil {
 		return nil, fmt.Errorf("failed to list triggers by run: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var triggers []*domain.Trigger
 	for rows.Next() {

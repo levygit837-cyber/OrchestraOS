@@ -390,7 +390,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 func teardownTestDB(t *testing.T, db *sql.DB) {
 	if db != nil {
-		db.Close()
+		_ = db.Close()
 	}
 }
 

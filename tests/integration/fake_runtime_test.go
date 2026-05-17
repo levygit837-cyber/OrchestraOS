@@ -21,7 +21,7 @@ import (
 // TestFakeRuntimeEvents tests that the fake runtime emits the expected event types
 func TestFakeRuntimeEvents(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	eventStore, err := eventstore.NewStore(db)
 	if err != nil {
@@ -148,7 +148,7 @@ func TestFakeRuntimeEvents(t *testing.T) {
 // TestFakeRuntimeWithAgentSession tests the full integration of FakeRuntime with AgentSession
 func TestFakeRuntimeWithAgentSession(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	taskRepo := taskmod.NewRepository(db)
 	wuRepo := workunitmod.NewRepository(db)
@@ -313,7 +313,7 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 // TestEventPayloads verifies that event payloads are correctly serialized and deserialized
 func TestEventPayloads(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	eventStore, err := eventstore.NewStore(db)
 	if err != nil {

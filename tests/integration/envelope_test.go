@@ -43,7 +43,7 @@ func getTestDB(t *testing.T) *sql.DB {
 
 func TestEventEnvelopeValidation(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	store, err := eventstore.NewStore(db)
 	if err != nil {
@@ -118,7 +118,7 @@ func TestEventEnvelopeValidation(t *testing.T) {
 
 func TestEventReplay(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	store, err := eventstore.NewStore(db)
 	if err != nil {
@@ -165,7 +165,7 @@ func TestEventReplay(t *testing.T) {
 
 func TestEventIdempotencyAndCheckpointLookup(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	store, err := eventstore.NewStore(db)
 	if err != nil {
@@ -220,7 +220,7 @@ func TestEventIdempotencyAndCheckpointLookup(t *testing.T) {
 
 func TestEventQueries(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	store, err := eventstore.NewStore(db)
 	if err != nil {

@@ -18,7 +18,7 @@ func TestGeminiRealInference(t *testing.T) {
 	}
 
 	// Força o modelo padrão para o teste
-	os.Setenv("GEMINI_MODEL", "gemini-3-flash-preview")
+	_ = os.Setenv("GEMINI_MODEL", "gemini-3-flash-preview")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()

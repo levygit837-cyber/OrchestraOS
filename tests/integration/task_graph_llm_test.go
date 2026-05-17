@@ -13,7 +13,7 @@ import (
 
 func TestTaskGraphService_Decompose_Heuristic_Default(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -55,11 +55,11 @@ func TestTaskGraphService_Decompose_LLM_FallbackToHeuristic(t *testing.T) {
 	// Ensure no API key is available so the LLM planner fails and triggers fallback.
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("GOOGLE_API_KEY", "")
-	os.Unsetenv("GEMINI_API_KEY")
-	os.Unsetenv("GOOGLE_API_KEY")
+	_ = os.Unsetenv("GEMINI_API_KEY")
+	_ = os.Unsetenv("GOOGLE_API_KEY")
 
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -95,7 +95,7 @@ func TestTaskGraphService_Decompose_LLM_FallbackToHeuristic(t *testing.T) {
 
 func TestTaskGraphService_Decompose_UnknownStrategy(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -127,7 +127,7 @@ func TestTaskGraphService_Decompose_UnknownStrategy(t *testing.T) {
 
 func TestTaskGraphService_Decompose_ReplaceActive(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -178,7 +178,7 @@ func TestTaskGraphService_Decompose_ReplaceActive(t *testing.T) {
 
 func TestTaskGraphService_Decompose_Idempotency(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)

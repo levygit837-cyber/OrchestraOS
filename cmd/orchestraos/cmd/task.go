@@ -167,16 +167,16 @@ func init() {
 	taskCreateCmd.Flags().String("priority", "P2", "Task priority (P0-P3)")
 	taskCreateCmd.Flags().String("risk-level", "low", "Risk level (low, medium, high, critical)")
 	taskCreateCmd.Flags().StringArray("acceptance", nil, "Acceptance criterion (repeatable)")
-	taskCreateCmd.MarkFlagRequired("title")
+	_ = taskCreateCmd.MarkFlagRequired("title")
 
 	taskGraphCreateCmd.Flags().String("task-id", "", "Task ID to decompose (required)")
 	taskGraphCreateCmd.Flags().Bool("replace-active", false, "Supersede the active task graph before creating a new one")
 	taskGraphCreateCmd.Flags().String("created-by", "cli", "Actor creating the task graph")
 	taskGraphCreateCmd.Flags().String("planner", os.Getenv("ORCHESTRAOS_PLANNER_STRATEGY"), "Planner strategy (local_heuristic_v1, llm_gemini_v1)")
-	taskGraphCreateCmd.MarkFlagRequired("task-id")
+	_ = taskGraphCreateCmd.MarkFlagRequired("task-id")
 
 	taskGraphListCmd.Flags().String("task-id", "", "Task ID to list graphs for (required)")
-	taskGraphListCmd.MarkFlagRequired("task-id")
+	_ = taskGraphListCmd.MarkFlagRequired("task-id")
 
 	taskGraphCmd.AddCommand(taskGraphCreateCmd)
 	taskGraphCmd.AddCommand(taskGraphListCmd)

@@ -69,7 +69,7 @@ func (r *Repository) ListByTask(taskID string) ([]domain.TaskGraph, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list task graphs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var graphs []domain.TaskGraph
 	for rows.Next() {

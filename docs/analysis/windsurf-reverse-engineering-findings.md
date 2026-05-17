@@ -406,3 +406,64 @@ Para o **serviço separado** (não OrchestraOS):
 ---
 
 *Descobertas feitas em investigação ativa no sistema WindSurf em execução.*
+
+## 🎉 BREAKTHROUGH: Streaming Real Funcionando!
+
+> Data: 2026-05-17
+
+### Descoberta Crítica
+
+A **porta correta** do Connect Protocol é **33945** (não 34567!). A porta 34567 é a porta LSP (Language Server Protocol), usada para comunicação LSP com o Extension Server.
+
+### Envelope Connect Protocol
+
+Para streaming, o Connect Protocol usa envelopes:
+
+**Request (com envelope):**
+```
+[flags: 1 byte = 0x00] [length: 4 bytes big-endian] [protobuf message]
+```
+
+**Response (stream de envelopes):**
+```
+[flags: 1 byte] [length: 4 bytes big-endian] [protobuf message]
+[flags: 1 byte] [length: 4 bytes big-endian] [protobuf message]
+...
+```
+
+### Streaming Confirmado
+
+```javascript
+const client = new WindSurfStreamingClient({
+  host: '127.0.0.1',
+  port: 33945,
+  csrfToken: '...'
+});
+
+await client.startSession();
+await client.streamUpdates((msg) => {
+  console.log('Update:', msg.flags, msg.length, msg.raw);
+});
+```
+
+Retorna status **200 OK** e recebe atualizações em tempo real!
+
+### Estrutura do full_state
+
+O `StreamReactiveUpdatesResponse.full_state` contém:
+- `cascadeId` (UUID)
+- `workspace_path` (ex: `file:///home/levybonito/Documentos/OrchestraOS`)
+- `git_repo` (ex: `levygit837-cyber/OrchestraOS`)
+- `git_url` (ex: `https://github.com/levygit837-cyber/OrchestraOS.git`)
+- `branch` (ex: `fix/lint-errcheck-cleanup`)
+- UUIDs de sessão
+
+### Arquivos Criados
+
+- `/home/levybonito/windsurf-proxy/windsurf-streaming-client.js` - Cliente streaming JS
+- `/home/levybonito/windsurf-proxy/proxy-mitm.js` - Proxy MITM
+- `windagent-backend/src/services/windsurf-streaming-client.ts` - Cliente TypeScript
+
+### Próximo Passo
+
+Integrar o cliente streaming ao **WindAgent Backend**, substituindo o polling pelo streaming real.

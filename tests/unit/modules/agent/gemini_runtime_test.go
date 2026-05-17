@@ -26,8 +26,8 @@ func TestNewGeminiRuntime(t *testing.T) {
 
 func TestGeminiRuntime_Start_RequiresAPIKey(t *testing.T) {
 	// Ensure no API key is set.
-	os.Unsetenv("GEMINI_API_KEY")
-	os.Unsetenv("GOOGLE_API_KEY")
+	_ = os.Unsetenv("GEMINI_API_KEY")
+	_ = os.Unsetenv("GOOGLE_API_KEY")
 
 	rt := agent.NewGeminiRuntime()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

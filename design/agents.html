@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OrchestraOS — Agents</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-sans); }
+    #app-sidebar { width: var(--sidebar-width); transition: width 0.2s; }
+    #app-sidebar.collapsed { width: var(--sidebar-collapsed); }
+    #app-sidebar.collapsed .nav-label, #app-sidebar.collapsed .sidebar-logo-text { display: none; }
+    #app-main { margin-left: var(--sidebar-width); transition: margin-left 0.2s; }
+    #app-sidebar.collapsed + #app-main { margin-left: var(--sidebar-collapsed); }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <aside id="app-sidebar" class="fixed top-0 left-0 h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)] z-40 flex flex-col">
+    <div class="h-14 flex items-center gap-3 px-4 border-b border-[var(--border-color)]">
+      <div class="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center flex-shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <span class="sidebar-logo-text font-bold text-lg text-[var(--text-primary)] tracking-tight">OrchestraOS</span>
+    </div>
+    <nav id="sidebar-nav" class="flex-1 py-4 px-2 space-y-1 overflow-y-auto"></nav>
+    <div class="p-3 border-t border-[var(--border-color)]">
+      <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)]">
+        <div class="w-8 h-8 rounded-full bg-[var(--accent-dark)] flex items-center justify-center text-xs font-bold text-[var(--accent-light)]">OP</div>
+        <div class="sidebar-logo-text">
+          <div class="text-sm font-medium text-[var(--text-primary)]">Operator</div>
+          <div class="text-xs text-[var(--text-muted)]">Nível 2</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <header id="app-header" class="fixed top-0 left-[var(--sidebar-width)] right-0 h-14 bg-[var(--bg-secondary)]/80 backdrop-blur border-b border-[var(--border-color)] z-30 transition-all duration-200"></header>
+
+  <main id="app-main" class="pt-14 min-h-screen">
+    <div class="p-6">
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-[var(--text-primary)]">Agentes</h1>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">Gerenciar perfis, sessões e capacidades</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <select class="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)]">
+            <option>Todos</option>
+            <option>Running</option>
+            <option>Idle</option>
+          </select>
+          <button class="toolbar-btn primary">+ Novo Agente</button>
+        </div>
+      </div>
+
+      <!-- Agent Grid -->
+      <div class="grid grid-cols-2 gap-4" id="agent-grid"></div>
+    </div>
+  </main>
+
+  <script src="js/state.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderSidebar('agents');
+    renderHeader('Agents', ['OrchestraOS', 'Agents']);
+
+    function renderAgents() {
+      const grid = document.getElementById('agent-grid');
+      grid.innerHTML = AppState.agents.map(agent => {
+        const statusClass = agent.status === 'running' ? 'running' : (agent.status === 'idle' ? 'pending' : 'pending');
+        const statusColor = getStatusColor(agent.status);
+        return `
+          <div class="panel hover:border-[var(--accent)]/40 transition-colors cursor-pointer" onclick="location.href='run.html?id=run-101'">
+            <div class="panel-body">
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: ${statusColor}15;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-[var(--text-primary)]">${agent.name}</div>
+                    <div class="text-xs text-[var(--text-secondary)]">${agent.profile} • ${agent.id}</div>
+                  </div>
+                </div>
+                <span class="status-badge ${statusClass}">${agent.status === 'running' ? '<span class="dot"></span>' : ''}${agent.status}</span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="text-center p-2 rounded-lg bg-[var(--bg-primary)]">
+                  <div class="text-lg font-bold text-[var(--text-primary)]">${agent.capabilities.length}</div>
+                  <div class="text-[10px] text-[var(--text-muted)] uppercase">Capabilities</div>
+                </div>
+                <div class="text-center p-2 rounded-lg bg-[var(--bg-primary)]">
+                  <div class="text-lg font-bold text-[var(--text-primary)]">${agent.currentTask ? '1' : '0'}</div>
+                  <div class="text-[10px] text-[var(--text-muted)] uppercase">Ativa</div>
+                </div>
+                <div class="text-center p-2 rounded-lg bg-[var(--bg-primary)]">
+                  <div class="text-lg font-bold text-[var(--text-primary)]">${agent.sessionId ? '1' : '0'}</div>
+                  <div class="text-[10px] text-[var(--text-muted)] uppercase">Sessões</div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-1.5 mb-3">
+                ${agent.capabilities.map(c => `<span class="event-pill">${c}</span>`).join('')}
+              </div>
+
+              ${agent.currentTask ? `
+                <div class="p-2 rounded-lg bg-[var(--info-dim)] border border-[var(--info)]/20">
+                  <div class="text-xs text-[var(--text-muted)]">Task Atual</div>
+                  <div class="text-sm text-[var(--info)] font-mono">${agent.currentTask}</div>
+                </div>
+              ` : `
+                <div class="p-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+                  <div class="text-xs text-[var(--text-muted)]">Status</div>
+                  <div class="text-sm text-[var(--text-secondary)]">Aguardando atribuição</div>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    renderAgents();
+  </script>
+</body>
+</html>

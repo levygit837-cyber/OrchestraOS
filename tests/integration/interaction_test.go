@@ -20,7 +20,7 @@ import (
 // TestTaskWorkUnitRunInteraction tests the full lifecycle of Task -> WorkUnit -> Run
 func TestTaskWorkUnitRunInteraction(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	taskRepo := taskmod.NewRepository(db)
 	wuRepo := workunitmod.NewRepository(db)
@@ -242,7 +242,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 // TestAgentSessionWithRun tests AgentSession lifecycle with Run
 func TestAgentSessionWithRun(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	taskRepo := taskmod.NewRepository(db)
 	wuRepo := workunitmod.NewRepository(db)

@@ -17,7 +17,7 @@ import (
 
 func TestTriggerServiceCreateAndList(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	triggerService := bootstrap.TriggerService(db)
@@ -59,7 +59,7 @@ func TestTriggerServiceCreateAndList(t *testing.T) {
 
 func TestTriggerServiceResolveAndDismiss(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	triggerService := bootstrap.TriggerService(db)
@@ -113,7 +113,7 @@ func TestTriggerServiceResolveAndDismiss(t *testing.T) {
 
 func TestTriggerServiceEvaluateRun(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -194,7 +194,7 @@ func TestTriggerServiceEvaluateRun(t *testing.T) {
 
 func TestTriggerServiceEvaluateSession(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -263,7 +263,7 @@ func TestTriggerServiceEvaluateSession(t *testing.T) {
 
 func TestTriggerServiceEvaluateWorkUnit(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)

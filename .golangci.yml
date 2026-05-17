@@ -12,7 +12,6 @@ linters:
     - gocritic
   disable:
     # TODO: re-enable after fixing existing violations in a dedicated lint PR
-    - errcheck
     - forbidigo
     - misspell
 

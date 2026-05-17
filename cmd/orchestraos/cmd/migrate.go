@@ -22,7 +22,7 @@ var migrateUpCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to connect to database: %w", err)
 		}
-		defer dbConn.Close()
+		defer func() { _ = dbConn.Close() }()
 
 		goose.SetBaseFS(nil)
 		if err := goose.SetDialect("postgres"); err != nil {
@@ -46,7 +46,7 @@ var migrateStatusCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to connect to database: %w", err)
 		}
-		defer dbConn.Close()
+		defer func() { _ = dbConn.Close() }()
 
 		goose.SetBaseFS(nil)
 		if err := goose.SetDialect("postgres"); err != nil {
@@ -65,7 +65,7 @@ var migrateResetCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to connect to database: %w", err)
 		}
-		defer dbConn.Close()
+		defer func() { _ = dbConn.Close() }()
 
 		goose.SetBaseFS(nil)
 		if err := goose.SetDialect("postgres"); err != nil {
