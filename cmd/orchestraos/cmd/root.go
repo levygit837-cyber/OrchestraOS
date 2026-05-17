@@ -21,6 +21,7 @@ func init() {
 	rootCmd = &cobra.Command{
 		Use:   "orchestraos",
 		Short: "OrchestraOS - Sistema de Orquestração de Agentes",
+		//nolint:misspell // Portuguese word
 		Long: `OrchestraOS é um sistema operacional de projeto onde agentes entendem contexto,
 propõem próximos passos, executam tarefas, registram decisões e operam rotinas
 com supervisão calibrada.`,
