@@ -72,7 +72,7 @@ func (r *Repository) ListByTask(ctx context.Context, taskID string) ([]*domain.R
 	if err != nil {
 		return nil, fmt.Errorf("failed to list reviews by task: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var reviews []*domain.Review
 	for rows.Next() {
@@ -92,7 +92,7 @@ func (r *Repository) ListPending(ctx context.Context) ([]*domain.Review, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pending reviews: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var reviews []*domain.Review
 	for rows.Next() {

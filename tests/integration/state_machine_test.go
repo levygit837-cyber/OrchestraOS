@@ -14,7 +14,7 @@ import (
 // rules and persists events correctly through the run lifecycle.
 func TestRunServiceStateMachine(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	taskID := createTestTask(t, db)
 	workUnitID := createTestWorkUnit(t, db, taskID)

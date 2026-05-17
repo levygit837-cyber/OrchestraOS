@@ -16,7 +16,7 @@ import (
 // stub exists, is wired through bootstrap, and exposes the contracted interface.
 func TestOrchestratorServiceStub_Interface(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -68,7 +68,7 @@ func TestOrchestratorServiceStub_Interface(t *testing.T) {
 // AgentService.FindOrCreate instead of inline AgentID generation.
 func TestRunStart_UsesAgentServiceFindOrCreate(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -138,7 +138,7 @@ func TestOrchestratorE2E_FullFlow(t *testing.T) {
 	t.Skip("Skipping: awaits real OrchestratorService implementation from ORCH-F05-R02-A01")
 
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	// 1. Create task

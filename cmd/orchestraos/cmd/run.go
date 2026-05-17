@@ -306,7 +306,7 @@ var runGetCmd = &cobra.Command{
 func init() {
 	runStartCmd.Flags().String("workunit-id", "", "Work unit ID to run (required)")
 	runStartCmd.Flags().String("runtime", "fake", "Runtime type (fake, codex_cli, gemini)")
-	runStartCmd.MarkFlagRequired("workunit-id")
+	_ = runStartCmd.MarkFlagRequired("workunit-id")
 
 	runListCmd.Flags().String("task-id", "", "Filter by task ID")
 

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OrchestraOS — New Task</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-sans); }
+    #app-sidebar { width: var(--sidebar-width); transition: width 0.2s; }
+    #app-sidebar.collapsed { width: var(--sidebar-collapsed); }
+    #app-sidebar.collapsed .nav-label, #app-sidebar.collapsed .sidebar-logo-text { display: none; }
+    #app-main { margin-left: var(--sidebar-width); transition: margin-left 0.2s; }
+    #app-sidebar.collapsed + #app-main { margin-left: var(--sidebar-collapsed); }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <aside id="app-sidebar" class="fixed top-0 left-0 h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)] z-40 flex flex-col">
+    <div class="h-14 flex items-center gap-3 px-4 border-b border-[var(--border-color)]">
+      <div class="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center flex-shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <span class="sidebar-logo-text font-bold text-lg text-[var(--text-primary)] tracking-tight">OrchestraOS</span>
+    </div>
+    <nav id="sidebar-nav" class="flex-1 py-4 px-2 space-y-1 overflow-y-auto"></nav>
+    <div class="p-3 border-t border-[var(--border-color)]">
+      <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)]">
+        <div class="w-8 h-8 rounded-full bg-[var(--accent-dark)] flex items-center justify-center text-xs font-bold text-[var(--accent-light)]">OP</div>
+        <div class="sidebar-logo-text">
+          <div class="text-sm font-medium text-[var(--text-primary)]">Operator</div>
+          <div class="text-xs text-[var(--text-muted)]">Nível 2</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <header id="app-header" class="fixed top-0 left-[var(--sidebar-width)] right-0 h-14 bg-[var(--bg-secondary)]/80 backdrop-blur border-b border-[var(--border-color)] z-30 transition-all duration-200"></header>
+
+  <main id="app-main" class="pt-14 min-h-screen">
+    <div class="p-6 max-w-5xl mx-auto">
+
+      <!-- Page Header -->
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold text-[var(--text-primary)]">Nova Task</h1>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">Descreva a intenção. O Orchestrator decomporá em work units e planejará o grafo de dependências.</p>
+      </div>
+
+      <div class="flex gap-6">
+        <!-- Input Form -->
+        <div class="flex-1 space-y-6">
+          <!-- Command Bar -->
+          <div class="panel">
+            <div class="panel-body space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Título</label>
+                <input type="text" value="Implementar Event Store" class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none transition-colors placeholder-[var(--text-muted)]"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Descrição / Intenção</label>
+                <textarea rows="5" class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none transition-colors resize-none placeholder-[var(--text-muted)]" placeholder="Descreva o que você quer que os agentes façam...">Criar sistema de persistência de eventos com envelope normalizado, replay e validação E2E.
+
+Requisitos:
+- Schema PostgreSQL para eventos
+- Envelope JSON normalizado com metadados
+- Replay para reconstrução de estado
+- Testes E2E cobrindo task → event → query</textarea>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Prioridade</label>
+                  <select class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none">
+                    <option>Low</option>
+                    <option selected>Medium</option>
+                    <option>High</option>
+                    <option>Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Risco</label>
+                  <select class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none">
+                    <option>Low</option>
+                    <option selected>Medium</option>
+                    <option>High</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Max Agentes</label>
+                  <select class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none">
+                    <option>1</option>
+                    <option selected>2</option>
+                    <option>3</option>
+                    <option>5</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 pt-2">
+                <button class="toolbar-btn primary" onclick="generatePreview()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/></svg>
+                  Gerar Task Graph
+                </button>
+                <button class="toolbar-btn">Salvar Rascunho</button>
+                <span class="text-xs text-[var(--text-muted)] ml-auto">Ctrl+Enter para gerar</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested Commands -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="text-sm font-semibold text-[var(--text-primary)]">Comandos Rápidos</span>
+            </div>
+            <div class="panel-body">
+              <div class="grid grid-cols-2 gap-2">
+                <button class="text-left p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-colors group">
+                  <div class="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-light)]">Refatorar módulo</div>
+                  <div class="text-xs text-[var(--text-muted)] mt-0.5">"Refatorar o package de eventos para usar interfaces"</div>
+                </button>
+                <button class="text-left p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-colors group">
+                  <div class="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-light)]">Adicionar testes</div>
+                  <div class="text-xs text-[var(--text-muted)] mt-0.5">"Cobrir o package db com testes de integração"</div>
+                </button>
+                <button class="text-left p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-colors group">
+                  <div class="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-light)]">Documentar ADR</div>
+                  <div class="text-xs text-[var(--text-muted)] mt-0.5">"Criar ADR para decisão de arquitetura de módulos"</div>
+                </button>
+                <button class="text-left p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-colors group">
+                  <div class="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-light)]">Fix bug crítico</div>
+                  <div class="text-xs text-[var(--text-muted)] mt-0.5">"Corrigir race condition no Event Store"</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="w-96 panel" id="preview-panel">
+          <div class="panel-header">
+            <span class="text-sm font-semibold text-[var(--text-primary)]">Preview do Task Graph</span>
+            <span class="text-xs text-[var(--text-muted)]" id="preview-status">Aguardando...</span>
+          </div>
+          <div class="panel-body" id="preview-content">
+            <div class="text-center py-12 text-[var(--text-muted)] text-sm">
+              <svg class="mx-auto mb-3 opacity-30" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              <p>Clique em "Gerar Task Graph"<br>para visualizar a decomposição</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="js/state.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderSidebar('composer');
+    renderHeader('New Task', ['OrchestraOS', 'New Task']);
+
+    function generatePreview() {
+      document.getElementById('preview-status').innerHTML = '<span class="status-badge running"><span class="dot"></span>Gerando...</span>';
+      setTimeout(() => {
+        document.getElementById('preview-status').textContent = '4 work units • 3 dependências';
+        document.getElementById('preview-content').innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)]">
+              <div class="w-8 h-8 rounded-lg bg-[var(--success-dim)] flex items-center justify-center text-sm font-bold text-[var(--success)]">1</div>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-[var(--text-primary)]">Criar schema de eventos</div>
+                <div class="text-xs text-[var(--text-muted)]">0 dependências • Codex-Builder</div>
+              </div>
+              <span class="status-badge completed">Completed</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)]">
+              <div class="w-8 h-8 rounded-lg bg-[var(--info-dim)] flex items-center justify-center text-sm font-bold text-[var(--info)]">2</div>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-[var(--text-primary)]">Implementar envelope</div>
+                <div class="text-xs text-[var(--text-muted)]">depends: wu-001 • Codex-Builder</div>
+              </div>
+              <span class="status-badge pending">Pending</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)]">
+              <div class="w-8 h-8 rounded-lg bg-[var(--info-dim)] flex items-center justify-center text-sm font-bold text-[var(--info)]">3</div>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-[var(--text-primary)]">Adicionar replay</div>
+                <div class="text-xs text-[var(--text-muted)]">depends: wu-002 • Codex-Builder</div>
+              </div>
+              <span class="status-badge pending">Pending</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)]">
+              <div class="w-8 h-8 rounded-lg bg-[var(--warning-dim)] flex items-center justify-center text-sm font-bold text-[var(--warning)]">4</div>
+              <div class="flex-1">
+                <div class="text-sm font-medium text-[var(--text-primary)]">Validar E2E</div>
+                <div class="text-xs text-[var(--text-muted)]">depends: wu-003 • Orchestrator</div>
+              </div>
+              <span class="status-badge pending">Pending</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-[var(--border-color)] flex gap-2">
+            <a href="task.html?id=task-001" class="toolbar-btn primary text-xs py-1.5 px-3 flex-1 text-center">Confirmar & Criar</a>
+            <button class="toolbar-btn text-xs py-1.5 px-3" onclick="clearPreview()">Regerar</button>
+          </div>
+        `;
+      }, 1200);
+    }
+
+    function clearPreview() {
+      document.getElementById('preview-status').textContent = 'Aguardando...';
+      document.getElementById('preview-content').innerHTML = `
+        <div class="text-center py-12 text-[var(--text-muted)] text-sm">
+          <svg class="mx-auto mb-3 opacity-30" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <p>Clique em "Gerar Task Graph"<br>para visualizar a decomposição</p>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

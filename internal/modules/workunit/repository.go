@@ -95,7 +95,7 @@ func (r *Repository) ListByTask(taskID string) ([]domain.WorkUnit, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list work units: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var workUnits []domain.WorkUnit
 	for rows.Next() {
@@ -115,7 +115,7 @@ func (r *Repository) ListByTaskGraph(taskGraphID string) ([]domain.WorkUnit, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to list work units by task graph: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var workUnits []domain.WorkUnit
 	for rows.Next() {
@@ -169,19 +169,29 @@ func (r *Repository) scanWorkUnit(scanner interface {
 	}
 
 	if len(ownedPathsJSON) > 0 {
-		json.Unmarshal(ownedPathsJSON, &wu.OwnedPaths)
+		if err := json.Unmarshal(ownedPathsJSON, &wu.OwnedPaths); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal owned_paths: %w", err)
+		}
 	}
 	if len(readPathsJSON) > 0 {
-		json.Unmarshal(readPathsJSON, &wu.ReadPaths)
+		if err := json.Unmarshal(readPathsJSON, &wu.ReadPaths); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal read_paths: %w", err)
+		}
 	}
 	if len(acceptanceCriteriaJSON) > 0 {
-		json.Unmarshal(acceptanceCriteriaJSON, &wu.AcceptanceCriteria)
+		if err := json.Unmarshal(acceptanceCriteriaJSON, &wu.AcceptanceCriteria); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal acceptance_criteria: %w", err)
+		}
 	}
 	if len(validationPlanJSON) > 0 {
-		json.Unmarshal(validationPlanJSON, &wu.ValidationPlan)
+		if err := json.Unmarshal(validationPlanJSON, &wu.ValidationPlan); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal validation_plan: %w", err)
+		}
 	}
 	if len(dependsOnJSON) > 0 {
-		json.Unmarshal(dependsOnJSON, &wu.DependsOn)
+		if err := json.Unmarshal(dependsOnJSON, &wu.DependsOn); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal depends_on: %w", err)
+		}
 	}
 
 	return &wu, nil

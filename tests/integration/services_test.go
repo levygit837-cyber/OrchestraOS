@@ -27,7 +27,7 @@ import (
 
 func TestDomainServicesFullLifecycle(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -155,7 +155,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 
 func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -359,7 +359,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 
 func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -415,7 +415,7 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 
 func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -552,7 +552,7 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 
 func TestEventServiceIdempotencyAndConflict(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
@@ -609,7 +609,7 @@ func TestEventServiceIdempotencyAndConflict(t *testing.T) {
 
 func TestEventServiceConcurrentIdempotencyConflict(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
@@ -679,7 +679,7 @@ func TestEventServiceConcurrentIdempotencyConflict(t *testing.T) {
 
 func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -775,7 +775,7 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 
 func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)
@@ -847,7 +847,7 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 
 func TestAgentSessionStartingEventReplays(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
@@ -895,7 +895,7 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 
 func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
@@ -1014,7 +1014,7 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 
 func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
@@ -1088,7 +1088,7 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 
 func TestAgentServiceCreateAndGet(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	agentService := bootstrap.AgentService(db)
@@ -1151,7 +1151,7 @@ func TestAgentServiceCreateAndGet(t *testing.T) {
 
 func TestAgentServiceValidation(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	agentService := bootstrap.AgentService(db)
@@ -1198,7 +1198,7 @@ func TestAgentServiceValidation(t *testing.T) {
 
 func TestAgentServiceFindOrCreate(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	agentService := bootstrap.AgentService(db)
@@ -1260,7 +1260,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 
 func TestAgentSessionServiceAgentIDValidation(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	sessionService := bootstrap.AgentSessionService(db)

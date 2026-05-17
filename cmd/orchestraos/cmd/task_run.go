@@ -89,7 +89,7 @@ func init() {
 	taskRunCmd.Flags().String("planner", "", "Planner strategy (local_heuristic_v1, llm_gemini_v1). Falls back to ORCHESTRAOS_PLANNER_STRATEGY env var")
 	taskRunCmd.Flags().Int("max-steps", 10, "Maximum steps per work unit")
 	taskRunCmd.Flags().Int("timeout", 300, "Timeout in seconds per work unit")
-	taskRunCmd.MarkFlagRequired("id")
+	_ = taskRunCmd.MarkFlagRequired("id")
 
 	taskCmd.AddCommand(taskRunCmd)
 }

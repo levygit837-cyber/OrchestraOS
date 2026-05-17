@@ -79,7 +79,7 @@ func (r *Repository) List() ([]domain.EventEnvelope, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []domain.EventEnvelope
 	for rows.Next() {
@@ -98,7 +98,7 @@ func (r *Repository) ListByTask(taskID string) ([]domain.EventEnvelope, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []domain.EventEnvelope
 	for rows.Next() {
@@ -117,7 +117,7 @@ func (r *Repository) ListByRun(runID string) ([]domain.EventEnvelope, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []domain.EventEnvelope
 	for rows.Next() {
@@ -136,7 +136,7 @@ func (r *Repository) ListByWorkUnit(workUnitID string) ([]domain.EventEnvelope, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []domain.EventEnvelope
 	for rows.Next() {

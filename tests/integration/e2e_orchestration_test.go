@@ -28,7 +28,7 @@ import (
 // Task → Graph → Run → Session → FakeRuntime → Complete
 func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	ctx := context.Background()
 	taskService := bootstrap.TaskService(db)
@@ -260,7 +260,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	ctx := context.Background()
 	taskService := bootstrap.TaskService(db)

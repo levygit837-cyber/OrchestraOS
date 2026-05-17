@@ -78,7 +78,7 @@ func (r *Repository) List() ([]Run, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list runs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var runs []Run
 	for rows.Next() {
@@ -98,7 +98,7 @@ func (r *Repository) ListByTask(taskID string) ([]Run, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list runs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var runs []Run
 	for rows.Next() {

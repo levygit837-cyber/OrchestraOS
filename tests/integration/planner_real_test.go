@@ -115,7 +115,7 @@ func TestTaskGraphService_Decompose_RealLLM(t *testing.T) {
 	}
 
 	db := getTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 
 	taskService := bootstrap.TaskService(db)

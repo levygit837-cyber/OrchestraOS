@@ -89,12 +89,12 @@ func init() {
 	workUnitCreateCmd.Flags().StringArray("acceptance", nil, "Acceptance criterion (repeatable)")
 	workUnitCreateCmd.Flags().StringArray("validation", nil, "Validation step (repeatable)")
 	workUnitCreateCmd.Flags().StringArray("depends-on", nil, "Dependency work unit UUID (repeatable)")
-	workUnitCreateCmd.MarkFlagRequired("task-id")
-	workUnitCreateCmd.MarkFlagRequired("title")
-	workUnitCreateCmd.MarkFlagRequired("objective")
+	_ = workUnitCreateCmd.MarkFlagRequired("task-id")
+	_ = workUnitCreateCmd.MarkFlagRequired("title")
+	_ = workUnitCreateCmd.MarkFlagRequired("objective")
 
 	workUnitListCmd.Flags().String("task-id", "", "Task ID to list work units for (required)")
-	workUnitListCmd.MarkFlagRequired("task-id")
+	_ = workUnitListCmd.MarkFlagRequired("task-id")
 
 	workUnitCmd.AddCommand(workUnitCreateCmd)
 	workUnitCmd.AddCommand(workUnitListCmd)
