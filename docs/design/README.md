@@ -54,6 +54,7 @@ Regras visuais específicas dos conceitos do OrchestraOS.
 | Document | Status | Description |
 |---|---|---|
 | [`CANVAS_GRAPH.md`](./CANVAS_GRAPH.md) | ⏳ Future | Regras do grafo DAG: nós, edges, zoom, pan, mini-map, layout algorithms |
+| [`ORCHESTRATION_FLOW_VISUAL.md`](./ORCHESTRATION_FLOW_VISUAL.md) | 📝 Draft | Fluxo visual real de orquestração: da mensagem do usuário à conclusão da task |
 | [`HUD_OVERLAY.md`](./HUD_OVERLAY.md) | ⏳ Future | Regras de elementos flutuantes: inspector, input bar, dock, notificações |
 | [`AGENT_VISUALS.md`](./AGENT_VISUALS.md) | ⏳ Future | Como representar agentes visualmente: avatar, status, capabilities, runs |
 

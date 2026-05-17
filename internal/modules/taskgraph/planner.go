@@ -3,7 +3,6 @@ package taskgraph
 import (
 	"context"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 )
 
@@ -11,8 +10,8 @@ import (
 type GraphPlan struct {
 	GraphID   string
 	WorkUnits []PlanWorkUnit
-	Nodes     []domain.TaskGraphNodeInfo
-	Edges     []domain.TaskGraphEdgeInfo
+	Nodes     []TaskGraphNodeInfo
+	Edges     []TaskGraphEdgeInfo
 	Rationale string
 }
 

@@ -14,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 )
 
@@ -77,7 +76,7 @@ func BuildLocalHeuristicGraphPlan(task *task.Task) (*GraphPlan, error) {
 		}
 	}
 
-	edges := []domain.TaskGraphEdgeInfo{}
+	edges := []TaskGraphEdgeInfo{}
 	for groupIndex, group := range groups {
 		depGroups := map[int]bool{}
 		for _, criterion := range group.Criteria {
@@ -96,7 +95,7 @@ func BuildLocalHeuristicGraphPlan(task *task.Task) (*GraphPlan, error) {
 		for _, depGroup := range depIndexes {
 			depID := workUnits[depGroup].ID
 			workUnits[groupIndex].DependsOn = append(workUnits[groupIndex].DependsOn, depID)
-			edges = append(edges, domain.TaskGraphEdgeInfo{
+			edges = append(edges, TaskGraphEdgeInfo{
 				From:   depID,
 				To:     workUnits[groupIndex].ID,
 				Type:   "blocks",
@@ -116,9 +115,9 @@ func BuildLocalHeuristicGraphPlan(task *task.Task) (*GraphPlan, error) {
 		return nil, apperrors.Wrap(apperrors.CodeValidation, "task_graph_service.cycle_detected", err)
 	}
 
-	nodes := make([]domain.TaskGraphNodeInfo, 0, len(workUnits))
+	nodes := make([]TaskGraphNodeInfo, 0, len(workUnits))
 	for _, wu := range workUnits {
-		nodes = append(nodes, domain.TaskGraphNodeInfo{
+		nodes = append(nodes, TaskGraphNodeInfo{
 			ID:                 wu.ID,
 			Title:              wu.Title,
 			Objective:          wu.Objective,

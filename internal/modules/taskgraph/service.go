@@ -309,7 +309,7 @@ func (s *TaskGraphService) buildFallbackPlan(task *task.Task, reason string) (*G
 	return &GraphPlan{
 		GraphID:   graphID,
 		WorkUnits: []PlanWorkUnit{wu},
-		Nodes: []domain.TaskGraphNodeInfo{{
+		Nodes: []TaskGraphNodeInfo{{
 			ID:                 wu.ID,
 			Title:              wu.Title,
 			Objective:          wu.Objective,
@@ -319,7 +319,7 @@ func (s *TaskGraphService) buildFallbackPlan(task *task.Task, reason string) (*G
 			AcceptanceCriteria: wu.AcceptanceCriteria,
 			ValidationPlan:     wu.ValidationPlan,
 		}},
-		Edges:     []domain.TaskGraphEdgeInfo{},
+		Edges:     []TaskGraphEdgeInfo{},
 		Rationale: fmt.Sprintf("Emergency fallback plan: %s", reason),
 	}, localHeuristicPlanner, fmt.Sprintf("Emergency fallback plan: %s", reason)
 }
@@ -356,7 +356,7 @@ func (s *TaskGraphService) duplicateResultWithExecutor(ctx context.Context, exec
 	if existing.Type != "task.graph_created" || existing.TaskID != input.TaskID {
 		return nil, false, apperrors.New(apperrors.CodeConflict, "task_graph_service.idempotency", "event_id already exists for a different operation")
 	}
-	var payload domain.TaskGraphCreatedPayload
+	var payload TaskGraphCreatedPayload
 	if err := json.Unmarshal(existing.Payload, &payload); err != nil {
 		return nil, false, apperrors.Wrap(apperrors.CodeValidation, "task_graph_service.existing_payload", err)
 	}

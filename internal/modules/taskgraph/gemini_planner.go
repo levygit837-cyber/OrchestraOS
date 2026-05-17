@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 
 	"google.golang.org/genai"
@@ -170,10 +169,10 @@ func (p *GeminiPlanner) convertToGraphPlan(task *task.Task, output *plannerOutpu
 	}
 
 	// Build edges
-	edges := make([]domain.TaskGraphEdgeInfo, 0)
+	edges := make([]TaskGraphEdgeInfo, 0)
 	for i, wu := range output.WorkUnits {
 		for _, depIdx := range wu.DependsOn {
-			edges = append(edges, domain.TaskGraphEdgeInfo{
+			edges = append(edges, TaskGraphEdgeInfo{
 				From:   idByIndex[depIdx],
 				To:     workUnits[i].ID,
 				Type:   "blocks",
@@ -183,9 +182,9 @@ func (p *GeminiPlanner) convertToGraphPlan(task *task.Task, output *plannerOutpu
 	}
 
 	// Build nodes
-	nodes := make([]domain.TaskGraphNodeInfo, 0, wuCount)
+	nodes := make([]TaskGraphNodeInfo, 0, wuCount)
 	for _, wu := range workUnits {
-		nodes = append(nodes, domain.TaskGraphNodeInfo{
+		nodes = append(nodes, TaskGraphNodeInfo{
 			ID:                 wu.ID,
 			Title:              wu.Title,
 			Objective:          wu.Objective,
