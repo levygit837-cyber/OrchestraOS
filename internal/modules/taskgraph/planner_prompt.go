@@ -78,6 +78,7 @@ var parsedPlannerPromptTemplate = template.Must(
 )
 
 // PlannerPromptInput holds the data for rendering the planner prompt.
+// TODO[ADR-0022]: migrar para *task.Task
 type PlannerPromptInput struct {
 	Task         *domain.Task
 	MaxWorkUnits int
@@ -100,6 +101,7 @@ func BuildPlannerPrompt(input PlannerPromptInput) (string, error) {
 }
 
 // PlannerPrompt returns a simple string prompt for the given task (convenience function).
+// TODO[ADR-0022]: migrar para *task.Task
 func PlannerPrompt(task *domain.Task) (string, error) {
 	return BuildPlannerPrompt(PlannerPromptInput{Task: task, MaxWorkUnits: MaxGraphWorkUnits})
 }

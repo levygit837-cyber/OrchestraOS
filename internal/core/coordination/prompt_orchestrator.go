@@ -81,25 +81,33 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 	}
 
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
-		Run:      run,
-		WorkUnit: wu,
-		// TODO: remove when prompt.PrepareAndPersistInput.Task uses *task.Task directly.
-		Task: &domain.Task{
-			ID:                   task.ID,
-			Title:                task.Title,
-			Description:          task.Description,
-			Status:               domain.TaskStatus(task.Status),
-			Priority:             domain.Priority(task.Priority),
-			RiskLevel:            domain.RiskLevel(task.RiskLevel),
-			CreatedFromMessageID: task.CreatedFromMessageID,
-			AcceptanceCriteria:   task.AcceptanceCriteria,
-			CreatedAt:            task.CreatedAt,
-			UpdatedAt:            task.UpdatedAt,
-		},
+		Run:                    run,
+		WorkUnit:               wu,
+		Task:                   taskToDomain(task),
 		Session:                session,
 		PromptSnapshotID:       input.PromptSnapshotID,
 		ToolsetSnapshotID:      input.ToolsetSnapshotID,
 		PromptSnapshotEventID:  input.PromptSnapshotEventID,
 		ToolsetSnapshotEventID: input.ToolsetSnapshotEventID,
 	})
+}
+
+// taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.
+// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Task usar *task.Task diretamente.
+func taskToDomain(t *taskmod.Task) *domain.Task {
+	if t == nil {
+		return nil
+	}
+	return &domain.Task{
+		ID:                   t.ID,
+		Title:                t.Title,
+		Description:          t.Description,
+		Status:               domain.TaskStatus(t.Status),
+		Priority:             domain.Priority(t.Priority),
+		RiskLevel:            domain.RiskLevel(t.RiskLevel),
+		CreatedFromMessageID: t.CreatedFromMessageID,
+		AcceptanceCriteria:   t.AcceptanceCriteria,
+		CreatedAt:            t.CreatedAt,
+		UpdatedAt:            t.UpdatedAt,
+	}
 }
