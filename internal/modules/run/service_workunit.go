@@ -1,4 +1,4 @@
-package coordination
+package run
 
 import (
 	"context"
@@ -9,12 +9,11 @@ import (
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // TransitionRunWithWorkUnit synchronizes a run transition with its associated work unit.
-func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *runmod.Run, target runmod.Status, input transition.TransitionInput) error {
+func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *Run, target Status, input transition.TransitionInput) error {
 	if run.WorkUnitID == "" {
 		return nil
 	}
@@ -24,15 +23,15 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *runmod.Run,
 	}
 	var wuTarget workunitmod.Status
 	switch target {
-	case runmod.StatusRunning:
+	case StatusRunning:
 		wuTarget = workunitmod.StatusRunning
-	case runmod.StatusValidating:
+	case StatusValidating:
 		wuTarget = workunitmod.StatusValidating
-	case runmod.StatusCompleted:
+	case StatusCompleted:
 		wuTarget = workunitmod.StatusCompleted
-	case runmod.StatusFailed:
+	case StatusFailed:
 		wuTarget = workunitmod.StatusFailed
-	case runmod.StatusCancelled:
+	case StatusCancelled:
 		wuTarget = workunitmod.StatusCancelled
 	default:
 		return nil
@@ -41,7 +40,7 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *runmod.Run,
 		return nil
 	}
 	if wuTarget == workunitmod.StatusRunning {
-		if err := dbcore.AcquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskID, "coordination.work_unit_path_lock"); err != nil {
+		if err := dbcore.AcquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskID, "run.work_unit_path_lock"); err != nil {
 			return err
 		}
 		if err := workunitmod.ValidateDependenciesCompleted(ctx, tx, wu); err != nil {
@@ -52,7 +51,7 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *runmod.Run,
 		}
 	}
 	if wuTarget == workunitmod.StatusCompleted && len(wu.AcceptanceCriteria) == 0 && input.Justification == "" {
-		return apperrors.New(apperrors.CodeInvalidInput, "coordination.run_workunit_sync", "related work unit completion requires acceptance criteria or explicit justification")
+		return apperrors.New(apperrors.CodeInvalidInput, "run.run_workunit_sync", "related work unit completion requires acceptance criteria or explicit justification")
 	}
 	if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(wuTarget), transition.TransitionContext(input)); err != nil {
 		if wuTarget == workunitmod.StatusFailed && wu.Status == workunitmod.StatusCreated {
@@ -65,9 +64,9 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *runmod.Run,
 	}
 	res, err := tx.ExecContext(ctx, workunitmod.QueryUpdateStatus, wu.ID, wuTarget, time.Now().UTC())
 	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "coordination.run_workunit_sync.update_work_unit", err)
+		return apperrors.Wrap(apperrors.CodePersistence, "run.run_workunit_sync.update_work_unit", err)
 	}
-	return dbcore.EnsureRowsAffected(res, "work unit", "coordination.run_workunit_sync.update_work_unit")
+	return dbcore.EnsureRowsAffected(res, "work unit", "run.run_workunit_sync.update_work_unit")
 }
 
 func workUnitEventTypeForStatus(status workunitmod.Status) string {

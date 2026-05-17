@@ -218,7 +218,7 @@ func (s *RunService) transition(ctx context.Context, runID string, target Status
 		if input.FailureReason != "" {
 			failureReason = &input.FailureReason
 		}
-		if err := updateRunProjection(ctx, tx, run.ID, target, result, failureReason); err != nil {
+		if err := UpdateRunProjection(ctx, tx, run.ID, target, result, failureReason); err != nil {
 			return nil, err
 		}
 		run.Status = target
@@ -232,7 +232,10 @@ func (s *RunService) transition(ctx context.Context, runID string, target Status
 	return &transition.OperationResult[*Run]{Value: run, Event: event, Duplicate: duplicate}, nil
 }
 
-func updateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status Status, result *Result, failureReason *string) error {
+// UpdateRunProjection updates the runs table projection. Exported temporarily
+// for coordination packages migrating per ADR-0028; callers should prefer
+// Repository.UpdateStatus or the run service transition methods.
+func UpdateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status Status, result *Result, failureReason *string) error {
 	now := time.Now().UTC()
 	var startedAt, finishedAt *time.Time
 	if status == StatusRunning {

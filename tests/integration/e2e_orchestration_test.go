@@ -148,7 +148,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := coordination.RelayConfig{
+	relayConfig := runmod.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,
@@ -380,7 +380,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := coordination.RelayConfig{
+	relayConfig := runmod.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,

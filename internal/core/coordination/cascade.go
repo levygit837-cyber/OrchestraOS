@@ -31,7 +31,7 @@ func CancelTaskDependents(ctx context.Context, tx *sql.Tx, taskID string, input 
 			return err
 		}
 		result := runmod.ResultForStatus(runmod.StatusCancelled)
-		if err := UpdateRunProjection(ctx, tx, run.ID, runmod.StatusCancelled, result, nil); err != nil {
+		if err := runmod.UpdateRunProjection(ctx, tx, run.ID, runmod.StatusCancelled, result, nil); err != nil {
 			return err
 		}
 	}
