@@ -28,6 +28,7 @@ type RunReader interface {
 }
 
 // AgentSessionReader abstracts agent-session reads to avoid cyclic imports.
+// TODO[ADR-0022]: migrar para *agentsession.AgentSession.
 type AgentSessionReader interface {
 	GetByID(id string) (*domain.AgentSession, error)
 }

@@ -19,11 +19,12 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 )
 
 // AgentReader abstracts agent reads to avoid cyclic imports.
 type AgentReader interface {
-	GetByID(ctx context.Context, id string) (*domain.Agent, error)
+	GetByID(ctx context.Context, id string) (*agentmod.Agent, error)
 }
 
 type AgentSessionService struct {
@@ -48,7 +49,7 @@ func NewAgentSessionService(database *sql.DB, newAgentReader func(*sql.Tx) Agent
 	return &AgentSessionService{db: database, newAgentReader: newAgentReader}
 }
 
-func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*AgentSession], error) {
 	if input.ID == "" {
 		input.ID = uuid.New().String()
 	}
@@ -68,7 +69,7 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 		return nil, err
 	}
 
-	session := &domain.AgentSession{
+	session := &AgentSession{
 		ID:               input.ID,
 		AgentID:          input.AgentID,
 		RunID:            input.RunID,
@@ -76,7 +77,7 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 		WorkUnitID:       input.WorkUnitID,
 		SandboxID:        input.SandboxID,
 		ConnectionID:     input.ConnectionID,
-		Status:           domain.AgentSessionStatusStarting,
+		Status:           StatusStarting,
 		LastSeenEventID:  input.LastSeenEventID,
 		RecoverableState: input.RecoverableState,
 	}
@@ -112,10 +113,10 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_create"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*AgentSession], error) {
 	if input.Extra == nil {
 		input.Extra = map[string]interface{}{}
 	}
@@ -125,7 +126,7 @@ func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connection
 	if sandboxID != "" {
 		input.Extra["sandbox_id"] = sandboxID
 	}
-	return s.transition(ctx, sessionID, domain.AgentSessionStatusRunning, input, func(ctx context.Context, tx *sql.Tx, session *domain.AgentSession) error {
+	return s.transition(ctx, sessionID, StatusRunning, input, func(ctx context.Context, tx *sql.Tx, session *AgentSession) error {
 		if connectionID == "" && session.ConnectionID == "" {
 			return apperrors.New(apperrors.CodeInvalidInput, "agent_session_service.connect", "connection_id is required")
 		}
@@ -143,15 +144,15 @@ func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connection
 	})
 }
 
-func (s *AgentSessionService) Disconnect(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	return s.transition(ctx, sessionID, domain.AgentSessionStatusDisconnected, input, nil)
+func (s *AgentSessionService) Disconnect(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*AgentSession], error) {
+	return s.transition(ctx, sessionID, StatusDisconnected, input, nil)
 }
 
-func (s *AgentSessionService) Resume(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	return s.transition(ctx, sessionID, domain.AgentSessionStatusRunning, input, nil)
+func (s *AgentSessionService) Resume(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*AgentSession], error) {
+	return s.transition(ctx, sessionID, StatusRunning, input, nil)
 }
 
-func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*AgentSession], error) {
 	op := "agent_session_service.stop"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err
@@ -171,31 +172,31 @@ func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input 
 	}
 	var lastEvent *domain.EventEnvelope
 	var duplicate bool
-	if session.Status != domain.AgentSessionStatusStopping {
+	if session.Status != StatusStopping {
 		stoppingInput := input
 		stoppingInput.EventID = ""
-		_, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, domain.AgentSessionStatusStopping, stoppingInput)
+		_, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, StatusStopping, stoppingInput)
 		if err != nil {
 			return nil, err
 		}
 		duplicate = dup
-		session.Status = domain.AgentSessionStatusStopping
+		session.Status = StatusStopping
 	}
-	event, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, domain.AgentSessionStatusStopped, input)
+	event, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, StatusStopped, input)
 	if err != nil {
 		return nil, err
 	}
 	lastEvent = event
 	duplicate = duplicate || dup
-	session.Status = domain.AgentSessionStatusStopped
+	session.Status = StatusStopped
 
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_stop"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: lastEvent, Duplicate: duplicate}, nil
+	return &transition.OperationResult[*AgentSession]{Value: session, Event: lastEvent, Duplicate: duplicate}, nil
 }
 
-func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input transition.TransitionInput) (*transition.OperationResult[*AgentSession], error) {
 	if input.Justification == "" {
 		input.Justification = "session heartbeat timeout reached"
 	}
@@ -204,7 +205,7 @@ func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, rec
 	}
 	input.Extra["timeout"] = true
 	input.Extra["recoverable"] = true
-	return s.transition(ctx, sessionID, domain.AgentSessionStatusDisconnected, input, func(ctx context.Context, tx *sql.Tx, session *domain.AgentSession) error {
+	return s.transition(ctx, sessionID, StatusDisconnected, input, func(ctx context.Context, tx *sql.Tx, session *AgentSession) error {
 		if len(recoverableState) > 0 {
 			if err := NewRepository(tx).UpdateRecoverableState(session.ID, recoverableState); err != nil {
 				return apperrors.Wrap(apperrors.CodePersistence, "agent_session_service.update_recoverable_state", err)
@@ -215,11 +216,11 @@ func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, rec
 	})
 }
 
-func (s *AgentSessionService) Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
-	return s.transition(ctx, sessionID, domain.AgentSessionStatusFailed, input, nil)
+func (s *AgentSessionService) Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*AgentSession], error) {
+	return s.transition(ctx, sessionID, StatusFailed, input, nil)
 }
 
-func (s *AgentSessionService) transition(ctx context.Context, sessionID string, target domain.AgentSessionStatus, input transition.TransitionInput, after func(context.Context, *sql.Tx, *domain.AgentSession) error) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) transition(ctx context.Context, sessionID string, target Status, input transition.TransitionInput, after func(context.Context, *sql.Tx, *AgentSession) error) (*transition.OperationResult[*AgentSession], error) {
 	op := "agent_session_service.transition"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err
@@ -250,10 +251,10 @@ func (s *AgentSessionService) transition(ctx context.Context, sessionID string, 
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_transition"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: event, Duplicate: duplicate}, nil
+	return &transition.OperationResult[*AgentSession]{Value: session, Event: event, Duplicate: duplicate}, nil
 }
 
-func transitionAgentSessionInTx(ctx context.Context, tx *sql.Tx, session *domain.AgentSession, taskID, workUnitID string, target domain.AgentSessionStatus, input transition.TransitionInput) (*domain.EventEnvelope, bool, error) {
+func transitionAgentSessionInTx(ctx context.Context, tx *sql.Tx, session *AgentSession, taskID, workUnitID string, target Status, input transition.TransitionInput) (*domain.EventEnvelope, bool, error) {
 	if err := statemachine.CanTransition(statemachine.AggregateAgentSession, string(session.Status), string(target), transition.TransitionContext(input)); err != nil {
 		return nil, false, err
 	}
@@ -264,7 +265,7 @@ func transitionAgentSessionInTx(ctx context.Context, tx *sql.Tx, session *domain
 	if !duplicate {
 		now := time.Now().UTC()
 		var heartbeatAt, checkpointAt *time.Time
-		if target == domain.AgentSessionStatusRunning {
+		if target == StatusRunning {
 			heartbeatAt = &now
 		}
 		res, err := tx.ExecContext(ctx, QueryUpdateStatus, session.ID, target, heartbeatAt, checkpointAt, now)
@@ -301,7 +302,7 @@ func validateCreateAgentSessionInput(input CreateAgentSessionInput) error {
 	return nil
 }
 
-func (s *AgentSessionService) requireAgentByID(ctx context.Context, tx *sql.Tx, id string) (*domain.Agent, error) {
+func (s *AgentSessionService) requireAgentByID(ctx context.Context, tx *sql.Tx, id string) (*agentmod.Agent, error) {
 	op := "agent_session_service.require_agent"
 	agent, err := s.newAgentReader(tx).GetByID(ctx, id)
 	if err != nil {

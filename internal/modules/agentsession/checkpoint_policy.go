@@ -66,7 +66,7 @@ type CheckpointRecord struct {
 }
 
 type RecoverableCheckpointState struct {
-	Session          domain.AgentSession
+	Session          AgentSession
 	LastCheckpoint   *CheckpointRecord
 	RecoverableState json.RawMessage
 }
@@ -104,7 +104,7 @@ func (s *AgentSessionService) SuggestCheckpoint(ctx context.Context, sessionID s
 	}, nil
 }
 
-func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*transition.OperationResult[*domain.AgentSession], *domain.CheckpointSuggestion, error) {
+func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*transition.OperationResult[*AgentSession], *domain.CheckpointSuggestion, error) {
 	suggestion, err := s.SuggestCheckpoint(ctx, sessionID, input)
 	if err != nil {
 		return nil, nil, err
@@ -119,7 +119,7 @@ func (s *AgentSessionService) AutomaticCheckpoint(ctx context.Context, sessionID
 	return result, suggestion, nil
 }
 
-func (s *AgentSessionService) CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*transition.OperationResult[*AgentSession], error) {
 	op := "agent_session_service.checkpoint_from_event"
 	if event == nil {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "event envelope is required")

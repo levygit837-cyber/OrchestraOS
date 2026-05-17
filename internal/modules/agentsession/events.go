@@ -1,7 +1,5 @@
 package agentsession
 
-import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
-
-func EventTypeForStatus(status domain.AgentSessionStatus) string {
+func EventTypeForStatus(status Status) string {
 	return "agent.session_" + string(status)
 }

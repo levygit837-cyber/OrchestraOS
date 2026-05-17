@@ -17,7 +17,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-func (s *AgentSessionService) Heartbeat(ctx context.Context, sessionID string, input domain.HeartbeatInput) (*transition.OperationResult[*domain.AgentSession], error) {
+func (s *AgentSessionService) Heartbeat(ctx context.Context, sessionID string, input domain.HeartbeatInput) (*transition.OperationResult[*AgentSession], error) {
 	op := "agent_session_service.heartbeat"
 	if err := validation.RequiredUUID(sessionID, "agent_session_id", op); err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (s *AgentSessionService) Heartbeat(ctx context.Context, sessionID string, i
 	if err != nil {
 		return nil, err
 	}
-	if session.Status != domain.AgentSessionStatusRunning && session.Status != domain.AgentSessionStatusWaitingApproval && session.Status != domain.AgentSessionStatusPaused {
+	if session.Status != StatusRunning && session.Status != StatusWaitingApproval && session.Status != StatusPaused {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "heartbeat requires an active session")
 	}
 	payload := input.Payload
@@ -75,5 +75,5 @@ func (s *AgentSessionService) Heartbeat(ctx context.Context, sessionID string, i
 	if err := dbcore.CommitTx(tx, "agent_session_service.commit_heartbeat"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*AgentSession]{Value: session, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
