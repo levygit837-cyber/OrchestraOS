@@ -1,0 +1,445 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - img
+    - generic [ref=e4] [cursor=pointer]:
+      - generic [ref=e6]:
+        - img [ref=e7]
+        - generic [ref=e10]: Orch
+      - generic: Supervisor
+    - generic [ref=e12] [cursor=pointer]:
+      - img [ref=e15]
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: Codex-Builder
+        - paragraph [ref=e19]: Running (1 WU)
+      - generic "Sandbox healthy" [ref=e21]
+    - generic [ref=e23] [cursor=pointer]:
+      - img [ref=e25]
+      - generic [ref=e27]:
+        - paragraph [ref=e28]: Review-Bot
+        - paragraph [ref=e29]: Idle • Waiting
+      - generic "No active sandbox" [ref=e30]
+    - generic [ref=e32] [cursor=pointer]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: wu-001
+        - img [ref=e36]
+      - paragraph [ref=e38]: Criar schema base
+      - generic [ref=e40]:
+        - img [ref=e41]
+        - text: hard gate
+    - generic [ref=e44] [cursor=pointer]:
+      - generic [ref=e47]: wu-002
+      - paragraph [ref=e51]: Implementar envelope
+      - generic [ref=e53]:
+        - img [ref=e54]
+        - text: soft gate
+    - generic [ref=e57] [cursor=pointer]:
+      - generic [ref=e58]:
+        - generic [ref=e59]: wu-003
+        - img [ref=e60]
+      - paragraph [ref=e62]: Adicionar middleware
+      - generic [ref=e64]:
+        - img [ref=e65]
+        - text: policy gate
+    - generic [ref=e68] [cursor=pointer]:
+      - generic [ref=e69]:
+        - generic [ref=e70]: wu-004
+        - img [ref=e71]
+      - paragraph [ref=e73]: Validar E2E
+      - generic [ref=e75]:
+        - img [ref=e76]
+        - text: soft gate
+    - generic [ref=e79] [cursor=pointer]:
+      - generic [ref=e81]:
+        - generic [ref=e82]: wu-005
+        - img [ref=e83]
+      - paragraph [ref=e85]: Setup CI pipeline
+      - generic [ref=e87]:
+        - img [ref=e88]
+        - text: hard gate
+    - generic [ref=e91] [cursor=pointer]:
+      - generic [ref=e92]:
+        - generic [ref=e93]: wu-006
+        - img [ref=e94]
+      - paragraph [ref=e96]: Documentar API
+      - generic [ref=e98]:
+        - img [ref=e99]
+        - text: policy gate
+    - generic [ref=e101] [cursor=pointer]:
+      - img
+      - generic [ref=e102]:
+        - generic [ref=e104]: task-099
+        - generic [ref=e106]: Event Envelope
+        - generic "P0 - Critical priority" [ref=e107]
+    - generic:
+      - generic:
+        - generic: blocks
+      - generic:
+        - generic: artifact
+      - generic:
+        - generic: review
+  - generic [ref=e109]:
+    - img [ref=e111]
+    - generic [ref=e113]:
+      - paragraph [ref=e114]: Stall detected
+      - paragraph [ref=e115]: Codex-Builder idle for 5m on wu-002
+    - generic [ref=e116]:
+      - button "Investigate" [ref=e117] [cursor=pointer]
+      - button "Pause Agent" [ref=e118] [cursor=pointer]
+    - button [ref=e119] [cursor=pointer]:
+      - img [ref=e120]
+  - generic:
+    - generic [ref=e122]:
+      - generic [ref=e123]:
+        - img [ref=e125]
+        - generic [ref=e128]:
+          - generic [ref=e129]: OrchestraOS
+          - generic [ref=e130]: Canvas
+      - generic [ref=e131]:
+        - generic [ref=e132]: View
+        - generic [ref=e133]: task-099
+        - generic [ref=e134]: Event Envelope
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - button "All" [ref=e137] [cursor=pointer]
+        - button "Running" [ref=e138] [cursor=pointer]
+        - button "Pending" [ref=e139] [cursor=pointer]
+      - generic [ref=e140]:
+        - generic [ref=e143]: 2 Agents
+        - generic [ref=e147]: 2 Done
+        - generic [ref=e151]: 4 Pending
+      - button "2 Approve" [ref=e152] [cursor=pointer]:
+        - generic [ref=e153]:
+          - img [ref=e154]
+          - generic [ref=e156]: "2"
+        - generic [ref=e157]: Approve
+      - button "Notifications" [ref=e158] [cursor=pointer]:
+        - img [ref=e160]
+      - button "Settings" [ref=e163] [cursor=pointer]:
+        - img [ref=e164]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - heading "Pending Approvals 2" [level=3]:
+            - img
+            - text: Pending Approvals
+            - generic: "2"
+          - button:
+            - img
+  - generic [ref=e328]:
+    - generic [ref=e329]:
+      - generic [ref=e330]:
+        - img [ref=e332]
+        - generic [ref=e334]:
+          - heading "Codex-Builder" [level=3] [ref=e335]
+          - paragraph [ref=e336]: session-042 • running • 02h 14m
+      - generic [ref=e337]:
+        - button "Pause" [ref=e338] [cursor=pointer]
+        - button "Stop" [ref=e339] [cursor=pointer]
+        - button [ref=e340] [cursor=pointer]:
+          - img [ref=e341]
+    - generic [ref=e343]:
+      - button "Chat" [ref=e344] [cursor=pointer]:
+        - img [ref=e345]
+        - text: Chat
+      - button "Checkpoints" [ref=e347] [cursor=pointer]:
+        - img [ref=e348]
+        - text: Checkpoints
+      - button "Prompts" [ref=e350] [cursor=pointer]:
+        - img [ref=e351]
+        - text: Prompts
+      - button "Artifacts" [ref=e353] [cursor=pointer]:
+        - img [ref=e354]
+        - text: Artifacts
+    - generic [ref=e508]:
+      - generic [ref=e509]:
+        - img [ref=e511]
+        - generic [ref=e513]:
+          - generic [ref=e514]:
+            - generic [ref=e515]: Codex-Builder
+            - generic [ref=e516]: 10:24:00
+          - generic [ref=e518]:
+            - text: Starting session
+            - strong [ref=e519]: session-042
+            - text: for work unit
+            - strong [ref=e520]: wu-002
+            - text: —
+            - emphasis [ref=e521]: Implementar envelope
+            - text: ". Goal: Wrap standard API responses with context metadata."
+      - generic [ref=e522]:
+        - img [ref=e524]
+        - generic [ref=e526]:
+          - generic [ref=e527]:
+            - generic [ref=e528]: Codex-Builder
+            - generic [ref=e529]: 10:24:05
+          - generic [ref=e531]: Analyzing task requirements... The event envelope needs to support context metadata, timestamps, and correlation IDs.
+      - generic [ref=e532]:
+        - img [ref=e534]
+        - generic [ref=e536]:
+          - generic [ref=e537]:
+            - generic [ref=e538]: Codex-Builder
+            - generic [ref=e539]: 10:25:14
+          - generic [ref=e541]:
+            - text: ✓
+            - strong [ref=e542]: checkpoint-001
+            - text: "reached — Initialize project structure Completed: • schema.sql created • migration script written Pending: • Run migration • Verify tables"
+      - generic [ref=e543]:
+        - img [ref=e545]
+        - generic [ref=e548]:
+          - generic [ref=e549]:
+            - generic [ref=e550]: Codex-Builder
+            - generic [ref=e551]: 10:25:45
+          - generic [ref=e553]:
+            - text: 🔧
+            - strong [ref=e554]: Tool Request
+            - text: ":"
+            - code [ref=e555]: file_write
+            - text: "on"
+            - code [ref=e556]: events.go
+            - text: "Input: Write EventEnvelope struct with metadata fields"
+            - emphasis [ref=e557]: "Risk: medium — Writing to existing file"
+      - generic [ref=e558]:
+        - img [ref=e560]
+        - generic [ref=e562]:
+          - generic [ref=e563]:
+            - generic [ref=e564]: You
+            - generic [ref=e565]: 10:25:52
+          - generic [ref=e567]: Approved. Go ahead.
+      - generic [ref=e568]:
+        - img [ref=e570]
+        - generic [ref=e572]:
+          - generic [ref=e573]:
+            - generic [ref=e574]: Codex-Builder
+            - generic [ref=e575]: 10:26:10
+          - generic [ref=e577]: "```go type EventEnvelope struct { ID string `json:\"id\"` Type string `json:\"type\"` Payload any `json:\"payload\"` Metadata Metadata `json:\"metadata\"` Timestamp time.Time `json:\"timestamp\"` CorrelationID string `json:\"correlation_id\"` } type Metadata struct { Source string `json:\"source\"` Version string `json:\"version\"` TraceID string `json:\"trace_id\"` } ```"
+      - generic [ref=e578]:
+        - img [ref=e580]
+        - generic [ref=e582]:
+          - generic [ref=e583]:
+            - generic [ref=e584]: Codex-Builder
+            - generic [ref=e585]: 10:28:44
+          - generic [ref=e587]:
+            - text: ❌
+            - strong [ref=e588]: Run attempt 1 failed
+            - text: — timeout after 5m The linter step took too long. I'll retry with a faster approach.
+      - generic [ref=e589]:
+        - img [ref=e591]
+        - generic [ref=e593]:
+          - generic [ref=e594]:
+            - generic [ref=e595]: Codex-Builder
+            - generic [ref=e596]: 10:31:02
+          - generic [ref=e598]:
+            - text: ❌
+            - strong [ref=e599]: Run attempt 2 failed
+            - text: — linter error on events.go
+            - code [ref=e600]
+            - text: "` events.go:42: undefined: Metadata"
+            - code [ref=e601]
+            - text: "` I need to fix the import order."
+      - generic [ref=e602]:
+        - img [ref=e604]
+        - generic [ref=e606]:
+          - generic [ref=e607]:
+            - generic [ref=e608]: Codex-Builder
+            - generic [ref=e609]: 10:31:15
+          - generic [ref=e611]: Third attempt starting... I'll separate the Metadata type into its own file to avoid circular imports.
+      - generic [ref=e612]:
+        - img [ref=e614]
+        - generic [ref=e616]:
+          - generic [ref=e617]:
+            - generic [ref=e618]: Codex-Builder
+            - generic [ref=e619]: 10:28:30
+          - generic [ref=e621]:
+            - text: ✓
+            - strong [ref=e622]: checkpoint-002
+            - text: "reached — Define base event types Completed: • EventType enum • Payload interface Blocker: • Need clarification on retry policy"
+      - generic [ref=e623]:
+        - img [ref=e625]
+        - generic [ref=e627]:
+          - generic [ref=e628]:
+            - generic [ref=e629]: Codex-Builder
+            - generic [ref=e630]: 10:32:16
+          - generic [ref=e632]:
+            - text: ✓
+            - strong [ref=e633]: checkpoint-003
+            - text: "reached — Implement envelope struct Completed: • EventEnvelope struct • Metadata fields Pending: • Add middleware integration • Write unit tests"
+      - generic [ref=e634]:
+        - img [ref=e636]
+        - generic [ref=e638]:
+          - generic [ref=e639]:
+            - generic [ref=e640]: Codex-Builder
+            - generic [ref=e641]: 10:32:20
+          - generic [ref=e643]:
+            - text: 🔄
+            - strong [ref=e644]: Run attempt 3
+            - text: is now
+            - strong [ref=e645]: running
+            - text: "... Current progress: • Envelope package compiling ✅ • Middleware integration in progress... • Unit tests pending"
+      - generic [ref=e646]:
+        - img [ref=e648]
+        - generic [ref=e650]:
+          - generic [ref=e651]:
+            - generic [ref=e652]: You
+            - generic [ref=e653]: 07:57:00
+          - generic [ref=e655]: Focus on fixing the linter error before continuing
+      - generic [ref=e656]:
+        - img [ref=e658]
+        - generic [ref=e660]:
+          - generic [ref=e661]:
+            - generic [ref=e662]: Codex-Builder
+            - generic [ref=e663]: 07:57:00
+          - generic [ref=e665]: Processing your message...
+    - generic [ref=e495]:
+      - generic [ref=e496]:
+        - img [ref=e498]
+        - textbox "Message Codex-Builder..." [active] [ref=e500]
+        - button [ref=e501] [cursor=pointer]:
+          - img [ref=e502]
+      - generic [ref=e504]:
+        - generic [ref=e505]: Shift + Enter for new line
+        - generic [ref=e507]: Enter to send
+  - generic:
+    - generic:
+      - generic:
+        - heading "Prompt Composition" [level=3]:
+          - img
+          - text: Prompt Composition
+        - button:
+          - img
+  - generic [ref=e265]:
+    - generic [ref=e266]:
+      - heading "Inspector" [level=3] [ref=e267]:
+        - img [ref=e268]
+        - text: Inspector
+      - generic [ref=e270]:
+        - generic [ref=e272]: Live
+        - button [ref=e273] [cursor=pointer]:
+          - img [ref=e274]
+    - generic [ref=e276]:
+      - generic [ref=e277]:
+        - generic [ref=e278]:
+          - heading "Codex-Builder" [level=2] [ref=e279]
+          - paragraph [ref=e280]: Software Engineer (Go/Node)
+        - generic [ref=e281]: Running
+      - generic [ref=e282]:
+        - generic [ref=e283]:
+          - generic [ref=e284]: Session
+          - generic [ref=e285]: session-042
+        - generic [ref=e286]:
+          - generic [ref=e287]: Heartbeat
+          - generic [ref=e288]: 2s ago
+        - generic [ref=e290]:
+          - generic [ref=e291]: Last Checkpoint
+          - generic [ref=e292]: checkpoint-003
+        - generic [ref=e293]:
+          - paragraph [ref=e294]: Sandbox
+          - generic [ref=e295]:
+            - generic [ref=e296]:
+              - generic [ref=e297]: Container
+              - generic [ref=e298]: orch-sandbox-7a3f
+            - generic [ref=e299]:
+              - generic [ref=e300]: Branch
+              - generic [ref=e301]: feat/t-099-event-envelope
+            - generic [ref=e302]:
+              - generic [ref=e303]: Worktree
+              - generic [ref=e304]: /tmp/orch/sb-7a3f
+        - generic [ref=e305]:
+          - paragraph [ref=e306]: Prompt
+          - generic [ref=e307]:
+            - generic [ref=e308]: 7 fragments
+            - generic [ref=e309]: a3f2c8d1
+      - generic [ref=e310]:
+        - generic [ref=e311]:
+          - generic [ref=e312]: Current Task
+          - generic [ref=e313]: wu-002
+        - generic [ref=e315]:
+          - generic [ref=e316]: Session Time
+          - generic [ref=e317]: 02h 14m
+      - paragraph [ref=e318]: Capabilities
+      - generic [ref=e319]:
+        - generic [ref=e320]: FileSystem
+        - generic [ref=e321]: Linter
+        - generic [ref=e322]: Bash(Sandbox)
+        - generic [ref=e323]: Git
+      - generic [ref=e324]:
+        - button "View Session" [ref=e325] [cursor=pointer]
+        - button "View Run" [ref=e326] [cursor=pointer]
+  - generic [ref=e167]:
+    - generic [ref=e168] [cursor=pointer]:
+      - heading "Event Stream" [level=3] [ref=e169]:
+        - img [ref=e170]
+        - text: Event Stream
+      - img [ref=e173]
+    - generic [ref=e175]:
+      - generic [ref=e176] [cursor=pointer]:
+        - generic [ref=e177]: 10:32:14
+        - generic [ref=e178]: "[RUN]"
+        - generic [ref=e179]: run-101 started for wu-002
+      - generic [ref=e180] [cursor=pointer]:
+        - generic [ref=e181]: 10:32:15
+        - generic [ref=e182]: "[TOOL]"
+        - generic [ref=e183]: Codex-Builder requests file_write(events.go)
+      - generic [ref=e184] [cursor=pointer]:
+        - generic [ref=e185]: 10:32:16
+        - generic [ref=e186]: "[CHK]"
+        - generic [ref=e187]: Checkpoint-003 reached by Codex-Builder
+      - generic [ref=e188] [cursor=pointer]:
+        - generic [ref=e189]: 10:32:20
+        - generic [ref=e190]: "[EVT]"
+        - generic [ref=e191]: Heartbeat from Review-Bot
+      - generic [ref=e192] [cursor=pointer]:
+        - generic [ref=e193]: 10:31:02
+        - generic [ref=e194]: "[RUN]"
+        - generic [ref=e195]: run-100 failed for wu-002 (linter error)
+      - generic [ref=e196] [cursor=pointer]:
+        - generic [ref=e197]: 10:30:14
+        - generic [ref=e198]: "[RUN]"
+        - generic [ref=e199]: run-099 started for wu-002 (attempt 2)
+      - generic [ref=e200] [cursor=pointer]:
+        - generic [ref=e201]: 10:28:44
+        - generic [ref=e202]: "[RUN]"
+        - generic [ref=e203]: run-098 failed for wu-002 (timeout)
+      - generic [ref=e204] [cursor=pointer]:
+        - generic [ref=e205]: 10:25:14
+        - generic [ref=e206]: "[RUN]"
+        - generic [ref=e207]: wu-001 completed successfully
+  - generic:
+    - generic [ref=e208]:
+      - img [ref=e210]
+      - textbox "Orchestrate a new flow, delegate to an agent, or ask a question..." [ref=e212]
+      - generic [ref=e213]:
+        - button "Attach context" [ref=e214] [cursor=pointer]:
+          - img [ref=e215]
+        - button "Voice" [ref=e217] [cursor=pointer]:
+          - img [ref=e218]
+        - button [ref=e221] [cursor=pointer]:
+          - img [ref=e222]
+    - generic:
+      - generic: Shift + Enter new line
+      - generic: Esc to cancel
+      - generic: "@ to mention agent"
+  - generic [ref=e224]:
+    - button "Zoom In" [ref=e225] [cursor=pointer]:
+      - img [ref=e226]
+    - button "Zoom Out" [ref=e228] [cursor=pointer]:
+      - img [ref=e229]
+    - button "Fit View" [ref=e231] [cursor=pointer]:
+      - img [ref=e232]
+    - button "Jump to Active (A)" [ref=e234] [cursor=pointer]:
+      - img [ref=e235]
+  - generic [ref=e248]:
+    - link "Canvas" [ref=e249] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e250]
+    - link "Tasks" [ref=e252] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e253]
+    - link "Runs" [ref=e255] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e256]
+    - link "Agents" [ref=e258] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e259]
+    - link "New Task" [ref=e262] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e263]

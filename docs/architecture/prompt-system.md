@@ -116,7 +116,7 @@ Campos recomendados:
   "query_reason": "Contexto inicial para work unit de prompting.",
   "memory_refs": ["mem_123", "mem_456"],
   "evidence_refs": [
-    "docs/adr/0007-prompt-composition-system.md",
+    "docs/adr/0007-agent-operational-cycle.md",
     "docs/architecture/memory-system.md"
   ],
   "token_budget": 1200,

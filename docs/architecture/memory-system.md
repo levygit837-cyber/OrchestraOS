@@ -8,7 +8,7 @@ A ideia e boa para o produto, desde que seja tratada como uma camada derivada, a
 
 ## Decisao De Produto
 
-A decisao arquitetural de adotar **Recursive Memory** esta documentada em [ADR 0012: Sistema De Memoria Recursiva](/docs/adr/0012-recursive-memory-system.md).
+A decisao arquitetural de adotar **Recursive Memory** esta documentada em [ADR 0009: Observabilidade, Event Store e Memoria Recursiva](/docs/adr/0009-observability-and-memory.md).
 
 Este documento detalha a implementacao tecnica, modelo de dados, pipeline de deduplicacao e operacao do sistema de memoria.
 
@@ -16,7 +16,7 @@ A memoria nao substitui repositorio, canvas, ADRs, issues, PRs, Event Store, Age
 
 ## Comparacao Com Tracing
 
-A fronteira entre tracing (Event Store) e memoria recursiva esta definida em [ADR 0009](/docs/adr/0009-trace-history-normalization.md) e [ADR 0012](/docs/adr/0012-recursive-memory-system.md).
+A fronteira entre tracing (Event Store) e memoria recursiva esta definida em [ADR 0009](/docs/adr/0009-observability-and-memory.md).
 
 Regra curta:
 
@@ -28,7 +28,7 @@ Regra curta:
 
 ## Principios
 
-Principios gerais estao em [ADR 0012](/docs/adr/0012-recursive-memory-system.md). Aqui estao as restricoes operacionais especificas:
+Principios gerais estao em [ADR 0009](/docs/adr/0009-observability-and-memory.md). Aqui estao as restricoes operacionais especificas:
 
 - Memorias stale devem ser expiradas, supersedidas ou rebaixadas no ranking.
 - Segredos, tokens, dados sensiveis e outputs perigosos nao devem ser indexados.

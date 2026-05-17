@@ -1,0 +1,333 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - img
+    - generic [ref=e4] [cursor=pointer]:
+      - generic [ref=e6]:
+        - img [ref=e7]
+        - generic [ref=e10]: Orch
+      - generic: Supervisor
+    - generic [ref=e12] [cursor=pointer]:
+      - img [ref=e15]
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: Codex-Builder
+        - paragraph [ref=e19]: Running (1 WU)
+      - generic "Sandbox healthy" [ref=e21]
+    - generic [ref=e23] [cursor=pointer]:
+      - img [ref=e25]
+      - generic [ref=e27]:
+        - paragraph [ref=e28]: Review-Bot
+        - paragraph [ref=e29]: Idle • Waiting
+      - generic "No active sandbox" [ref=e30]
+    - generic [ref=e32] [cursor=pointer]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: wu-001
+        - img [ref=e36]
+      - paragraph [ref=e38]: Criar schema base
+      - generic [ref=e40]:
+        - img [ref=e41]
+        - text: hard gate
+    - generic [ref=e44] [cursor=pointer]:
+      - generic [ref=e47]: wu-002
+      - paragraph [ref=e51]: Implementar envelope
+      - generic [ref=e53]:
+        - img [ref=e54]
+        - text: soft gate
+    - generic [ref=e57] [cursor=pointer]:
+      - generic [ref=e58]:
+        - generic [ref=e59]: wu-003
+        - img [ref=e60]
+      - paragraph [ref=e62]: Adicionar middleware
+      - generic [ref=e64]:
+        - img [ref=e65]
+        - text: policy gate
+    - generic [ref=e68] [cursor=pointer]:
+      - generic [ref=e69]:
+        - generic [ref=e70]: wu-004
+        - img [ref=e71]
+      - paragraph [ref=e73]: Validar E2E
+      - generic [ref=e75]:
+        - img [ref=e76]
+        - text: soft gate
+    - generic [ref=e79] [cursor=pointer]:
+      - generic [ref=e81]:
+        - generic [ref=e82]: wu-005
+        - img [ref=e83]
+      - paragraph [ref=e85]: Setup CI pipeline
+      - generic [ref=e87]:
+        - img [ref=e88]
+        - text: hard gate
+    - generic [ref=e91] [cursor=pointer]:
+      - generic [ref=e92]:
+        - generic [ref=e93]: wu-006
+        - img [ref=e94]
+      - paragraph [ref=e96]: Documentar API
+      - generic [ref=e98]:
+        - img [ref=e99]
+        - text: policy gate
+    - generic [ref=e101] [cursor=pointer]:
+      - img
+      - generic [ref=e102]:
+        - generic [ref=e104]: task-099
+        - generic [ref=e106]: Event Envelope
+        - generic "P0 - Critical priority" [ref=e107]
+    - generic:
+      - generic:
+        - generic: blocks
+      - generic:
+        - generic: artifact
+      - generic:
+        - generic: review
+  - generic [ref=e109]:
+    - img [ref=e111]
+    - generic [ref=e113]:
+      - paragraph [ref=e114]: Stall detected
+      - paragraph [ref=e115]: Codex-Builder idle for 5m on wu-002
+    - generic [ref=e116]:
+      - button "Investigate" [ref=e117] [cursor=pointer]
+      - button "Pause Agent" [ref=e118] [cursor=pointer]
+    - button [ref=e119] [cursor=pointer]:
+      - img [ref=e120]
+  - generic:
+    - generic [ref=e122]:
+      - generic [ref=e123]:
+        - img [ref=e125]
+        - generic [ref=e128]:
+          - generic [ref=e129]: OrchestraOS
+          - generic [ref=e130]: Canvas
+      - generic [ref=e131]:
+        - generic [ref=e132]: View
+        - generic [ref=e133]: task-099
+        - generic [ref=e134]: Event Envelope
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - button "All" [ref=e137] [cursor=pointer]
+        - button "Running" [ref=e138] [cursor=pointer]
+        - button "Pending" [ref=e139] [cursor=pointer]
+      - generic [ref=e140]:
+        - generic [ref=e143]: 2 Agents
+        - generic [ref=e147]: 2 Done
+        - generic [ref=e151]: 4 Pending
+      - button "2 Approve" [ref=e152] [cursor=pointer]:
+        - generic [ref=e153]:
+          - img [ref=e154]
+          - generic [ref=e156]: "2"
+        - generic [ref=e157]: Approve
+      - button "Notifications" [ref=e158] [cursor=pointer]:
+        - img [ref=e160]
+      - button "Settings" [ref=e163] [cursor=pointer]:
+        - img [ref=e164]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - heading "Pending Approvals 2" [level=3]:
+            - img
+            - text: Pending Approvals
+            - generic: "2"
+          - button:
+            - img
+  - generic [ref=e328]:
+    - generic [ref=e329]:
+      - generic [ref=e330]:
+        - img [ref=e332]
+        - generic [ref=e334]:
+          - heading "Review-Bot" [level=3] [ref=e768]
+          - paragraph [ref=e336]: No active session
+      - generic [ref=e337]:
+        - button "Pause" [ref=e338] [cursor=pointer]
+        - button "Stop" [ref=e339] [cursor=pointer]
+        - button [ref=e340] [cursor=pointer]:
+          - img [ref=e341]
+    - generic [ref=e343]:
+      - button "Chat" [ref=e344] [cursor=pointer]:
+        - img [ref=e345]
+        - text: Chat
+      - button "Checkpoints" [ref=e347] [cursor=pointer]:
+        - img [ref=e348]
+        - text: Checkpoints
+      - button "Prompts" [ref=e350] [cursor=pointer]:
+        - img [ref=e351]
+        - text: Prompts
+      - button "Artifacts" [ref=e353] [cursor=pointer]:
+        - img [ref=e354]
+        - text: Artifacts
+    - generic [ref=e769]:
+      - generic [ref=e770]:
+        - img [ref=e772]
+        - generic [ref=e774]:
+          - generic [ref=e775]:
+            - generic [ref=e776]: Review-Bot
+            - generic [ref=e777]: 10:20:00
+          - generic [ref=e779]:
+            - strong [ref=e780]: Review-Bot
+            - text: "initialized. Standing by for review requests. Current assignment:"
+            - emphasis [ref=e781]: Awaiting wu-002 completion for security review
+            - text: "Capabilities: StaticAnalysis, GitRead, Playwright"
+      - generic [ref=e782]:
+        - img [ref=e784]
+        - generic [ref=e786]:
+          - generic [ref=e787]:
+            - generic [ref=e788]: Review-Bot
+            - generic [ref=e789]: 10:20:30
+          - generic [ref=e791]:
+            - text: Scanning repository for existing security patterns... Found 12 existing security rules in
+            - code [ref=e792]: .security/rules.yml
+            - text: . Ready to apply them when wu-002 is submitted.
+      - generic [ref=e793]:
+        - img [ref=e795]
+        - generic [ref=e797]:
+          - generic [ref=e798]:
+            - generic [ref=e799]: Review-Bot
+            - generic [ref=e800]: 10:21:00
+          - generic [ref=e802]:
+            - text: ✓
+            - strong [ref=e803]: checkpoint-rb-001
+            - text: — Pre-review scan complete
+            - strong [ref=e804]: "Completed:"
+            - text: "• Repository security baseline captured • Dependency vulnerability scan: 0 critical, 2 low (dev-only) • Secret detection: clean"
+            - strong [ref=e805]: "Ready for:"
+            - text: • Code review on wu-002 • E2E validation on wu-004
+      - generic [ref=e806]:
+        - img [ref=e808]
+        - generic [ref=e810]:
+          - generic [ref=e811]:
+            - generic [ref=e812]: You
+            - generic [ref=e813]: 10:21:30
+          - generic [ref=e815]: Start reviewing wu-002 envelope implementation when ready.
+      - generic [ref=e816]:
+        - img [ref=e818]
+        - generic [ref=e820]:
+          - generic [ref=e821]:
+            - generic [ref=e822]: Review-Bot
+            - generic [ref=e823]: 10:21:35
+          - generic [ref=e825]:
+            - text: Acknowledged. I'll begin static analysis of
+            - code [ref=e826]: internal/envelope/
+            - text: as soon as Codex-Builder marks wu-002 complete.
+    - generic [ref=e691]:
+      - generic [ref=e692]:
+        - img [ref=e694]
+        - textbox "Message Codex-Builder..." [active] [ref=e696]
+        - button [ref=e697] [cursor=pointer]:
+          - img [ref=e698]
+      - generic [ref=e700]:
+        - generic [ref=e701]: Shift + Enter for new line
+        - generic [ref=e703]: Enter to send
+  - generic:
+    - generic:
+      - generic:
+        - heading "Prompt Composition" [level=3]:
+          - img
+          - text: Prompt Composition
+        - button:
+          - img
+  - generic [ref=e265]:
+    - generic [ref=e266]:
+      - heading "Inspector" [level=3] [ref=e267]:
+        - img [ref=e268]
+        - text: Inspector
+      - generic [ref=e270]:
+        - generic [ref=e272]: Live
+        - button [ref=e273] [cursor=pointer]:
+          - img [ref=e274]
+    - generic [ref=e276]:
+      - generic [ref=e747]:
+        - generic [ref=e748]:
+          - heading "Review-Bot" [level=2] [ref=e749]
+          - paragraph [ref=e750]: QA / Security Analyst
+        - generic [ref=e751]: Idle
+      - paragraph [ref=e752]: No active session.
+      - generic [ref=e753]:
+        - generic [ref=e754]:
+          - generic [ref=e755]: Current Task
+          - generic [ref=e756]: None
+        - generic [ref=e757]:
+          - generic [ref=e758]: Session Time
+          - generic [ref=e759]: "-"
+      - paragraph [ref=e760]: Capabilities
+      - generic [ref=e761]:
+        - generic [ref=e762]: StaticAnalysis
+        - generic [ref=e763]: GitRead
+        - generic [ref=e764]: Playwright
+      - generic [ref=e765]:
+        - button "View Session" [ref=e766] [cursor=pointer]
+        - button "View Run" [ref=e767]
+  - generic [ref=e167]:
+    - generic [ref=e168] [cursor=pointer]:
+      - heading "Event Stream" [level=3] [ref=e169]:
+        - img [ref=e170]
+        - text: Event Stream
+      - img [ref=e173]
+    - generic [ref=e175]:
+      - generic [ref=e176] [cursor=pointer]:
+        - generic [ref=e177]: 10:32:14
+        - generic [ref=e178]: "[RUN]"
+        - generic [ref=e179]: run-101 started for wu-002
+      - generic [ref=e180] [cursor=pointer]:
+        - generic [ref=e181]: 10:32:15
+        - generic [ref=e182]: "[TOOL]"
+        - generic [ref=e183]: Codex-Builder requests file_write(events.go)
+      - generic [ref=e184] [cursor=pointer]:
+        - generic [ref=e185]: 10:32:16
+        - generic [ref=e186]: "[CHK]"
+        - generic [ref=e187]: Checkpoint-003 reached by Codex-Builder
+      - generic [ref=e188] [cursor=pointer]:
+        - generic [ref=e189]: 10:32:20
+        - generic [ref=e190]: "[EVT]"
+        - generic [ref=e191]: Heartbeat from Review-Bot
+      - generic [ref=e192] [cursor=pointer]:
+        - generic [ref=e193]: 10:31:02
+        - generic [ref=e194]: "[RUN]"
+        - generic [ref=e195]: run-100 failed for wu-002 (linter error)
+      - generic [ref=e196] [cursor=pointer]:
+        - generic [ref=e197]: 10:30:14
+        - generic [ref=e198]: "[RUN]"
+        - generic [ref=e199]: run-099 started for wu-002 (attempt 2)
+      - generic [ref=e200] [cursor=pointer]:
+        - generic [ref=e201]: 10:28:44
+        - generic [ref=e202]: "[RUN]"
+        - generic [ref=e203]: run-098 failed for wu-002 (timeout)
+      - generic [ref=e204] [cursor=pointer]:
+        - generic [ref=e205]: 10:25:14
+        - generic [ref=e206]: "[RUN]"
+        - generic [ref=e207]: wu-001 completed successfully
+  - generic:
+    - generic [ref=e208]:
+      - img [ref=e210]
+      - textbox "Orchestrate a new flow, delegate to an agent, or ask a question..." [ref=e212]
+      - generic [ref=e213]:
+        - button "Attach context" [ref=e214] [cursor=pointer]:
+          - img [ref=e215]
+        - button "Voice" [ref=e217] [cursor=pointer]:
+          - img [ref=e218]
+        - button [ref=e221] [cursor=pointer]:
+          - img [ref=e222]
+    - generic:
+      - generic: Shift + Enter new line
+      - generic: Esc to cancel
+      - generic: "@ to mention agent"
+  - generic [ref=e224]:
+    - button "Zoom In" [ref=e225] [cursor=pointer]:
+      - img [ref=e226]
+    - button "Zoom Out" [ref=e228] [cursor=pointer]:
+      - img [ref=e229]
+    - button "Fit View" [ref=e231] [cursor=pointer]:
+      - img [ref=e232]
+    - button "Jump to Active (A)" [ref=e234] [cursor=pointer]:
+      - img [ref=e235]
+  - generic [ref=e248]:
+    - link "Canvas" [ref=e249] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e250]
+    - link "Tasks" [ref=e252] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e253]
+    - link "Runs" [ref=e255] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e256]
+    - link "Agents" [ref=e258] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e259]
+    - link "New Task" [ref=e262] [cursor=pointer]:
+      - /url: "#"
+      - img [ref=e263]

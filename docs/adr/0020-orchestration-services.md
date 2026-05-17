@@ -1,4 +1,8 @@
-# ADR 0020: Orchestrator Service e Loop de Orquestracao
+# ADR 0020: Serviços de Orquestração — OrchestratorService e AgentService
+
+**Status:** Consolidated (absorve: ADR 0021)  
+**Data original:** 2026-05-12  
+**Última atualização:** 2026-05-17
 
 ## Contexto
 
@@ -95,10 +99,76 @@ O `OrchestratorService` deve ser implementado em `internal/modules/orchestrator/
 - O primeiro corte sera sequencial e sem LLM. Paralelismo e decisoes inteligentes entram depois.
 - A implementacao deve reusar exclusivamente servicos de dominio existentes, nao repositorios diretos.
 
-## Alternativas consideradas
+---
 
-- **Orchestrator como agente LLM**: flexivel e inteligente, mas aumenta custo, latencia e superficie de falha antes de validar o fluxo basico.
-- **Orchestrator como script CLI**: rapido de implementar, mas fraco para testes, composicao e auditoria.
-- **Manter orquestracao manual**: funciona para prototipo, mas impede validacao E2E e adocao real do sistema.
-- **Workflow engine externa (Temporal, etc.)**: robusta para durabilidade e retry, mas adiciona dependencia pesada antes de validar os fluxos centrais do MVP.
-- **Orchestrator distribuido com filas**: escalavel, mas prematuro para 1-5 agentes locais.
+## 2. AgentService e Registro de Agentes
+
+### 2.1 Contexto adicional
+
+O OrchestraOS define `Agent` como entidade do domínio, mas não existia um serviço de domínio para agentes. Na prática, a CLI `run start` gerava um `AgentID` inline sem registro, e `AgentSessionService.Create()` aceitava qualquer `AgentID` sem validar existência.
+
+Com a introdução do `OrchestratorService`, que precisa criar agentes automaticamente para cada work unit, é necessário ter um serviço que registre, consulte e gerencie agentes.
+
+### 2.2 Decisão
+
+O OrchestraOS adicionará `AgentService` à lista de serviços de domínio aprovados.
+
+Responsabilidades iniciais:
+
+- `Create(ctx, input) -> Agent`: cria um agente com nome, `RuntimeType`, `SystemProfile` e persiste. Emite evento `agent.created`.
+- `GetByID(ctx, id) -> Agent`: consulta um agente por ID.
+- `FindOrCreate(ctx, profile, runtimeType) -> Agent`: busca agente disponível com o perfil solicitado ou cria um novo. Interface principal para o `OrchestratorService`.
+
+Validação: `AgentSessionService.Create()` deve validar que o `AgentID` referencia um agente existente.
+
+Perfis de agente válidos (definidos no planner):
+
+- `code_worker`
+- `docs_writer`
+- `reviewer`
+- `debugger`
+- `default`
+
+Runtime types aceitos:
+
+- `fake`
+- `gemini`
+- `codex_cli`
+- `external`
+
+No primeiro corte, cada work unit cria um agente novo via `FindOrCreate`. Reutilização de agentes ociosos é direção futura.
+
+O `AgentService` deve ser implementado em `internal/modules/agent/service.go`.
+
+### 2.3 Consequências (AgentService)
+
+- O `OrchestratorService` pode criar agentes automaticamente para cada work unit.
+- A `AgentSession` passa a referenciar agentes reais e consultáveis.
+- O sistema ganha registro auditável de quais agentes existem e qual seu perfil.
+- A CLI `run start` deve migrar de gerar `AgentID` inline para usar `AgentService.FindOrCreate()`.
+- A validação de `AgentID` em `AgentSessionService.Create()` pode quebrar testes existentes. Testes devem ser atualizados para criar agentes via serviço.
+
+### 2.4 Alternativas consideradas (AgentService)
+
+- **Manter agentes como IDs soltos sem registro**: simples, mas impede match por perfil, consulta de histórico e validação de integridade.
+- **Criar AgentPool com capacidades avançadas**: útil para escala, mas prematuro para o primeiro corte.
+- **Embutir lógica de agentes no OrchestratorService**: reduziria um serviço, mas violaria separação de responsabilidades.
+- **Registrar agentes apenas no Event Store sem projeção**: manteria canonicalidade, mas dificultaria consulta rápida por perfil e status.
+
+---
+
+## Apêndice A: Histórico de Evolução
+
+| Data | Evento | ADR Original |
+| --- | --- | --- |
+| 2026-05-12 | OrchestratorService definido como loop de orquestração | ADR 0020 |
+| 2026-05-12 | AgentService definido para registro e match de agentes | ADR 0021 |
+| 2026-05-17 | Ambos consolidados neste documento único | — |
+
+## Apêndice B: Alternativas Consideradas (Orquestração)
+
+- **Orchestrator como agente LLM**: flexível e inteligente, mas aumenta custo, latência e superfície de falha antes de validar o fluxo básico.
+- **Orchestrator como script CLI**: rápido de implementar, mas fraco para testes, composição e auditoria.
+- **Manter orquestração manual**: funciona para protótipo, mas impede validação E2E e adoção real do sistema.
+- **Workflow engine externa (Temporal, etc.)**: robusta para durabilidade e retry, mas adiciona dependência pesada antes de validar os fluxos centrais do MVP.
+- **Orchestrator distribuído com filas**: escalável, mas prematuro para 1-5 agentes locais.
