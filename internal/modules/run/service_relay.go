@@ -80,7 +80,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 				return StatusFailed, lastErr
 			}
 			lastErr := fmt.Errorf("runtime event receive error: %w", err)
-			_ = r.handleRuntimeError(ctx, config, lastErr)
+			_ = r.handleRuntimeError(ctx, config, lastErr) // ignore: error already captured in lastErr
 			return StatusFailed, lastErr
 		}
 
@@ -99,7 +99,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 		case "agent.failed":
 			processErr = r.handleFailed(ctx, config, event)
 			if processErr != nil {
-				_ = r.handleRuntimeError(ctx, config, processErr)
+				_ = r.handleRuntimeError(ctx, config, processErr) // ignore: error already captured in processErr
 			}
 			return StatusFailed, processErr
 		case "agent.tool_requested":
@@ -109,14 +109,14 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 		}
 
 		if processErr != nil {
-			_ = r.handleRuntimeError(ctx, config, processErr)
+			_ = r.handleRuntimeError(ctx, config, processErr) // ignore: error already captured in processErr
 			return StatusFailed, processErr
 		}
 
 		// Auto-checkpoint is evaluated for all event types; only matching
 		// triggers (tool_request, tool_executed, completed) produce a checkpoint.
 		if err := r.maybeAutoCheckpoint(ctx, config, event); err != nil {
-			_ = r.handleRuntimeError(ctx, config, err)
+			_ = r.handleRuntimeError(ctx, config, err) // ignore: error already captured in err
 			return StatusFailed, err
 		}
 
@@ -155,7 +155,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 		Justification: justification,
 	}); err != nil {
 		lastErr := fmt.Errorf("failed to complete run: %w", err)
-		_ = r.handleRuntimeError(ctx, config, lastErr)
+		_ = r.handleRuntimeError(ctx, config, lastErr) // ignore: error already captured in lastErr
 		return StatusFailed, lastErr
 	}
 

@@ -1,0 +1,225 @@
+name: PR Gate
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # PR Gate: blocks merge if ANY check fails.
+  # Each job has a clear name so the failure reason is visible in the PR UI.
+  # ---------------------------------------------------------------------------
+
+  build:
+    name: PR Gate / Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go build ./...
+
+  vet:
+    name: PR Gate / go vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go vet ./...
+
+  unit-tests:
+    name: PR Gate / Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./... -race -count=1
+
+  lint:
+    name: PR Gate / Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.6
+          args: --timeout=5m
+
+  # ===========================================================================
+  # ARCHITECTURE GATES — These are the critical rules that must never be broken.
+  # ===========================================================================
+
+  golden-rule-modules:
+    name: PR Gate / Golden Rule — No Cross-Module Imports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: A module in internal/modules/* imported another module."
+          echo "Modules MUST be autonomous (ADR-0022). Only DI interface return types are allowed (ADR-0026)."
+          go test ./tests/architecture/... -run TestModuleBoundaries -v -count=1
+
+  golden-rule-importers:
+    name: PR Gate / Golden Rule — Only Allowed Packages Import Modules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: A package outside orchestrator/bootstrap/cmd imported internal/modules/*."
+          echo "Only orchestrator (coordination), bootstrap (DI wiring), and cmd (entrypoint) may import modules."
+          go test ./tests/architecture/... -run TestOnlyCoordinationImportsModules -v -count=1
+
+  golden-rule-transition-leaf:
+    name: PR Gate / Golden Rule — Transition Package Is Leaf
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: internal/core/transition imported a module."
+          echo "transition must be a leaf package with no module dependencies."
+          go test ./tests/architecture/... -run TestTransitionPackageIsLeaf -v -count=1
+
+  golden-rule-no-coordination:
+    name: PR Gate / Golden Rule — No coordination Package References
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: A module still imports the removed coordination package."
+          echo "internal/core/coordination was removed per ADR-0028. Use internal/core/transition for shared types."
+          go test ./tests/architecture/... -run TestModulesDoNotImportCoordination -v -count=1
+
+  module-structure:
+    name: PR Gate / Module Structure Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: A module is missing mandatory files (doc.go, README.md, CONTRACTS.md, etc.)."
+          go test ./tests/architecture/... -run TestModuleRequiredFiles -v -count=1
+          go test ./tests/architecture/... -run TestCoreRequiredFiles -v -count=1
+
+  contract-sync:
+    name: PR Gate / Contract Documentation Sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: CONTRACTS.md or README.md is out of sync with code."
+          echo "Every status constant must be documented. Every import must be listed in README.md Allowed Dependencies."
+          go test ./tests/architecture/... -run TestContractsSync -v -count=1
+
+  queries-purity:
+    name: PR Gate / Queries Purity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: A queries.go file contains functions, non-stdlib imports, or non-string declarations."
+          echo "queries.go must only contain SQL string constants/variables (ADR-0028)."
+          go test ./tests/architecture/... -run TestQueriesPurity -v -count=1
+
+  # ===========================================================================
+  # ANOMALY DETECTION — Catches patterns that violate coding standards.
+  # ===========================================================================
+
+  anomaly-filenames:
+    name: PR Gate / Anomaly — Forbidden Filenames
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: Forbidden filename detected (helpers.go, utils.go, common.go, base.go, misc.go, kit.go, ops.go, etc.)."
+          echo "See ADR-0028 Section 2.2.2 for the full list of prohibited names."
+          go test ./tests/architecture/... -run TestForbiddenFilenames -v -count=1
+
+  anomaly-code:
+    name: PR Gate / Anomaly — Code Anti-Patterns
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: Code anti-pattern detected (panic, fmt.Println, inline SQL, ignored errors without comment)."
+          echo "See docs/development/CODING_STANDARDS.md for remediation."
+          go test ./tests/architecture/... -run TestCodeAnomalies -v -count=1
+
+  anomaly-domain:
+    name: PR Gate / Anomaly — Domain Package Purity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: Entity structs found in internal/domain/*."
+          echo "Entity structs must live in their respective modules (ADR-0022). internal/domain is for shared infrastructure types only."
+          go test ./tests/architecture/... -run TestDomainPurity -v -count=1
+
+  anomaly-coordination:
+    name: PR Gate / Anomaly — coordination Package Fully Removed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: References to removed internal/core/coordination package detected."
+          echo "coordination/ was removed per ADR-0028. Its logic was distributed to owner modules."
+          go test ./tests/architecture/... -run TestCoordinationRemoved -v -count=1

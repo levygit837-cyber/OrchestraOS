@@ -59,7 +59,6 @@ Critical invariants:
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports
-- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of service logic from other modules.
 
 ---

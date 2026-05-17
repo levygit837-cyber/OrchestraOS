@@ -28,7 +28,7 @@ func CommitTx(tx *sql.Tx, op string) error {
 
 // RollbackTx rolls back a transaction. It is safe to call on a committed or rolled-back tx.
 func RollbackTx(tx *sql.Tx) {
-	_ = tx.Rollback()
+	_ = tx.Rollback() // ignore: Rollback on committed/rolled-back tx is always safe
 }
 
 // EnsureRowsAffected checks that a SQL execution affected at least one row.

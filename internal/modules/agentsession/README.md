@@ -69,7 +69,6 @@ starting → running → stopping → stopped
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports
-- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `run.Service` or `agent.Service`
 
 ---

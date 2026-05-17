@@ -376,10 +376,10 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 	// Ensure runtime is stopped
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer stopCancel()
-	_ = runtime.Stop(stopCtx)
+	_ = runtime.Stop(stopCtx) // ignore: best effort cleanup, error logged elsewhere
 
 	// Ensure agent session is stopped (best effort cleanup)
-	_, _ = s.deps.AgentSessionService.Stop(ctx, sessionCreateResult.Value.ID, transition.TransitionInput{
+	_, _ = s.deps.AgentSessionService.Stop(ctx, sessionCreateResult.Value.ID, transition.TransitionInput{ //nolint:errcheck // best effort cleanup
 		Runtime:       options.RuntimeType,
 		Justification: "work unit execution completed",
 	})

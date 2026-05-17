@@ -136,7 +136,7 @@ func (s *AgentSessionService) Connect(ctx context.Context, sessionID, connection
 		if sandboxID != "" {
 			session.SandboxID = sandboxID
 		}
-		res, err := tx.ExecContext(ctx, `UPDATE agent_sessions SET connection_id = $2, sandbox_id = $3, updated_at = $4 WHERE id = $1`, session.ID, session.ConnectionID, session.SandboxID, time.Now().UTC())
+		res, err := tx.ExecContext(ctx, QueryUpdateConnection, session.ID, session.ConnectionID, session.SandboxID, time.Now().UTC())
 		if err != nil {
 			return apperrors.Wrap(apperrors.CodePersistence, "agent_session_service.update_connection", err)
 		}

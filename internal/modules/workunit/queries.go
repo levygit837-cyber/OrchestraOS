@@ -20,4 +20,7 @@ const (
 
 	QueryUpdateStatus = `
 		UPDATE work_units SET status = $2, updated_at = $3 WHERE id = $1`
+
+	QueryUpdateAssignment = `
+		UPDATE work_units SET assigned_agent_profile = $2, updated_at = $3 WHERE id = $1`
 )

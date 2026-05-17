@@ -67,9 +67,8 @@ created → running → validating → completed
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports
-- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `task.Service` or `workunit.Service`
-- Cross-module mutations outside `core/coordination`
+- Cross-module mutations outside `orchestrator/` module
 
 ---
 

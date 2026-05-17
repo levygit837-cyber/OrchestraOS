@@ -21,4 +21,22 @@ const (
 		    last_checkpoint_at = COALESCE($4, last_checkpoint_at),
 		    updated_at = $5
 		WHERE id = $1`
+
+	QueryUpdateHeartbeat = `
+		UPDATE agent_sessions SET last_heartbeat_at = $2, updated_at = $3 WHERE id = $1`
+
+	QueryUpdateHeartbeatWithEvent = `
+		UPDATE agent_sessions SET last_heartbeat_at = $2, last_seen_event_id = COALESCE($3, last_seen_event_id), updated_at = $4 WHERE id = $1`
+
+	QueryUpdateCheckpoint = `
+		UPDATE agent_sessions SET last_checkpoint_at = $2, updated_at = $3 WHERE id = $1`
+
+	QueryUpdateCheckpointWithEvent = `
+		UPDATE agent_sessions SET last_checkpoint_at = $2, last_seen_event_id = COALESCE($3, last_seen_event_id), updated_at = $4 WHERE id = $1`
+
+	QueryUpdateRecoverableState = `
+		UPDATE agent_sessions SET recoverable_state = $2, updated_at = $3 WHERE id = $1`
+
+	QueryUpdateConnection = `
+		UPDATE agent_sessions SET connection_id = $2, sandbox_id = $3, updated_at = $4 WHERE id = $1`
 )

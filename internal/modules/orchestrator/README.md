@@ -15,7 +15,7 @@ This module DOES NOT:
 - Implement runtime execution logic (belongs to `agent/`).
 - Manage persistent agent or session state directly (belongs to `agent/` and `agentsession/`).
 - Compose prompts directly (belongs to `prompt/`).
-- Perform low-level transaction coordination (belongs to `core/coordination/`).
+- Perform low-level transaction coordination (belongs to owner modules via DI interfaces).
 
 ---
 
@@ -60,7 +60,6 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
-- `internal/core/coordination` (ONLY module allowed to import this package)
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 - `internal/modules/review`: DI interface return type `*review.Review` in ReviewManager (ADR-0026)
 - `internal/modules/taskgraph`: DI interface return type `*taskgraph.TaskGraph` in TaskGraphManager (ADR-0026)
