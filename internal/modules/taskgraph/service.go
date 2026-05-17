@@ -30,11 +30,13 @@ type TaskReader interface {
 }
 
 // WorkUnitCreator abstracts work-unit writes to avoid importing the workunit module.
+// TODO[ADR-0022]: migrar para *workunit.WorkUnit
 type WorkUnitCreator interface {
 	Create(wu *domain.WorkUnit) error
 }
 
 // WorkUnitLister abstracts work-unit reads to avoid importing the workunit module.
+// TODO[ADR-0022]: migrar para []workunit.WorkUnit
 type WorkUnitLister interface {
 	ListByTaskGraph(graphID string) ([]domain.WorkUnit, error)
 }

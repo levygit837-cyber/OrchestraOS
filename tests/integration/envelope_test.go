@@ -324,14 +324,14 @@ func createTestWorkUnit(t *testing.T, db *sql.DB, taskID string) string {
 
 	taskGraphID := createTestTaskGraph(t, db, taskID)
 	repo := workunitmod.NewRepository(db)
-	wu := &domain.WorkUnit{
+	wu := &workunitmod.WorkUnit{
 		ID:                   uuid.New().String(),
 		TaskID:               taskID,
 		TaskGraphID:          taskGraphID,
 		Title:                "Integration Test Work Unit",
 		Objective:            "Validate event persistence",
 		AssignedAgentProfile: "default",
-		Status:               domain.WorkUnitStatusCreated,
+		Status:               workunitmod.StatusCreated,
 	}
 	if err := repo.Create(wu); err != nil {
 		t.Fatalf("Failed to create test work unit: %v", err)

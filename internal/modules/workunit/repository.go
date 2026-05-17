@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // Repository handles work unit persistence
@@ -27,7 +26,7 @@ func NewRepository(db db.DBTX) *Repository {
 }
 
 // Create inserts a new work unit
-func (r *Repository) Create(wu *domain.WorkUnit) error {
+func (r *Repository) Create(wu *WorkUnit) error {
 	if wu.ID == "" {
 		wu.ID = uuid.New().String()
 	}
@@ -84,20 +83,20 @@ func (r *Repository) Create(wu *domain.WorkUnit) error {
 }
 
 // GetByID retrieves a work unit by ID
-func (r *Repository) GetByID(id string) (*domain.WorkUnit, error) {
+func (r *Repository) GetByID(id string) (*WorkUnit, error) {
 	row := r.db.QueryRow(QueryGetByID, id)
 	return r.scanWorkUnit(row)
 }
 
 // ListByTask retrieves all work units for a task
-func (r *Repository) ListByTask(taskID string) ([]domain.WorkUnit, error) {
+func (r *Repository) ListByTask(taskID string) ([]WorkUnit, error) {
 	rows, err := r.db.Query(QueryListByTask, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list work units: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var workUnits []domain.WorkUnit
+	var workUnits []WorkUnit
 	for rows.Next() {
 		wu, err := r.scanWorkUnit(rows)
 		if err != nil {
@@ -110,14 +109,14 @@ func (r *Repository) ListByTask(taskID string) ([]domain.WorkUnit, error) {
 }
 
 // ListByTaskGraph retrieves all work units for a task graph.
-func (r *Repository) ListByTaskGraph(taskGraphID string) ([]domain.WorkUnit, error) {
+func (r *Repository) ListByTaskGraph(taskGraphID string) ([]WorkUnit, error) {
 	rows, err := r.db.Query(QueryListByTaskGraph, taskGraphID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list work units by task graph: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var workUnits []domain.WorkUnit
+	var workUnits []WorkUnit
 	for rows.Next() {
 		wu, err := r.scanWorkUnit(rows)
 		if err != nil {
@@ -140,8 +139,8 @@ func (r *Repository) UpdateStatus(id string, status Status) error {
 
 func (r *Repository) scanWorkUnit(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.WorkUnit, error) {
-	var wu domain.WorkUnit
+}) (*WorkUnit, error) {
+	var wu WorkUnit
 	var ownedPathsJSON, readPathsJSON, acceptanceCriteriaJSON, validationPlanJSON, dependsOnJSON []byte
 	var createdAt, updatedAt time.Time
 

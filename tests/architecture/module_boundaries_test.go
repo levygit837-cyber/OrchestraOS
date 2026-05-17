@@ -22,9 +22,12 @@ import (
 //     add the entry here and document it in the migration plan.
 //
 // Current allowed imports:
-//   run -> task: run.TaskReader returns *task.Task
+//
+//	run -> task: run.TaskReader returns *task.Task
+//	workunit -> task: workunit.TaskReader returns *task.Task
 var allowedModuleImports = map[string]map[string]bool{
-	"run": {"task": true},
+	"run":      {"task": true},
+	"workunit": {"task": true},
 }
 
 // leafModules must not import any other module under internal/modules/.
@@ -78,9 +81,9 @@ func TestModuleBoundaries(t *testing.T) {
 					if !ok || !allowed[importedMod] {
 						t.Errorf(
 							"module %q imports %q, which is not in the allowed list. "+
-							"Cross-module imports are allowed ONLY for DI interface return types (ADR-0026). "+
-							"If this import is for a DI interface type, add it to allowedModuleImports and document in the migration plan. "+
-							"If this import is for a service/repository/business logic, refactor to use DI or move to core/coordination.",
+								"Cross-module imports are allowed ONLY for DI interface return types (ADR-0026). "+
+								"If this import is for a DI interface type, add it to allowedModuleImports and document in the migration plan. "+
+								"If this import is for a service/repository/business logic, refactor to use DI or move to core/coordination.",
 							modName, importedMod,
 						)
 					}
