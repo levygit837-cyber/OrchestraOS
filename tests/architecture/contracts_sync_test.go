@@ -10,15 +10,6 @@ import (
 	"testing"
 )
 
-// modulesWithStateMachine are modules that define status constants and
-// therefore must have a State Machine section in their CONTRACTS.md.
-var modulesWithStateMachine = map[string]bool{
-	"task":         true,
-	"workunit":     true,
-	"run":          true,
-	"agentsession": true,
-}
-
 // TestContractsSync verifies that CONTRACTS.md files stay in sync with code.
 func TestContractsSync(t *testing.T) {
 	modulesDir := "../../internal/modules"

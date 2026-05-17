@@ -32,9 +32,11 @@ import (
 // For full contracts, read CONTRACTS.md in this directory.
 
 //go:embed README.md
+//nolint:unused // embed placeholder for architecture test
 var _readme string
 
 //go:embed CONTRACTS.md
+//nolint:unused // embed placeholder for architecture test
 var _contracts string
 
 var ModuleContract = struct {

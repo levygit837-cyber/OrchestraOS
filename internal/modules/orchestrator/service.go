@@ -166,8 +166,6 @@ func (s *Service) RunTask(ctx context.Context, taskID string, options RunTaskOpt
 
 // executeWorkUnit executes a single work unit.
 func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task *domain.Task, options RunTaskOptions) (*WorkUnitExecutionResult, error) {
-	const op = "orchestrator.execute_work_unit"
-
 	result := &WorkUnitExecutionResult{
 		WorkUnitID: wu.ID,
 	}

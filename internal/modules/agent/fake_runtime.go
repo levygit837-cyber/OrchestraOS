@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/google/uuid"
@@ -262,10 +261,4 @@ func (f *FakeRuntime) emitEvent(eventType, version string, payload interface{}) 
 	default:
 		// Channel full, drop event (for simulation purposes)
 	}
-}
-
-// Random failure simulation
-func (f *FakeRuntime) maybeFail() bool {
-	// 10% chance of simulated failure
-	return rand.Float32() < 0.1
 }

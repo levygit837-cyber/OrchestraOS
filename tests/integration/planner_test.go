@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -9,16 +8,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
-
-// fakePlanner is a test double that returns a predetermined plan.
-type fakePlanner struct {
-	plan *taskgraphmod.GraphPlan
-	err  error
-}
-
-func (f *fakePlanner) Plan(ctx context.Context, task *domain.Task) (*taskgraphmod.GraphPlan, error) {
-	return f.plan, f.err
-}
 
 func TestPlannerValidator_ValidPlan(t *testing.T) {
 	plan := &taskgraphmod.GraphPlan{

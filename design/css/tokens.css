@@ -1,0 +1,75 @@
+/* OrchestraOS Design Tokens — Dark Theme */
+
+:root {
+  /* Backgrounds */
+  --bg-primary:   #0B0C10;
+  --bg-secondary: #1F2833;
+  --bg-tertiary:  #2C3E50;
+  --bg-hover:     #354A5F;
+  --bg-active:    #2A3D52;
+
+  /* Text */
+  --text-primary:   #C5C6C7;
+  --text-secondary: #8D99AE;
+  --text-muted:     #5D6D7E;
+  --text-inverse:   #0B0C10;
+
+  /* Accents */
+  --accent:        #45A29E;
+  --accent-light:  #66FCF1;
+  --accent-dark:   #2D6A67;
+  --accent-glow:   rgba(102, 252, 241, 0.25);
+
+  /* Semantic */
+  --success:       #2ECC71;
+  --success-dim:   rgba(46, 204, 113, 0.15);
+  --error:         #E74C3C;
+  --error-dim:     rgba(231, 76, 60, 0.15);
+  --warning:       #F39C12;
+  --warning-dim:   rgba(243, 156, 18, 0.15);
+  --info:          #3498DB;
+  --info-dim:      rgba(52, 152, 219, 0.15);
+
+  /* Agent status colors */
+  --status-pending:  #8D99AE;
+  --status-running: #66FCF1;
+  --status-completed: #2ECC71;
+  --status-failed:    #E74C3C;
+  --status-paused:    #F39C12;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --text-xs:  12px;
+  --text-sm:  14px;
+  --text-base: 16px;
+  --text-lg:  18px;
+  --text-xl:  24px;
+  --text-2xl: 32px;
+
+  /* Borders */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-color: rgba(141, 153, 174, 0.15);
+  --border-color-hover: rgba(141, 153, 174, 0.30);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 64px;
+  --header-height: 56px;
+}
