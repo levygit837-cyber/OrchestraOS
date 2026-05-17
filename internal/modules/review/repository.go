@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // Repository handles review persistence
@@ -23,7 +22,7 @@ func NewRepository(database db.DBTX) *Repository {
 }
 
 // Create inserts a new review
-func (r *Repository) Create(review *domain.Review) error {
+func (r *Repository) Create(review *Review) error {
 	if review.ID == "" {
 		review.ID = uuid.New().String()
 	}
@@ -61,20 +60,20 @@ func (r *Repository) Create(review *domain.Review) error {
 }
 
 // GetByID retrieves a review by ID
-func (r *Repository) GetByID(ctx context.Context, id string) (*domain.Review, error) {
+func (r *Repository) GetByID(ctx context.Context, id string) (*Review, error) {
 	row := r.db.QueryRowContext(ctx, QueryGetByID, id)
 	return r.scanReview(row)
 }
 
 // ListByTask retrieves all reviews for a task
-func (r *Repository) ListByTask(ctx context.Context, taskID string) ([]*domain.Review, error) {
+func (r *Repository) ListByTask(ctx context.Context, taskID string) ([]*Review, error) {
 	rows, err := r.db.QueryContext(ctx, QueryListByTask, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list reviews by task: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var reviews []*domain.Review
+	var reviews []*Review
 	for rows.Next() {
 		review, err := r.scanReview(rows)
 		if err != nil {
@@ -87,14 +86,14 @@ func (r *Repository) ListByTask(ctx context.Context, taskID string) ([]*domain.R
 }
 
 // ListPending retrieves all pending or in_progress reviews
-func (r *Repository) ListPending(ctx context.Context) ([]*domain.Review, error) {
+func (r *Repository) ListPending(ctx context.Context) ([]*Review, error) {
 	rows, err := r.db.QueryContext(ctx, QueryListPending)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pending reviews: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var reviews []*domain.Review
+	var reviews []*Review
 	for rows.Next() {
 		review, err := r.scanReview(rows)
 		if err != nil {
@@ -107,7 +106,7 @@ func (r *Repository) ListPending(ctx context.Context) ([]*domain.Review, error) 
 }
 
 // ExistsActiveByWorkUnitAndGate checks if an active review exists for a work unit + gate
-func (r *Repository) ExistsActiveByWorkUnitAndGate(workUnitID string, gate domain.ValidationGate) (bool, error) {
+func (r *Repository) ExistsActiveByWorkUnitAndGate(workUnitID string, gate ValidationGate) (bool, error) {
 	var exists bool
 	err := r.db.QueryRow(QueryExistsActiveByWorkUnitAndGate, workUnitID, gate).Scan(&exists)
 	if err != nil {
@@ -117,7 +116,7 @@ func (r *Repository) ExistsActiveByWorkUnitAndGate(workUnitID string, gate domai
 }
 
 // ExistsActiveByRunAndGate checks if an active review exists for a run + gate
-func (r *Repository) ExistsActiveByRunAndGate(runID string, gate domain.ValidationGate) (bool, error) {
+func (r *Repository) ExistsActiveByRunAndGate(runID string, gate ValidationGate) (bool, error) {
 	var exists bool
 	err := r.db.QueryRow(QueryExistsActiveByRunAndGate, runID, gate).Scan(&exists)
 	if err != nil {
@@ -127,7 +126,7 @@ func (r *Repository) ExistsActiveByRunAndGate(runID string, gate domain.Validati
 }
 
 // ExistsActiveByTaskAndGate checks if an active review exists for a task + gate
-func (r *Repository) ExistsActiveByTaskAndGate(taskID string, gate domain.ValidationGate) (bool, error) {
+func (r *Repository) ExistsActiveByTaskAndGate(taskID string, gate ValidationGate) (bool, error) {
 	var exists bool
 	err := r.db.QueryRow(QueryExistsActiveByTaskAndGate, taskID, gate).Scan(&exists)
 	if err != nil {
@@ -137,7 +136,7 @@ func (r *Repository) ExistsActiveByTaskAndGate(taskID string, gate domain.Valida
 }
 
 // UpdateStatus updates the status and optional fields of a review
-func (r *Repository) UpdateStatus(review *domain.Review) error {
+func (r *Repository) UpdateStatus(review *Review) error {
 	now := time.Now().UTC()
 	review.UpdatedAt = now
 
@@ -169,8 +168,8 @@ func (r *Repository) UpdateStatus(review *domain.Review) error {
 
 func (r *Repository) scanReview(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.Review, error) {
-	var review domain.Review
+}) (*Review, error) {
+	var review Review
 	var runID, workUnitID, taskID, agentSessionID, reviewerAgentID sql.NullString
 	var verdictReason sql.NullString
 	var evidenceRefs []byte
@@ -232,7 +231,7 @@ func (r *Repository) scanReview(scanner interface {
 		}
 	}
 	if len(criteriaCheckedJSON) > 0 {
-		var criteria []domain.ReviewCriteriaChecked
+		var criteria []CriteriaChecked
 		if err := json.Unmarshal(criteriaCheckedJSON, &criteria); err == nil {
 			review.CriteriaChecked = criteria
 		}

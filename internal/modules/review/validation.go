@@ -3,21 +3,20 @@ package review
 import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-func validateGateType(gate domain.ValidationGate, op string) error {
+func validateGateType(gate ValidationGate, op string) error {
 	switch gate {
-	case domain.ValidationGateHard, domain.ValidationGateSoft, domain.ValidationGatePolicy:
+	case GateHard, GateSoft, GatePolicy:
 		return nil
 	default:
 		return apperrors.New(apperrors.CodeInvalidInput, op, "invalid gate_type")
 	}
 }
 
-func validateVerdict(verdict domain.ReviewDecision, op string) error {
+func validateVerdict(verdict Decision, op string) error {
 	switch verdict {
-	case domain.ReviewStatusApproved, domain.ReviewStatusChangesRequested, domain.ReviewStatusNeedsDiscussion:
+	case StatusApproved, StatusChangesRequested, StatusNeedsDiscussion:
 		return nil
 	default:
 		return apperrors.New(apperrors.CodeInvalidInput, op, "invalid verdict")

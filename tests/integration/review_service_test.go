@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
 )
 
@@ -21,15 +20,15 @@ func TestReviewServiceCreateAndGet(t *testing.T) {
 	result, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err != nil {
 		t.Fatalf("create review: %v", err)
 	}
-	if result.Value.Status != domain.ReviewStatusPending {
+	if result.Value.Status != reviewmod.StatusPending {
 		t.Fatalf("expected status pending, got %s", result.Value.Status)
 	}
-	if result.Value.GateType != domain.ValidationGateHard {
+	if result.Value.GateType != reviewmod.GateHard {
 		t.Fatalf("expected gate hard, got %s", result.Value.GateType)
 	}
 
@@ -57,7 +56,7 @@ func TestReviewServiceStartAndSubmitVerdict(t *testing.T) {
 	created, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateSoft,
+		GateType:   reviewmod.GateSoft,
 	})
 	if err != nil {
 		t.Fatalf("create review: %v", err)
@@ -69,21 +68,21 @@ func TestReviewServiceStartAndSubmitVerdict(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start review: %v", err)
 	}
-	if started.Value.Status != domain.ReviewStatusInProgress {
+	if started.Value.Status != reviewmod.StatusInProgress {
 		t.Fatalf("expected status in_progress, got %s", started.Value.Status)
 	}
 
-	verdicts := []domain.ReviewDecision{
-		domain.ReviewStatusApproved,
-		domain.ReviewStatusChangesRequested,
-		domain.ReviewStatusNeedsDiscussion,
+	verdicts := []reviewmod.Decision{
+		reviewmod.StatusApproved,
+		reviewmod.StatusChangesRequested,
+		reviewmod.StatusNeedsDiscussion,
 	}
 	for _, verdict := range verdicts {
 		// Create a fresh review for each verdict to avoid immutability conflict
 		review, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 			TaskID:     taskID,
 			WorkUnitID: workUnitID,
-			GateType:   domain.ValidationGateSoft,
+			GateType:   reviewmod.GateSoft,
 		})
 		if err != nil {
 			t.Fatalf("create review for verdict %s: %v", verdict, err)
@@ -97,7 +96,7 @@ func TestReviewServiceStartAndSubmitVerdict(t *testing.T) {
 			Verdict:      verdict,
 			Reason:       "test verdict",
 			EvidenceRefs: []string{"evidence:1"},
-			CriteriaChecked: []domain.ReviewCriteriaChecked{
+			CriteriaChecked: []reviewmod.CriteriaChecked{
 				{Criterion: "tests pass", Passed: true},
 			},
 		})
@@ -128,7 +127,7 @@ func TestReviewServiceVerdictImmutable(t *testing.T) {
 	created, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err != nil {
 		t.Fatalf("create review: %v", err)
@@ -139,7 +138,7 @@ func TestReviewServiceVerdictImmutable(t *testing.T) {
 
 	_, err = reviewService.SubmitVerdict(ctx, created.Value.ID, reviewmod.SubmitVerdictInput{
 		AgentID: "agent-reviewer",
-		Verdict: domain.ReviewStatusApproved,
+		Verdict: reviewmod.StatusApproved,
 		Reason:  "first verdict",
 	})
 	if err != nil {
@@ -148,7 +147,7 @@ func TestReviewServiceVerdictImmutable(t *testing.T) {
 
 	_, err = reviewService.SubmitVerdict(ctx, created.Value.ID, reviewmod.SubmitVerdictInput{
 		AgentID: "agent-reviewer",
-		Verdict: domain.ReviewStatusChangesRequested,
+		Verdict: reviewmod.StatusChangesRequested,
 		Reason:  "second verdict",
 	})
 	if err == nil {
@@ -172,7 +171,7 @@ func TestReviewServiceListPending(t *testing.T) {
 	pending1, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err != nil {
 		t.Fatalf("create review 1: %v", err)
@@ -180,7 +179,7 @@ func TestReviewServiceListPending(t *testing.T) {
 	pending2, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateSoft,
+		GateType:   reviewmod.GateSoft,
 	})
 	if err != nil {
 		t.Fatalf("create review 2: %v", err)
@@ -188,7 +187,7 @@ func TestReviewServiceListPending(t *testing.T) {
 	completed, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGatePolicy,
+		GateType:   reviewmod.GatePolicy,
 	})
 	if err != nil {
 		t.Fatalf("create review 3: %v", err)
@@ -198,7 +197,7 @@ func TestReviewServiceListPending(t *testing.T) {
 	}
 	if _, err := reviewService.SubmitVerdict(ctx, completed.Value.ID, reviewmod.SubmitVerdictInput{
 		AgentID: "agent-reviewer",
-		Verdict: domain.ReviewStatusApproved,
+		Verdict: reviewmod.StatusApproved,
 		Reason:  "done",
 	}); err != nil {
 		t.Fatalf("submit verdict: %v", err)
@@ -240,7 +239,7 @@ func TestReviewServiceListByTask(t *testing.T) {
 	_, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err != nil {
 		t.Fatalf("create review: %v", err)
@@ -276,7 +275,7 @@ func TestReviewServiceInvalidGateType(t *testing.T) {
 	_, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   "invalid_gate",
+		GateType:   reviewmod.ValidationGate("invalid_gate"),
 	})
 	if err == nil {
 		t.Fatal("expected invalid gate type to be rejected")
@@ -299,7 +298,7 @@ func TestReviewServiceInvalidVerdict(t *testing.T) {
 	created, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err != nil {
 		t.Fatalf("create review: %v", err)
@@ -310,7 +309,7 @@ func TestReviewServiceInvalidVerdict(t *testing.T) {
 
 	_, err = reviewService.SubmitVerdict(ctx, created.Value.ID, reviewmod.SubmitVerdictInput{
 		AgentID: "agent-reviewer",
-		Verdict: "invalid_verdict",
+		Verdict: reviewmod.Decision("invalid_verdict"),
 	})
 	if err == nil {
 		t.Fatal("expected invalid verdict to be rejected")
@@ -333,7 +332,7 @@ func TestReviewServiceStartRequiresPending(t *testing.T) {
 	created, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err != nil {
 		t.Fatalf("create review: %v", err)
@@ -363,7 +362,7 @@ func TestReviewServiceRejectsDuplicateActiveReview(t *testing.T) {
 	_, err := reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err != nil {
 		t.Fatalf("create first review: %v", err)
@@ -372,7 +371,7 @@ func TestReviewServiceRejectsDuplicateActiveReview(t *testing.T) {
 	_, err = reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateHard,
+		GateType:   reviewmod.GateHard,
 	})
 	if err == nil {
 		t.Fatal("expected duplicate active review to be rejected")
@@ -386,7 +385,7 @@ func TestReviewServiceRejectsDuplicateActiveReview(t *testing.T) {
 	_, err = reviewService.Create(ctx, reviewmod.CreateReviewInput{
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		GateType:   domain.ValidationGateSoft,
+		GateType:   reviewmod.GateSoft,
 	})
 	if err != nil {
 		t.Fatalf("create review with different gate: %v", err)

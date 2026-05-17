@@ -62,6 +62,7 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/core/coordination` (ONLY module allowed to import this package)
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
+- `internal/modules/review`: DI interface return type `*review.Review` in ReviewManager (ADR-0026)
 - `internal/modules/*` services (via DI interfaces, never direct repository imports)
 
 Forbidden:

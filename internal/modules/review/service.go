@@ -31,9 +31,9 @@ type CreateReviewInput struct {
 	TaskID          string
 	AgentSessionID  string
 	ReviewerAgentID string
-	GateType        domain.ValidationGate
+	GateType        ValidationGate
 	EvidenceRefs    []string
-	CriteriaChecked []domain.ReviewCriteriaChecked
+	CriteriaChecked []CriteriaChecked
 }
 
 type StartReviewInput struct {
@@ -44,17 +44,17 @@ type StartReviewInput struct {
 type SubmitVerdictInput struct {
 	EventID         string
 	AgentID         string
-	Verdict         domain.ReviewDecision
+	Verdict         Decision
 	Reason          string
 	EvidenceRefs    []string
-	CriteriaChecked []domain.ReviewCriteriaChecked
+	CriteriaChecked []CriteriaChecked
 }
 
 func NewReviewService(database *sql.DB) *ReviewService {
 	return &ReviewService{db: database}
 }
 
-func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*transition.OperationResult[*domain.Review], error) {
+func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*transition.OperationResult[*Review], error) {
 	if err := validateCreateReviewInput(input); err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 		reviewerAgentID = &input.ReviewerAgentID
 	}
 
-	review := &domain.Review{
+	review := &Review{
 		ID:              input.ID,
 		RunID:           runID,
 		WorkUnitID:      workUnitID,
@@ -87,7 +87,7 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 		AgentSessionID:  agentSessionID,
 		ReviewerAgentID: reviewerAgentID,
 		GateType:        input.GateType,
-		Status:          domain.ReviewStatusPending,
+		Status:          StatusPending,
 		EvidenceRefs:    input.EvidenceRefs,
 		CriteriaChecked: input.CriteriaChecked,
 	}
@@ -165,10 +165,10 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 	if err := dbcore.CommitTx(tx, "review_service.commit_create"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.Review]{Value: review, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*Review]{Value: review, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *ReviewService) Start(ctx context.Context, reviewID string, input StartReviewInput) (*transition.OperationResult[*domain.Review], error) {
+func (s *ReviewService) Start(ctx context.Context, reviewID string, input StartReviewInput) (*transition.OperationResult[*Review], error) {
 	op := "review_service.start"
 	if err := validation.RequiredUUID(reviewID, "review_id", op); err != nil {
 		return nil, err
@@ -184,11 +184,11 @@ func (s *ReviewService) Start(ctx context.Context, reviewID string, input StartR
 	if err != nil {
 		return nil, err
 	}
-	if review.Status != domain.ReviewStatusPending {
+	if review.Status != StatusPending {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "review can only be started from pending status")
 	}
 
-	review.Status = domain.ReviewStatusInProgress
+	review.Status = StatusInProgress
 	if err := NewRepository(tx).UpdateStatus(review); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.update_start", err)
 	}
@@ -220,10 +220,10 @@ func (s *ReviewService) Start(ctx context.Context, reviewID string, input StartR
 	if err := dbcore.CommitTx(tx, "review_service.commit_start"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.Review]{Value: review, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*Review]{Value: review, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *ReviewService) SubmitVerdict(ctx context.Context, reviewID string, input SubmitVerdictInput) (*transition.OperationResult[*domain.Review], error) {
+func (s *ReviewService) SubmitVerdict(ctx context.Context, reviewID string, input SubmitVerdictInput) (*transition.OperationResult[*Review], error) {
 	op := "review_service.submit_verdict"
 	if err := validation.RequiredUUID(reviewID, "review_id", op); err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func (s *ReviewService) SubmitVerdict(ctx context.Context, reviewID string, inpu
 	if isFinalReviewStatus(review.Status) {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "verdict is immutable after submission")
 	}
-	if review.Status != domain.ReviewStatusInProgress && review.Status != domain.ReviewStatusPending {
+	if review.Status != StatusInProgress && review.Status != StatusPending {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "review must be pending or in_progress to submit a verdict")
 	}
 
@@ -291,10 +291,10 @@ func (s *ReviewService) SubmitVerdict(ctx context.Context, reviewID string, inpu
 	if err := dbcore.CommitTx(tx, "review_service.commit_verdict"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.Review]{Value: review, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*Review]{Value: review, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *ReviewService) GetByID(ctx context.Context, id string) (*domain.Review, error) {
+func (s *ReviewService) GetByID(ctx context.Context, id string) (*Review, error) {
 	op := "review_service.get_by_id"
 	if err := validation.RequiredUUID(id, "review_id", op); err != nil {
 		return nil, err
@@ -306,7 +306,7 @@ func (s *ReviewService) GetByID(ctx context.Context, id string) (*domain.Review,
 	return review, nil
 }
 
-func (s *ReviewService) ListByTask(ctx context.Context, taskID string) ([]*domain.Review, error) {
+func (s *ReviewService) ListByTask(ctx context.Context, taskID string) ([]*Review, error) {
 	op := "review_service.list_by_task"
 	if err := validation.RequiredUUID(taskID, "task_id", op); err != nil {
 		return nil, err
@@ -318,7 +318,7 @@ func (s *ReviewService) ListByTask(ctx context.Context, taskID string) ([]*domai
 	return reviews, nil
 }
 
-func (s *ReviewService) ListPending(ctx context.Context) ([]*domain.Review, error) {
+func (s *ReviewService) ListPending(ctx context.Context) ([]*Review, error) {
 	reviews, err := NewRepository(s.db).ListPending(ctx)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.list_pending", err)
@@ -326,7 +326,7 @@ func (s *ReviewService) ListPending(ctx context.Context) ([]*domain.Review, erro
 	return reviews, nil
 }
 
-func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*domain.Review, error) {
+func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*Review, error) {
 	review, err := NewRepository(tx).GetByID(ctx, id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review.require_by_id", err)
@@ -337,9 +337,9 @@ func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*domain.Review, er
 	return review, nil
 }
 
-func isFinalReviewStatus(status domain.ReviewStatus) bool {
+func isFinalReviewStatus(status Status) bool {
 	switch status {
-	case domain.ReviewStatusApproved, domain.ReviewStatusChangesRequested, domain.ReviewStatusNeedsDiscussion:
+	case StatusApproved, StatusChangesRequested, StatusNeedsDiscussion:
 		return true
 	default:
 		return false
