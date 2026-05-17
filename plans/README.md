@@ -1,113 +1,112 @@
-# Plans — Estrutura de Planos de Execução
+# Plans — Execution Plan Structure
 
-Este diretório contém planos de execução para agentes. Os planos são **decompostos** em micro-tarefas independentes, cada uma com escopo pequeno, verificável e de fácil execução. Toda a serialização segue uma convenção padronizada que permite rastreabilidade, paralelização e reexecução controlada.
+This directory contains execution plans for agents. Plans are decomposed into independent, small, verifiable units of work. Each plan follows a standardized serialization convention that enables traceability, parallelization, and controlled re-execution.
 
-## Estrutura
+## Structure
 
 ```text
 plans/
-├── README.md                  # Este arquivo
-├── active/                    # Planos em execução
-│   └── {fase}/
-│       └── {ID-do-plano}/
-│           ├── plan.md        # Prompt completo com contexto, escopo e regras
-│           └── checklist.md   # Checklist de execução (Ralph Loop)
-├── completed/                 # Planos finalizados
-│   └── {fase}/
-│       └── {ID-do-plano}/
-│           ├── plan.md
-│           └── checklist.md   # Checklist completo com todos os itens marcados
-└── templates/                 # Templates reutilizáveis
-    └── modulo-go-completo.md
+├── README.md                  # This file
+├── active/                    # Plans in execution
+│   └── {ID}-{task-name}/
+│       ├── plan.md            # Context, scope, acceptance criteria
+│       └── checklist.md       # Execution tracker + delivery artifact
+├── completed/                 # Finished plans
+│   └── {ID}-{task-name}/
+│       ├── plan.md
+│       └── checklist.md       # Completed with all items checked
+├── templates/                 # Reusable templates
+│   ├── plan.md
+│   ├── checklist.md
+│   └── modulo-go-completo.md
+└── archive/                   # Old or superseded plans
 ```
 
-## Convenção de Serialização
+> **Flat structure:** Prefer `plans/active/{ID}-{task}/` over deep nesting.
 
-Todo plano recebe um identificador único e imutável.
+## Serialization Convention
 
-Formato.
+Every plan gets a unique, immutable identifier.
 
+Format:
 ```text
-ORCH-{FASE}-{RODADA}-{AGENTE}-{tarefa}
+ORCH-{PHASE}-{ROUND}-{AGENT}-{task-name}
 ```
 
-Exemplo.
-
+Example:
 ```text
 ORCH-F05-R01-A01-agentservice
 ```
 
-| Segmento | Significado | Exemplo |
-| --- | --- | --- |
-| `ORCH` | Prefixo fixo (Orquestrador) | — |
-| `{FASE}` | Identificador da fase (ex: F05, F28) | `F05` = Fase 5 |
-| `{RODADA}` | Iteração dentro da fase (R01, R02...) | `R01` = primeira rodada |
-| `{AGENTE}` | Identificador do agente executor | `A01` = Agente 1 |
-| `{tarefa}` | Descrição curta do escopo (kebab-case) | `agentservice` |
+| Segment | Meaning | Example |
+|---|---|---|
+| `ORCH` | Fixed prefix (Orchestrator) | — |
+| `{PHASE}` | Phase identifier (F05, F28...) | `F05` = Phase 5 |
+| `{ROUND}` | Iteration within phase (R01, R02...) | `R01` = first round |
+| `{AGENT}` | Executor agent identifier | `A01` = Agent 1 |
+| `{task-name}` | Short scope description (kebab-case) | `agentservice` |
 
-**Exemplo completo:** `ORCH-F05-R01-A01-agentservice` significa Orquestrador, Fase 5, Rodada 1, Agente 1, Tarefa: implementar AgentService.
+**Full example:** `ORCH-F05-R01-A01-agentservice` = Orchestrator, Phase 5, Round 1, Agent 1, Task: implement AgentService.
 
-## Princípio — Planos Decompostos
+## Principle — Decomposed Plans
 
-Cada plano representa **uma única unidade de trabalho** que um único agente pode executar de ponta a ponta sem precisar de coordenação externa. Não agrupamos múltiplas responsabilidades em um único plano.
+Each plan represents **a single unit of work** that one agent can execute end-to-end without external coordination. Do not group multiple responsibilities into one plan.
 
-### Características de um plano válido
+### Characteristics of a valid plan
 
-- **Escopo pequeno** — Pode ser completado em poucas iterações do Ralph Loop
-- **Independente** — Não bloqueia outros planos (ou declara dependências explícitas)
-- **Verificável** — Tem critérios de aceite claros e testáveis
-- **Isolado** — Define fronteiras de código que pode e não pode tocar
-- **Serializado** — ID único permite rastreamento em canvas, ADRs e commits
+- **Small scope** — Can be completed in a focused session
+- **Independent** — Does not block other plans (or declares explicit dependencies)
+- **Verifiable** — Has clear, testable acceptance criteria
+- **Isolated** — Defines code boundaries (TOUCH / AVOID)
+- **Serialized** — Unique ID enables tracking in canvas, ADRs, and commits
 
-## Ciclo de Vida de um Plano
+## Creating a New Plan
 
-### 1. Criação (Orquestrador)
+Use the scaffold script:
 
-```text
-plans/active/{fase}/{ID-do-plano}/
-  → plan.md      (contexto, escopo, regras, critérios de aceite)
-  → checklist.md (itens pendentes, não marcados)
+```bash
+./scripts/new-plan.sh {ID} {task-name} [agent-id]
 ```
 
-### 2. Execução (Agente Executor)
-
-```text
-Use a skill execute.
-Leia o plano:  plans/active/{fase}/{ID-do-plano}/plan.md
-Siga o Ralph Loop atualizando: plans/active/{fase}/{ID-do-plano}/checklist.md
+Example:
+```bash
+./scripts/new-plan.sh ORCH-F05-R01-A01 agentservice agent-1
 ```
 
-A cada iteração:
+This generates:
+- `plans/active/ORCH-F05-R01-A01-agentservice/plan.md`
+- `plans/active/ORCH-F05-R01-A01-agentservice/checklist.md`
 
-1. **LER** o checklist para identificar o próximo item pendente
-2. **EXECUTAR** o item (código, teste, refactor)
-3. **VALIDAR** o item (testes passam? build verde?)
-4. **ATUALIZAR** o checklist marcando o item como concluído (`[x]`)
-5. **CONTINUAR** para o próximo item
+Then edit both files with task-specific details.
 
-### 3. Conclusão
+## Plan Lifecycle
 
-Quando todos os itens do checklist estiverem marcados:
+### 1. Creation (Orchestrator)
 
-- Mova o diretório de `plans/active/{fase}/` para `plans/completed/{fase}/`
-- O checklist permanece no estado final (tudo `[x]`) — **não renomeie** para `-completed.md`
+```text
+plans/active/{ID}-{task}/
+  → plan.md      (context, scope, boundaries, acceptance criteria)
+  → checklist.md (pending items, unmarked)
+```
 
-## Regras
+### 2. Execution (Executor Agent)
 
-1. **1 Plano = 1 Agente = 1 Micro-tarefa** — Nunca coloque prompts de múltiplos agentes no mesmo arquivo
-2. **Checklist acompanha o plano** — Todo plano tem seu `checklist.md` no mesmo diretório
-3. **Mova para completed quando concluído** — Transfira o diretório inteiro para `plans/completed/{fase}/`
-4. **Não edite planos em execução** — Se precisar alterar, crie uma nova rodada (R02, R03...)
-5. **Commits via safe-commit** — Use `./scripts/safe-commit.sh` ao final de cada ciclo significativo
+1. Read the plan
+2. Locate or create the checklist
+3. Execute iteratively: read → execute → validate → update checklist
+4. Add annotations with timestamps as needed
 
-## Fases Ativas
+### 3. Completion
 
-| Fase | Diretório | Status | Planos |
-| --- | --- | --- | --- |
-| Fase 28 — Refinamento | `active/f28-r01/` | Em execução | 6 |
+When all checklist items are checked and annotations are up to date:
 
-## Fases Completadas
+- Move the directory from `plans/active/` to `plans/completed/`
+- The checklist remains in final state (all `[x]`) with delivery section filled
 
-| Fase | Diretório | Status | Planos |
-| --- | --- | --- | --- |
-| Fase 5 — Orquestração | `completed/fase-05-orquestracao/` | Concluído | 9 |
+## Rules
+
+1. **1 Plan = 1 Agent = 1 Micro-task** — Never put prompts for multiple agents in the same plan
+2. **Checklist accompanies the plan** — Every plan has its `checklist.md` in the same directory
+3. **Move to completed when done** — Transfer the entire directory to `plans/completed/`
+4. **Do not edit plans in execution** — If changes are needed, create a new round (R02, R03...)
+5. **Commit via safe-commit** — Use `./scripts/safe-commit.sh` after significant cycles

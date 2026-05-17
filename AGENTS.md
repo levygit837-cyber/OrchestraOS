@@ -84,3 +84,18 @@ Decisões relevantes devem virar ADR em `docs/adr/`. Use o formato:
 - Decisão
 - Consequências
 - Alternativas consideradas
+
+## Tipos de Plano
+
+O projeto suporta 4 tipos de plano. O tipo é metadado que orienta o executor:
+
+| Tipo | Quando Usar |
+|---|---|
+| **Faseado** | Fluxo sequencial com dependências temporais |
+| **Por Domínio** | Módulos independentes evoluem separadamente |
+| **Árvore de Decisões** | Problema técnico aberto com múltiplos caminhos |
+| **Cenário-Based** | Feature user-facing com múltiplos fluxos de usuário |
+
+Consulte `docs/development/plan-types.md` para detalhes e templates.
+
+Todo plano deve declarar seu tipo no front matter ou cabeçalho.
