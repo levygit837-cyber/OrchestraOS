@@ -157,3 +157,20 @@ Nenhuma.
 1. Commit com `./scripts/safe-commit.sh "refactor(core): remove coordination package per ADR-0028"`
 2. Push da feature branch
 3. Reportar ao usuário: "Cleanup completo. Pacote coordination/ removido. Build verde. Documentação atualizada."
+
+---
+
+## Resultado da Execução
+
+**Data:** 2026-05-17  
+**Branch:** `feat/adr28-a03-task-cascade`  
+**PR:** #32
+
+**Execução:**
+- Diretório `internal/core/coordination/` removido completamente (4 arquivos deletados).
+- `grep -r "internal/core/coordination" --include="*.go" .` retornou **zero** imports funcionais restantes (apenas architecture tests detectam a proibição de importação).
+- Atualizados 17 arquivos de documentação (`doc.go`, `contract.go`) que mencionavam `core/coordination` → `core/transition`.
+- Atualizados 3 architecture tests: `module_boundaries_test.go`, `transition_imports_test.go`, `orchestration_imports_test.go`.
+- Comentário em `run/service.go` atualizado (`UpdateRunProjection`).
+- `AGENTS.md` não necessitou atualização (não mencionava `coordination`).
+- Todos os checks passaram (build, test, vet, architecture, contracts, lint).
