@@ -34,7 +34,7 @@ var allowedModuleImports = map[string]map[string]bool{
 	"taskgraph":    {"task": true, "workunit": true},
 	"agentsession": {"agent": true},
 	"prompt":       {"run": true, "task": true, "workunit": true, "agentsession": true},
-	"orchestrator": {"review": true, "taskgraph": true, "workunit": true, "trigger": true, "prompt": true},
+	"orchestrator": {"review": true, "taskgraph": true, "workunit": true, "trigger": true, "prompt": true, "task": true, "run": true, "agent": true, "agentsession": true},
 	"trigger":      {"agentsession": true, "run": true, "workunit": true},
 }
 

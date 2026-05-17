@@ -13,6 +13,9 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // Dependencies holds all services required by the OrchestratorService.
@@ -165,7 +168,7 @@ func (s *Service) RunTask(ctx context.Context, taskID string, options RunTaskOpt
 }
 
 // executeWorkUnit executes a single work unit.
-func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task *domain.Task, options RunTaskOptions) (*WorkUnitExecutionResult, error) {
+func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit, task *taskmod.Task, options RunTaskOptions) (*WorkUnitExecutionResult, error) {
 	result := &WorkUnitExecutionResult{
 		WorkUnitID: wu.ID,
 	}
@@ -385,8 +388,7 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task
 	// Wait for goroutine to complete to prevent leaks
 	<-routineDone
 
-	// TODO[ADR-0022]: usar run.StatusCompleted quando orchestrator consumir *run.Run
-	result.Success = finalStatus == domain.RunStatusCompleted
+	result.Success = finalStatus == runmod.StatusCompleted
 
 	// Note: Review creation for validation gates is deferred to future iteration
 	// as WorkUnit does not currently have a ValidationGate field.
@@ -415,9 +417,9 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task
 }
 
 // topologicalSort sorts work units respecting their dependencies.
-func (s *Service) topologicalSort(workUnits []domain.WorkUnit) ([]domain.WorkUnit, error) {
+func (s *Service) topologicalSort(workUnits []workunitmod.WorkUnit) ([]workunitmod.WorkUnit, error) {
 	// Build adjacency list and in-degree count
-	wuMap := make(map[string]*domain.WorkUnit)
+	wuMap := make(map[string]*workunitmod.WorkUnit)
 	inDegree := make(map[string]int)
 	adj := make(map[string][]string)
 
@@ -446,7 +448,7 @@ func (s *Service) topologicalSort(workUnits []domain.WorkUnit) ([]domain.WorkUni
 		}
 	}
 
-	result := make([]domain.WorkUnit, 0)
+	result := make([]workunitmod.WorkUnit, 0)
 	for len(queue) > 0 {
 		currentID := queue[0]
 		queue = queue[1:]
@@ -468,7 +470,7 @@ func (s *Service) topologicalSort(workUnits []domain.WorkUnit) ([]domain.WorkUni
 }
 
 // listWorkUnitsByGraph lists all work units for a task graph.
-func (s *Service) listWorkUnitsByGraph(ctx context.Context, graphID string) ([]domain.WorkUnit, error) {
+func (s *Service) listWorkUnitsByGraph(ctx context.Context, graphID string) ([]workunitmod.WorkUnit, error) {
 	return s.deps.WorkUnitLister.ListByTaskGraph(graphID)
 }
 

@@ -26,7 +26,7 @@ func ValidateRunForSessionCreation(ctx context.Context, tx *sql.Tx, runID string
 }
 
 // AgentSessionTimeout coordinates session timeout with run pause.
-func AgentSessionTimeout(ctx context.Context, tx *sql.Tx, session *domain.AgentSession, recoverableState json.RawMessage, input transition.TransitionInput) (*domain.EventEnvelope, bool, error) {
+func AgentSessionTimeout(ctx context.Context, tx *sql.Tx, session *agentsessionmod.AgentSession, recoverableState json.RawMessage, input transition.TransitionInput) (*domain.EventEnvelope, bool, error) {
 	if len(recoverableState) > 0 {
 		if err := agentsessionmod.NewRepository(tx).UpdateRecoverableState(session.ID, recoverableState); err != nil {
 			return nil, false, apperrors.Wrap(apperrors.CodePersistence, "coordination.agent_session_timeout.update_state", err)
@@ -44,7 +44,7 @@ func AgentSessionTimeout(ctx context.Context, tx *sql.Tx, session *domain.AgentS
 		if _, _, err := transition.AppendTransition(ctx, tx, "", "run.paused", run.TaskID, run.ID, run.WorkUnitID, session.AgentID, transition.TransitionPayload(run.Status, runmod.StatusPaused, input)); err != nil {
 			return nil, false, err
 		}
-		if err := UpdateRunProjection(ctx, tx, run.ID, domain.RunStatusPaused, nil, nil); err != nil {
+		if err := UpdateRunProjection(ctx, tx, run.ID, runmod.StatusPaused, nil, nil); err != nil {
 			return nil, false, err
 		}
 	}

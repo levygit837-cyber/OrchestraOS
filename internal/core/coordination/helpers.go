@@ -7,19 +7,18 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
 // UpdateRunProjection updates the runs table projection.
 // TODO: move to run module once cross-module calls are refactored.
-// TODO[ADR-0022]: migrar para run.Status e run.Result quando run module for totalmente desacoplado.
-func UpdateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status domain.RunStatus, result *domain.RunResult, failureReason *string) error {
+func UpdateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status runmod.Status, result *runmod.Result, failureReason *string) error {
 	now := time.Now().UTC()
 	var startedAt, finishedAt *time.Time
-	if status == domain.RunStatusRunning {
+	if status == runmod.StatusRunning {
 		startedAt = &now
 	}
-	if status == domain.RunStatusCompleted || status == domain.RunStatusFailed || status == domain.RunStatusCancelled {
+	if status == runmod.StatusCompleted || status == runmod.StatusFailed || status == runmod.StatusCancelled {
 		finishedAt = &now
 	}
 

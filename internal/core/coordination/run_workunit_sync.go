@@ -9,13 +9,12 @@ import (
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // TransitionRunWithWorkUnit synchronizes a run transition with its associated work unit.
-// TODO[ADR-0022]: migrar para *run.Run e run.Status quando run module for totalmente desacoplado.
-func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error {
+func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *runmod.Run, target runmod.Status, input transition.TransitionInput) error {
 	if run.WorkUnitID == "" {
 		return nil
 	}
@@ -25,15 +24,15 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 	}
 	var wuTarget workunitmod.Status
 	switch target {
-	case domain.RunStatusRunning:
+	case runmod.StatusRunning:
 		wuTarget = workunitmod.StatusRunning
-	case domain.RunStatusValidating:
+	case runmod.StatusValidating:
 		wuTarget = workunitmod.StatusValidating
-	case domain.RunStatusCompleted:
+	case runmod.StatusCompleted:
 		wuTarget = workunitmod.StatusCompleted
-	case domain.RunStatusFailed:
+	case runmod.StatusFailed:
 		wuTarget = workunitmod.StatusFailed
-	case domain.RunStatusCancelled:
+	case runmod.StatusCancelled:
 		wuTarget = workunitmod.StatusCancelled
 	default:
 		return nil
