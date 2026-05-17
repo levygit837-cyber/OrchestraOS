@@ -28,7 +28,7 @@ Critical invariants:
 
 State Flow:
 ```
-(fragment catalog) → composition → snapshot → usage
+(fragment catalog) → composition → snapshot (deduped) → usage tracking
 ```
 
 ---
@@ -38,15 +38,14 @@ State Flow:
 ### Mandatory Files
 - `doc.go` → package documentation and context briefing
 - `contract.go` → ModuleContract + hierarchical rules
-- `models.go` → domain types (PromptSnapshot, ToolsetSnapshot, Fragment)
-- `events.go` → event-type mapping for prompt lifecycle
+- `models.go` → domain types (PromptSnapshot, ToolsetSnapshot, Fragment, Composer types)
+- `events.go` → event-type mapping for prompt lifecycle actions
 - `queries.go` → SQL constants for prompt_fragments, prompt_snapshots, toolset_snapshots
-- `repository.go` → prompt fragment CRUD, no business logic
+- `repository.go` → prompt fragment, snapshot, and toolset snapshot CRUD
 - `service.go` → prompt preparation service for runs
-- `validation.go` → input validation
+- `validation.go` → input validation for fragments, snapshots, and toolsets
 
 ### Optional Files
-- `types.go` → Fragment, Composer, Toolset types and constants (legacy — will merge into models.go)
 - `catalog.go` → fragment catalog loader
 - `catalog/` → markdown fragment files organized by category
 - `composer.go` → fragment selection and validation logic
@@ -54,7 +53,6 @@ State Flow:
 - `composer_test.go` → composer tests
 - `toolset.go` → toolset snapshot logic
 - `toolset_test.go` → toolset tests
-- `repository_snapshot.go` → prompt snapshot and toolset snapshot CRUD (legacy — will merge into repository.go)
 
 ---
 
@@ -63,8 +61,10 @@ State Flow:
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
-- DI interface types: `task.Task`, `workunit.WorkUnit`, `run.Run`, `agentsession.AgentSession`
-  — see ADR-0026: types may be imported ONLY for DI interface return types.
+- `internal/modules/agentsession` — types imported for DI interfaces only
+- `internal/modules/workunit` — types imported for DI interfaces only
+- `internal/modules/run` — types imported for DI interfaces only
+- `internal/modules/task` — types imported for DI interfaces only
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports

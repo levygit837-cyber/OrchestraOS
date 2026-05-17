@@ -77,9 +77,6 @@ Cross-module orchestration belongs ONLY to:
 
 ## File Decomposition
 
-### `repository_snapshot.go`
-Created because `repository.go` exceeded 300 lines. Extracted prompt snapshot and toolset snapshot CRUD operations.
-
 ### `composer_render.go`
 Created because `composer.go` exceeded 300 lines. Extracted template rendering, system profile building, and formatting helpers.
 
