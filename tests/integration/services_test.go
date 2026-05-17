@@ -77,7 +77,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
 		Name:        "Service Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("create agent: %v", err)
@@ -1097,7 +1097,7 @@ func TestAgentServiceCreateAndGet(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "Test Agent",
 		Profile:     "code_worker",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("create agent: %v", err)
@@ -1111,7 +1111,7 @@ func TestAgentServiceCreateAndGet(t *testing.T) {
 	if agentResult.Value.Profile != "code_worker" {
 		t.Fatalf("expected profile 'code_worker', got '%s'", agentResult.Value.Profile)
 	}
-	if agentResult.Value.RuntimeType != domain.AgentRuntimeTypeFake {
+	if agentResult.Value.RuntimeType != agent.RuntimeTypeFake {
 		t.Fatalf("expected runtime type 'fake', got '%s'", agentResult.Value.RuntimeType)
 	}
 	if agentResult.Event == nil {
@@ -1160,7 +1160,7 @@ func TestAgentServiceValidation(t *testing.T) {
 	_, err := agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "Test Agent",
 		Profile:     "invalid_profile",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err == nil {
 		t.Fatal("expected error for invalid profile, got nil")
@@ -1186,7 +1186,7 @@ func TestAgentServiceValidation(t *testing.T) {
 	_, err = agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "",
 		Profile:     "code_worker",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err == nil {
 		t.Fatal("expected error for empty name, got nil")
@@ -1204,7 +1204,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	agentService := bootstrap.AgentService(db)
 
 	// Test 1: FindOrCreate with no existing agent should create new
-	agent1, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeFake)
+	agent1, err := agentService.FindOrCreate(ctx, "code_worker", agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create (first call): %v", err)
 	}
@@ -1213,7 +1213,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 2: FindOrCreate with same profile and runtime should return existing
-	agent2, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeFake)
+	agent2, err := agentService.FindOrCreate(ctx, "code_worker", agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create (second call): %v", err)
 	}
@@ -1225,7 +1225,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 3: FindOrCreate with different profile should create new
-	agent3, err := agentService.FindOrCreate(ctx, "docs_writer", domain.AgentRuntimeTypeFake)
+	agent3, err := agentService.FindOrCreate(ctx, "docs_writer", agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create (different profile): %v", err)
 	}
@@ -1237,7 +1237,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 4: FindOrCreate with different runtime should create new
-	agent4, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeGemini)
+	agent4, err := agentService.FindOrCreate(ctx, "code_worker", agent.RuntimeTypeGemini)
 	if err != nil {
 		t.Fatalf("find or create (different runtime): %v", err)
 	}
@@ -1249,7 +1249,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 5: FindOrCreate with invalid profile should fail
-	_, err = agentService.FindOrCreate(ctx, "invalid_profile", domain.AgentRuntimeTypeFake)
+	_, err = agentService.FindOrCreate(ctx, "invalid_profile", agent.RuntimeTypeFake)
 	if err == nil {
 		t.Fatal("expected error for invalid profile, got nil")
 	}
@@ -1320,7 +1320,7 @@ func TestAgentSessionServiceAgentIDValidation(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "Validation Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("create agent: %v", err)

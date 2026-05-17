@@ -249,7 +249,7 @@ Todo `CONTRACTS.md` deve conter uma seção "File Decomposition" se houver `serv
 - [ ] Refatorar `contract.go` de todos os 10 módulos para seguir o template unificado
 - [ ] Criar arquivos faltantes: `validation.go`, `events.go`, `models.go`
 - [ ] Documentar decomposições `service_*.go` existentes nos `README.md` e `CONTRACTS.md`
-- [ ] Resolver import de `core/coordination` em `orchestrator/` (mover para `internal/orchestration/` ou documentar exceção)
+- [x] `core/coordination` é o pacote correto para orquestração cross-module — único módulo permitido a importar é `orchestrator/`
 - [ ] Adicionar architecture test: verificar que todo módulo tem os 10 arquivos obrigatórios
 - [ ] Adicionar architecture test: verificar que nenhum módulo (exceto orchestrator) importa `core/coordination`
 - [x] Executar `go test ./...`, `go build ./...`, `./scripts/lint.sh`

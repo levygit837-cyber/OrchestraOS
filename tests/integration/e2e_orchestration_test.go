@@ -90,7 +90,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
 		Name:        "E2E Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create agent: %v", err)
@@ -321,7 +321,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
 		Name:        "E2E Gemini Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeGemini,
+		RuntimeType: agent.RuntimeTypeGemini,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create agent: %v", err)

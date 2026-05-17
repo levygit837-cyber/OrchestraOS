@@ -37,7 +37,7 @@ Adotaremos uma arquitetura baseada em **Vertical Slices** (ou Módulos Verticais
 
 2. **Isolamento Estrito (Regra de Ouro):**
    Um módulo em `internal/modules/*` **NÃO PODE** importar arquivos de outro módulo em `internal/modules/*`. Eles devem ser complementamente autônomos.
-   Se precisarem se comunicar, devem fazê-lo de forma assíncrona (via `core/eventstore`) ou ser orquestrados por uma camada de aplicação superior (`cmd/` ou `internal/orchestration/`), que os interliga usando dependências puras (ex: IDs genéricos em vez de structs concretas).
+   Se precisarem se comunicar, devem fazê-lo de forma assíncrona (via `core/eventstore`) ou ser orquestrados por uma camada de aplicação superior (`cmd/` ou `internal/core/coordination/`), que os interliga usando dependências puras (ex: IDs genéricos em vez de structs concretas).
 
 ## 3. Consequências
 

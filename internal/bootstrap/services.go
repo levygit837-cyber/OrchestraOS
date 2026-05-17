@@ -65,6 +65,51 @@ func (a *taskReaderAdapter) GetByID(id string) (*domain.Task, error) {
 	return taskToDomain(t), nil
 }
 
+// agentToDomain converts a local agent.Agent to domain.Agent for cross-module compatibility.
+// TODO: remove when agentsession.AgentReader and orchestrator.AgentManager use *agent.Agent directly.
+func agentToDomain(a *agentmod.Agent) *domain.Agent {
+	if a == nil {
+		return nil
+	}
+	return &domain.Agent{
+		ID:                     a.ID,
+		Name:                   a.Name,
+		Profile:                a.Profile,
+		Capabilities:           a.Capabilities,
+		AllowedTools:           a.AllowedTools,
+		DefaultPromptFragments: a.DefaultPromptFragments,
+		RuntimeType:            domain.AgentRuntimeType(a.RuntimeType),
+	}
+}
+
+// agentReaderAdapter wraps agent.Repository to return domain.Agent for cross-module compatibility.
+// TODO: remove when agentsession.AgentReader uses *agent.Agent directly.
+type agentReaderAdapter struct {
+	repo *agentmod.Repository
+}
+
+func (a *agentReaderAdapter) GetByID(ctx context.Context, id string) (*domain.Agent, error) {
+	agent, err := a.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return agentToDomain(agent), nil
+}
+
+// agentManagerAdapter wraps agent.AgentService to implement orchestrator.AgentManager with domain.Agent.
+// TODO: remove when orchestrator.AgentManager uses agent.RuntimeType and *agent.Agent directly.
+type agentManagerAdapter struct {
+	svc *agentmod.AgentService
+}
+
+func (a *agentManagerAdapter) FindOrCreate(ctx context.Context, profile string, runtimeType domain.AgentRuntimeType) (*domain.Agent, error) {
+	agent, err := a.svc.FindOrCreate(ctx, profile, agentmod.RuntimeType(runtimeType))
+	if err != nil {
+		return nil, err
+	}
+	return agentToDomain(agent), nil
+}
+
 // RunService creates a RunService with standard repository factories.
 func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
@@ -87,7 +132,7 @@ func WorkUnitService(db *sql.DB) *workunitmod.WorkUnitService {
 // AgentSessionService creates an AgentSessionService with standard dependencies.
 func AgentSessionService(db *sql.DB) *agentsessionmod.AgentSessionService {
 	return agentsessionmod.NewAgentSessionService(db,
-		func(tx *sql.Tx) agentsessionmod.AgentReader { return agentmod.NewRepository(tx) },
+		func(tx *sql.Tx) agentsessionmod.AgentReader { return &agentReaderAdapter{repo: agentmod.NewRepository(tx)} },
 	)
 }
 
@@ -173,7 +218,7 @@ func OrchestratorService(db *sql.DB) *orchestratormod.Service {
 		TaskService:         &taskAdapter{db: db, svc: TaskService(db)},
 		TaskGraphService:    &taskGraphAdapter{db: db, svc: taskGraphSvc},
 		RunService:          &runAdapter{svc: runSvc},
-		AgentService:        agentSvc,
+		AgentService:        &agentManagerAdapter{svc: agentSvc},
 		AgentSessionService: &sessionAdapter{svc: sessionSvc},
 		PromptOrchestrator:  &promptAdapter{orch: coordination.NewPromptOrchestrator(db, promptSvc)},
 		ReviewService:       &reviewAdapter{svc: reviewSvc},

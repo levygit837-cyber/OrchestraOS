@@ -43,7 +43,7 @@ A ADR 0017 é marcada como **DEPRECATED**. Os princípios fundamentais da ADR 00
 
 - **Módulos Verticais:** Cada entidade de domínio tem seu próprio módulo autônomo
 - **Comunicação Cross-Module:** Módulos NUNCA importam outros módulos diretamente
-- **Core/Orchestration:** Helpers cross-domain residem em `internal/core/coordination/`
+- **Core/Coordination:** Helpers cross-domain residem em `internal/core/coordination/`
 - **Bootstrap:** Wiring de dependências via `internal/bootstrap/services.go` com adapters
 - **Isolamento para LLMs:** Cada módulo pode ser compreendido isoladamente por agentes de IA
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	orchestratormod "github.com/levygit837-cyber/OrchestraOS/internal/modules/orchestrator"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
@@ -107,7 +108,7 @@ func TestRunStart_UsesAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Before creating a run, no agent should exist for this profile + runtime
-	agentsBefore, err := agentService.FindOrCreate(ctx, profile, domain.AgentRuntimeTypeFake)
+	agentsBefore, err := agentService.FindOrCreate(ctx, profile, agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create agent before: %v", err)
 	}
@@ -126,8 +127,8 @@ func TestRunStart_UsesAgentServiceFindOrCreate(t *testing.T) {
 	if fetched.Profile != profile {
 		t.Fatalf("expected profile %s, got %s", profile, fetched.Profile)
 	}
-	if fetched.RuntimeType != domain.AgentRuntimeTypeFake {
-		t.Fatalf("expected runtime type %s, got %s", domain.AgentRuntimeTypeFake, fetched.RuntimeType)
+	if fetched.RuntimeType != agent.RuntimeTypeFake {
+		t.Fatalf("expected runtime type %s, got %s", agent.RuntimeTypeFake, fetched.RuntimeType)
 	}
 }
 

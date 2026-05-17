@@ -68,7 +68,7 @@ var runStartCmd = &cobra.Command{
 		}
 
 		agentService := bootstrap.AgentService(getDB())
-		agentEntity, err := agentService.FindOrCreate(cmd.Context(), agentProfile, domain.AgentRuntimeType(runtimeType))
+		agentEntity, err := agentService.FindOrCreate(cmd.Context(), agentProfile, agent.RuntimeType(runtimeType))
 		if err != nil {
 			_ = failStartedRun(context.Background(), runService, nil, run.ID, "", runtimeType, "", err)
 			return fmt.Errorf("failed to find or create agent: %w", err)

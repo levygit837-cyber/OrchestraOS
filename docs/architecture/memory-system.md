@@ -8,44 +8,15 @@ A ideia e boa para o produto, desde que seja tratada como uma camada derivada, a
 
 ## Decisao De Produto
 
-O sistema tera uma capacidade futura chamada **Recursive Memory**.
+A decisao arquitetural de adotar **Recursive Memory** esta documentada em [ADR 0012: Sistema De Memoria Recursiva](/docs/adr/0012-recursive-memory-system.md).
 
-Recursive Memory significa:
+Este documento detalha a implementacao tecnica, modelo de dados, pipeline de deduplicacao e operacao do sistema de memoria.
 
-- capturar informacoes relevantes durante a execucao dos agentes;
-- classificar essas informacoes por tipo, dominio, escopo e confianca;
-- indexar memorias para busca semantica e filtros estruturados;
-- recuperar memorias relevantes no inicio de uma interacao ou em checkpoints;
-- injetar apenas o contexto necessario no agente;
-- registrar o que foi injetado para evitar repeticao e preservar auditoria.
-
-Essa memoria nao substitui:
-
-- repositório;
-- canvas;
-- ADRs;
-- issues;
-- PRs;
-- Event Store;
-- Agent Task Ledger;
-- Agent Checkpoints;
-- artefatos e diffs.
-
-A memoria e um indice operacional derivado dessas fontes.
+A memoria nao substitui repositorio, canvas, ADRs, issues, PRs, Event Store, Agent Task Ledger, Agent Checkpoints, artefatos ou diffs. E um indice operacional derivado dessas fontes.
 
 ## Comparacao Com Tracing
 
-ADR 0009 define normalizacao de historico e tracing. Recursive Memory usa parte desse historico, mas nao tem o mesmo papel.
-
-| Pergunta | Tracing / Event Store | Recursive Memory |
-| --- | --- | --- |
-| O que registra? | Eventos, comandos, tool calls, logs, artefatos, checkpoints e decisoes em ordem. | Aprendizados, fatos, decisoes reutilizaveis, padroes e contexto condensado. |
-| E fonte canonica? | Sim, para historico operacional. | Nao. E projecao derivada com referencias para fontes canonicas. |
-| Consumidor principal | Orchestrator, live view, auditoria, replay, policy engine e diagnostico. | Agentes, via Orchestrator e Prompt Composer. |
-| Granularidade | Fina e cronologica. | Seletiva, semantica e deduplicada. |
-| Otimizacao | Reconstruir uma run com fidelidade. | Entregar pouco contexto de alto valor. |
-| Pode descartar informacao? | Nao deve descartar eventos relevantes. | Deve descartar ruido, duplicatas e informacao sem evidencia. |
-| Como lida com conflito? | Preserva eventos e evidencias para auditoria. | Marca memoria como conflitante/stale e evita injecao. |
+A fronteira entre tracing (Event Store) e memoria recursiva esta definida em [ADR 0009](/docs/adr/0009-trace-history-normalization.md) e [ADR 0012](/docs/adr/0012-recursive-memory-system.md).
 
 Regra curta:
 
@@ -57,15 +28,12 @@ Regra curta:
 
 ## Principios
 
-- O repositório e o Event Store continuam sendo as fontes canonicas.
-- Toda memoria deve apontar para evidencia verificavel.
-- Memoria recuperada nao pode sobrescrever politica, autonomia, criterio de aceite, ADR ou instrucao do repositorio.
-- A recuperacao deve ser pequena, relevante, deduplicada e rastreavel.
-- A gravacao de memoria deve acontecer em segundo plano sempre que possivel.
-- O agente nao deve decidir sozinho qual memoria permanente criar.
-- Memorias devem ter escopo: projeto, repositorio, task, work unit, dominio, caminho de arquivo ou integracao.
+Principios gerais estao em [ADR 0012](/docs/adr/0012-recursive-memory-system.md). Aqui estao as restricoes operacionais especificas:
+
 - Memorias stale devem ser expiradas, supersedidas ou rebaixadas no ranking.
 - Segredos, tokens, dados sensiveis e outputs perigosos nao devem ser indexados.
+- A gravacao de memoria deve acontecer em segundo plano sempre que possivel.
+- O agente nao deve decidir sozinho qual memoria permanente criar.
 
 ## Fontes Canonicas
 

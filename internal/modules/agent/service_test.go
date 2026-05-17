@@ -1,10 +1,6 @@
 package agent
 
-import (
-	"testing"
-
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-)
+import "testing"
 
 func TestValidateProfile(t *testing.T) {
 	op := "test"
@@ -35,11 +31,11 @@ func TestValidateRuntimeType(t *testing.T) {
 	op := "test"
 
 	// Valid runtime types
-	validTypes := []domain.AgentRuntimeType{
-		domain.AgentRuntimeTypeFake,
-		domain.AgentRuntimeTypeGemini,
-		domain.AgentRuntimeTypeCodexCLI,
-		domain.AgentRuntimeTypeExternal,
+	validTypes := []RuntimeType{
+		RuntimeTypeFake,
+		RuntimeTypeGemini,
+		RuntimeTypeCodexCLI,
+		RuntimeTypeExternal,
 	}
 	for _, rt := range validTypes {
 		if err := ValidateRuntimeType(rt, op); err != nil {
@@ -74,44 +70,6 @@ func TestValidateName(t *testing.T) {
 	// Blank name
 	if err := ValidateName("   ", op); err == nil {
 		t.Fatal("expected blank name to be rejected")
-	}
-}
-
-func TestToDomainRuntimeType(t *testing.T) {
-	tests := []struct {
-		local    RuntimeType
-		expected domain.AgentRuntimeType
-	}{
-		{RuntimeTypeFake, domain.AgentRuntimeTypeFake},
-		{RuntimeTypeGemini, domain.AgentRuntimeTypeGemini},
-		{RuntimeTypeCodexCLI, domain.AgentRuntimeTypeCodexCLI},
-		{RuntimeTypeExternal, domain.AgentRuntimeTypeExternal},
-	}
-
-	for _, tt := range tests {
-		result := ToDomainRuntimeType(tt.local)
-		if result != tt.expected {
-			t.Fatalf("expected %s, got %s", tt.expected, result)
-		}
-	}
-}
-
-func TestFromDomainRuntimeType(t *testing.T) {
-	tests := []struct {
-		domain   domain.AgentRuntimeType
-		expected RuntimeType
-	}{
-		{domain.AgentRuntimeTypeFake, RuntimeTypeFake},
-		{domain.AgentRuntimeTypeGemini, RuntimeTypeGemini},
-		{domain.AgentRuntimeTypeCodexCLI, RuntimeTypeCodexCLI},
-		{domain.AgentRuntimeTypeExternal, RuntimeTypeExternal},
-	}
-
-	for _, tt := range tests {
-		result := FromDomainRuntimeType(tt.domain)
-		if result != tt.expected {
-			t.Fatalf("expected %s, got %s", tt.expected, result)
-		}
 	}
 }
 

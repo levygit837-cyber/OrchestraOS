@@ -3,8 +3,6 @@ package agent
 import (
 	"context"
 	_ "embed"
-
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // GLOBAL RULES (apply to ALL modules — do NOT remove):
@@ -52,5 +50,5 @@ var ModuleContract = struct {
 
 // AgentReader abstracts agent reads to avoid cyclic imports.
 type AgentReader interface {
-	GetByID(ctx context.Context, id string) (*domain.Agent, error)
+	GetByID(ctx context.Context, id string) (*Agent, error)
 }
