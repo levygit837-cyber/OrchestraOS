@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
