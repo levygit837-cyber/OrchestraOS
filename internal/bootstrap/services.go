@@ -111,16 +111,6 @@ func taskToDomain(t *taskmod.Task) *domain.Task {
 	}
 }
 
-// wuTaskReaderAdapter wraps task.Repository to return *task.Task for workunit.TaskReader.
-// TODO[ADR-0022]: remove when workunit.TaskReader uses *task.Task directly.
-type wuTaskReaderAdapter struct {
-	repo *taskmod.Repository
-}
-
-func (a *wuTaskReaderAdapter) GetByID(id string) (*taskmod.Task, error) {
-	return a.repo.GetByID(id)
-}
-
 // agentToDomain converts a local agent.Agent to domain.Agent for cross-module compatibility.
 // TODO[ADR-0022]: remove when orchestrator.AgentManager uses *agent.Agent directly.
 func agentToDomain(a *agentmod.Agent) *domain.Agent {
@@ -244,7 +234,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 // WorkUnitService creates a WorkUnitService with standard repository factories.
 func WorkUnitService(db *sql.DB) *workunitmod.WorkUnitService {
 	return workunitmod.NewWorkUnitService(db,
-		func(tx *sql.Tx) workunitmod.TaskReader { return &wuTaskReaderAdapter{repo: taskmod.NewRepository(tx)} },
+		func(tx *sql.Tx) workunitmod.TaskReader { return taskmod.NewRepository(tx) },
 		func(tx *sql.Tx) workunitmod.TaskGraphManager { return taskgraphmod.NewRepository(tx) },
 	)
 }
@@ -533,7 +523,6 @@ func (a *promptAdapter) PrepareRunPrompt(ctx context.Context, input orchestrator
 	}, nil
 }
 
-// TODO[ADR-0022]: reviewAdapter now passes through review.Review directly - no conversion needed
 type reviewAdapter struct{ svc *reviewmod.ReviewService }
 
 func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType reviewmod.ValidationGate) (*transition.OperationResult[*reviewmod.Review], error) {

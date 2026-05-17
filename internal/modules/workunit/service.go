@@ -25,7 +25,6 @@ type TaskReader interface {
 }
 
 // TaskGraphManager abstracts task-graph operations to avoid cyclic imports.
-// TODO[ADR-0022]: migrar para *taskgraph.TaskGraph quando A04 for concluido
 type TaskGraphManager interface {
 	GetActiveByTask(taskID string) (*taskgraphmod.TaskGraph, error)
 	GetByID(id string) (*taskgraphmod.TaskGraph, error)
