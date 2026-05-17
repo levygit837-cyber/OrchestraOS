@@ -10,11 +10,12 @@ linters:
     - staticcheck
     - ineffassign
     - gocritic
-    # TODO: re-enable after fixing existing violations
-    # - errcheck
-    # - forbidigo
-    # - misspell
-    # - unused
+  disable:
+    # TODO: re-enable after fixing existing violations in a dedicated lint PR
+    - errcheck
+    - forbidigo
+    - misspell
+    - unused
 
 linters-settings:
   govet:
