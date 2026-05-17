@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrchestraOS — Canvas</title>
+    <!--
+      aesthetic_dna: Spatial Graph Canvas / Agent Control Plane
+      ui_paradigm: Immersive HUD-over-Canvas
+      palette: Obsidian & Amber Gold (#0A0A0A, #111111) with Amber Accents (#F59E0B, #FBBF24)
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bgMain: '#0A0A0A',
+                        bgPanel: '#141414',
+                        bgHover: '#1C1C1C',
+                        bgCanvas: '#070707',
+                        textPri: '#E7E5E4',
+                        textSec: '#78716C',
+                        accent: '#F59E0B',
+                        accentLight: '#FBBF24',
+                        semantic: {
+                            success: '#22C55E',
+                            error: '#EF4444',
+                            warning: '#F97316',
+                            info: '#A8A29E'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(245,158,11,0.18)',
+                        'glow-active': '0 0 35px rgba(245,158,11,0.35)',
+                        'glow-panel': '0 8px 32px -8px rgba(0,0,0,0.7)',
+                        'inner-border': 'inset 0 0 0 1px rgba(120,113,108,0.12)',
+                        'inner-border-accent': 'inset 0 0 0 1px rgba(245,158,11,0.5)',
+                        'float': '0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(120,113,108,0.08)'
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'dash': 'dash 20s linear infinite',
+                    },
+                    keyframes: {
+                        pulseRing: {
+                            '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(245, 158, 11, 0.4)' },
+                            '70%': { transform: 'scale(1.02)', boxShadow: '0 0 0 10px rgba(245, 158, 11, 0)' },
+                            '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(245, 158, 11, 0)' }
+                        },
+                        dash: {
+                            to: { strokeDashoffset: '-100' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #292524; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #F59E0B; }
+
+        body {
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+            -webkit-font-smoothing: antialiased;
+            background-color: #0A0A0A;
+            color: #E7E5E4;
+            overflow: hidden;
+        }
+
+        /* Canvas Grid — warm undertone */
+        .grid-bg {
+            background-size: 48px 48px;
+            background-image:
+                linear-gradient(to right, rgba(120,113,108,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(120,113,108,0.03) 1px, transparent 1px);
+        }
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, #070707 85%);
+            pointer-events: none;
+        }
+
+        /* Node Animations */
+        .node-pulse { animation: pulseRing 2s infinite calc(var(--delay) * 1s); }
+        .running-edge {
+            stroke-dasharray: 4;
+            animation: dash 1s linear infinite;
+            stroke: #FBBF24;
+            filter: drop-shadow(0 0 4px rgba(245,158,11,0.5));
+            opacity: 0.85;
+        }
+        .standard-edge { stroke: rgba(120,113,108,0.2); transition: stroke 0.3s ease; }
+
+        .node-card {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: center center;
+            cursor: pointer;
+        }
+        .node-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            z-index: 20;
+        }
+        .node-selected {
+            box-shadow: inset 0 0 0 1px rgba(245,158,11,0.8), 0 0 35px rgba(245,158,11,0.3) !important;
+            border-color: transparent !important;
+        }
+
+        /* HUD Elements */
+        .hud-panel {
+            background: rgba(20, 20, 20, 0.88);
+            backdrop-filter: blur(16px) saturate(1.2);
+            -webkit-backdrop-filter: blur(16px) saturate(1.2);
+            border: 1px solid rgba(68, 64, 60, 0.2);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        /* Floating Inspector */
+        .floating-inspector {
+            position: absolute;
+            z-index: 50;
+            width: 320px;
+            max-height: 420px;
+            transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.96) translateY(8px);
+        }
+        .floating-inspector.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1) translateY(0);
+        }
+
+        /* Input Bar */
+        .input-bar {
+            background: rgba(10, 10, 10, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            box-shadow:
+                0 0 0 1px rgba(245, 158, 11, 0.05),
+                0 8px 32px rgba(0,0,0,0.6),
+                0 0 50px rgba(245,158,11,0.06);
+            transition: all 0.3s ease;
+        }
+        .input-bar:focus-within {
+            border-color: rgba(245, 158, 11, 0.4);
+            box-shadow:
+                0 0 0 1px rgba(245, 158, 11, 0.1),
+                0 8px 40px rgba(0,0,0,0.7),
+                0 0 60px rgba(245,158,11,0.12);
+        }
+
+        /* Canvas */
+        #dag-canvas-container {
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+        }
+        #dag-canvas-container:active { cursor: grabbing; }
+        #dag-inner {
+            transition: transform 0.15s ease-out;
+            transform-origin: top left;
+        }
+
+        /* Mini Map */
+        .minimap {
+            background: rgba(10, 10, 10, 0.85);
+            border: 1px solid rgba(68, 64, 60, 0.25);
+            backdrop-filter: blur(4px);
+        }
+        .minimap-viewport {
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        /* Warm scrollbar for inspector */
+        .floating-inspector ::-webkit-scrollbar-thumb { background: #292524; }
+        .floating-inspector ::-webkit-scrollbar-thumb:hover { background: #F59E0B; }
+    </style>
+</head>
+<body class="h-[100dvh] w-screen overflow-hidden selection:bg-accent/30 selection:text-white relative">
+
+    <!-- ==================== FULL-SCREEN CANVAS LAYER ==================== -->
+    <div id="dag-canvas-container" class="absolute inset-0 w-full h-full bg-bgCanvas grid-bg">
+        <div id="dag-inner" class="absolute w-[1400px] h-[900px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+
+            <!-- Connecting Lines SVG -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 1400 900" preserveAspectRatio="none">
+                <!-- Orch to Agent 1 -->
+                <path d="M700 160 C 700 280, 400 280, 400 360" class="running-edge" stroke-width="2" fill="none" />
+                <!-- Orch to Agent 2 -->
+                <path d="M700 160 C 700 280, 1000 280, 1000 360" class="standard-edge" stroke-width="1.5" fill="none" />
+                <!-- Agent 1 to WUs -->
+                <path d="M400 420 C 400 520, 250 520, 250 600" class="standard-edge stroke-semantic-success/50" stroke-width="1.5" fill="none" />
+                <path d="M400 420 C 400 520, 400 520, 400 600" class="running-edge" stroke-width="2" fill="none" />
+                <path d="M400 420 C 400 520, 550 520, 550 600" class="standard-edge" stroke-width="1.5" fill="none" />
+                <!-- Agent 2 to WUs -->
+                <path d="M1000 420 C 1000 520, 850 520, 850 600" class="standard-edge" stroke-dasharray="4 4" stroke-width="1.5" fill="none" />
+                <path d="M1000 420 C 1000 520, 1000 520, 1000 600" class="standard-edge stroke-semantic-success/50" stroke-width="1.5" fill="none" />
+                <path d="M1000 420 C 1000 520, 1150 520, 1150 600" class="standard-edge" stroke-width="1.5" fill="none" />
+            </svg>
+
+            <!-- Node: Orchestrator (Central, larger) -->
+            <div class="node-card absolute top-[100px] left-[700px] -translate-x-1/2 -translate-y-1/2 z-10 w-32 h-32" data-id="orch">
+                <div class="w-full h-full bg-[#1C1C1C]/90 backdrop-blur-md rounded-[32px] border border-accent/50 shadow-glow-active flex flex-col items-center justify-center gap-1 relative overflow-hidden before:absolute before:inset-0 before:bg-accent/5 before:pointer-events-none" style="transform: rotate(45deg);">
+                    <div class="flex flex-col items-center justify-center gap-1" style="transform: rotate(-45deg);">
+                        <svg class="w-8 h-8 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span class="text-[11px] font-bold text-white tracking-widest uppercase">Orch</span>
+                    </div>
+                </div>
+                <!-- Label -->
+                <div class="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 text-center pointer-events-none">
+                    <span class="bg-bgMain/90 backdrop-blur px-2.5 py-1 rounded-md text-[10px] font-mono text-accent tracking-widest uppercase border border-accent/20 shadow-lg">Supervisor</span>
+                </div>
+            </div>
+
+            <!-- Node: Agent 1 (Running) -->
+            <div class="node-card absolute top-[390px] left-[400px] -translate-x-1/2 -translate-y-1/2 z-10 w-48" data-id="agent-1" style="--delay: 0">
+                <div class="node-pulse bg-[#1C1C1C]/90 backdrop-blur-md rounded-xl border border-accentLight/60 shadow-glow-active flex items-center p-4 gap-3 relative overflow-hidden">
+                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-accentLight"></div>
+                     <div class="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                     </div>
+                     <div class="flex-1 min-w-0">
+                         <p class="text-sm font-semibold text-white truncate">Codex-Builder</p>
+                         <p class="text-[11px] font-mono text-accentLight flex items-center gap-1.5 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-accentLight animate-pulse shadow-glow"></span> Running (1 WU)</p>
+                     </div>
+                </div>
+            </div>
+
+            <!-- Node: Agent 2 (Idle) -->
+            <div class="node-card absolute top-[390px] left-[1000px] -translate-x-1/2 -translate-y-1/2 z-10 w-48" data-id="agent-2">
+                <div class="bg-[#1C1C1C]/90 backdrop-blur-md rounded-xl border border-[#44403C]/40 flex items-center p-4 gap-3 hover:border-[#57534E]/60 transition-colors">
+                     <div class="w-10 h-10 rounded-lg bg-[#292524]/60 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                     </div>
+                     <div class="flex-1 min-w-0">
+                         <p class="text-sm font-semibold text-textPri truncate">Review-Bot</p>
+                         <p class="text-[11px] font-mono text-textSec mt-0.5">Idle • Waiting</p>
+                     </div>
+                </div>
+            </div>
+
+            <!-- Node: WU 001 (Done) -->
+            <div class="node-card absolute top-[640px] left-[250px] -translate-x-1/2 -translate-y-1/2 z-10 w-[200px]" data-id="wu-001">
+                <div class="bg-[#1C1C1C]/95 rounded-lg border border-[#292524]/60 flex flex-col p-3 overflow-hidden relative hover:border-semantic-success/40 transition-colors">
+                    <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-semantic-success"></div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[10px] font-mono bg-[#1C1917] text-textSec px-1.5 py-0.5 rounded border border-[#292524]/50">wu-001</span>
+                        <svg class="w-3.5 h-3.5 text-semantic-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <p class="text-xs font-medium text-textPri truncate">Criar schema base</p>
+                </div>
+            </div>
+
+            <!-- Node: WU 002 (Running) -->
+            <div class="node-card absolute top-[640px] left-[400px] -translate-x-1/2 -translate-y-1/2 z-10 w-[200px]" data-id="wu-002" style="--delay: 0.5">
+                <div class="node-pulse bg-[#1C1C1C]/95 rounded-lg border border-accentLight/50 flex flex-col p-3 relative shadow-glow">
+                    <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-accentLight"></div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[10px] font-mono bg-accent/10 text-accentLight px-1.5 py-0.5 rounded border border-accent/20">wu-002</span>
+                        <span class="flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accentLight opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-accentLight"></span></span>
+                    </div>
+                    <p class="text-xs font-medium text-white truncate">Implementar envelope</p>
+                </div>
+            </div>
+
+            <!-- Node: WU 003 (Pending) -->
+            <div class="node-card absolute top-[640px] left-[550px] -translate-x-1/2 -translate-y-1/2 z-10 w-[200px]" data-id="wu-003">
+                <div class="bg-[#1C1C1C]/95 rounded-lg border border-[#292524]/40 flex flex-col p-3 relative border-dashed opacity-70">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[10px] font-mono border border-[#44403C]/40 text-textSec px-1.5 py-0.5 rounded">wu-003</span>
+                        <svg class="w-3.5 h-3.5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <p class="text-xs font-medium text-textSec truncate">Adicionar middleware</p>
+                </div>
+            </div>
+
+            <!-- Node: WU 004 (Pending) -->
+            <div class="node-card absolute top-[640px] left-[850px] -translate-x-1/2 -translate-y-1/2 z-10 w-[200px]" data-id="wu-004">
+                <div class="bg-[#1C1C1C]/95 rounded-lg border border-[#292524]/40 flex flex-col p-3 relative border-dashed opacity-70">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[10px] font-mono border border-[#44403C]/40 text-textSec px-1.5 py-0.5 rounded">wu-004</span>
+                        <svg class="w-3.5 h-3.5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <p class="text-xs font-medium text-textSec truncate">Validar E2E</p>
+                </div>
+            </div>
+
+            <!-- Node: WU 005 (Done) -->
+            <div class="node-card absolute top-[640px] left-[1000px] -translate-x-1/2 -translate-y-1/2 z-10 w-[200px]" data-id="wu-005">
+                <div class="bg-[#1C1C1C]/95 rounded-lg border border-[#292524]/60 flex flex-col p-3 relative overflow-hidden hover:border-semantic-success/40 transition-colors">
+                    <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-semantic-success"></div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[10px] font-mono bg-[#1C1917] text-textSec px-1.5 py-0.5 rounded border border-[#292524]/50">wu-005</span>
+                        <svg class="w-3.5 h-3.5 text-semantic-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <p class="text-xs font-medium text-textPri truncate">Setup CI pipeline</p>
+                </div>
+            </div>
+
+            <!-- Node: WU 006 (Pending) -->
+            <div class="node-card absolute top-[640px] left-[1150px] -translate-x-1/2 -translate-y-1/2 z-10 w-[200px]" data-id="wu-006">
+                <div class="bg-[#1C1C1C]/95 rounded-lg border border-[#292524]/40 flex flex-col p-3 relative border-dashed opacity-70">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[10px] font-mono border border-[#44403C]/40 text-textSec px-1.5 py-0.5 rounded">wu-006</span>
+                        <svg class="w-3.5 h-3.5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <p class="text-xs font-medium text-textSec truncate">Documentar API</p>
+                </div>
+            </div>
+
+            <!-- Node: Task 099 (Root) -->
+            <div class="node-card absolute top-[60px] left-[400px] -translate-x-1/2 -translate-y-1/2 z-10" data-id="task-099">
+                <div class="bg-[#1C1C1C]/90 backdrop-blur-md rounded-lg border border-semantic-info/30 flex items-center px-4 py-2.5 gap-2.5 hover:border-semantic-info/50 transition-colors">
+                    <span class="w-2 h-2 rounded-full bg-semantic-info shadow-[0_0_8px_rgba(168,162,158,0.4)]"></span>
+                    <span class="text-[11px] font-mono text-semantic-info tracking-wide">task-099</span>
+                    <span class="w-px h-3 bg-[#44403C]/40"></span>
+                    <span class="text-[11px] text-textPri">Feature: Event Envelope</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== HUD OVERLAYS ==================== -->
+
+    <!-- Top Bar -->
+    <div class="absolute top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-5 pointer-events-none">
+        <!-- Left: Logo + Context -->
+        <div class="flex items-center gap-3 pointer-events-auto">
+            <div class="hud-panel rounded-lg px-3 py-2 flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-md bg-gradient-to-br from-accentLight to-accent flex items-center justify-center shadow-glow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-bgMain"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="font-bold text-sm text-white tracking-tight">Orchestra<span class="text-accentLight">OS</span></span>
+                    <span class="text-[10px] font-mono text-textSec/70 uppercase tracking-widest">Canvas</span>
+                </div>
+            </div>
+
+            <!-- Breadcrumb / Context Chip -->
+            <div class="hud-panel rounded-lg px-3 py-2 flex items-center gap-2">
+                <span class="text-[10px] font-mono text-accentLight/80 uppercase tracking-wider">View</span>
+                <span class="text-[11px] text-textPri font-medium">task-099</span>
+                <span class="text-[10px] text-textSec/50">Event Envelope</span>
+            </div>
+        </div>
+
+        <!-- Right: System Status + Actions -->
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <!-- Compact Stats HUD -->
+            <div class="hud-panel rounded-lg px-3 py-2 flex items-center gap-4">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-accentLight animate-pulse shadow-glow"></span>
+                    <span class="text-[10px] font-mono text-textSec"><span class="text-white">2</span> Agents</span>
+                </div>
+                <div class="w-px h-3 bg-[#292524]/60"></div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-semantic-success"></span>
+                    <span class="text-[10px] font-mono text-textSec"><span class="text-white">2</span> Done</span>
+                </div>
+                <div class="w-px h-3 bg-[#292524]/60"></div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-semantic-warning"></span>
+                    <span class="text-[10px] font-mono text-textSec"><span class="text-white">4</span> Pending</span>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <button class="hud-panel rounded-lg w-9 h-9 flex items-center justify-center hover:bg-bgHover/50 transition-colors" title="Notifications">
+                <div class="relative">
+                    <svg class="w-4 h-4 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accentLight rounded-full border border-bgPanel shadow-glow"></span>
+                </div>
+            </button>
+
+            <button class="hud-panel rounded-lg w-9 h-9 flex items-center justify-center hover:bg-bgHover/50 transition-colors" title="Settings">
+                <svg class="w-4 h-4 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Inspector (Positioned dynamically via JS) -->
+    <div id="floating-inspector" class="floating-inspector hud-panel rounded-xl overflow-hidden flex flex-col">
+        <div class="h-10 border-b border-[#292524]/50 flex items-center px-3 justify-between bg-[#0A0A0A]/40 shrink-0">
+            <h3 class="text-xs font-semibold tracking-tight text-white flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                Inspector
+            </h3>
+            <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-semantic-success animate-pulse hidden" id="live-indicator"></span>
+                <span class="text-[9px] font-mono text-textSec uppercase">Live</span>
+                <button onclick="closeInspector()" class="w-5 h-5 rounded hover:bg-bgHover flex items-center justify-center text-textSec hover:text-white transition-colors ml-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+        <div id="inspector-content" class="p-3.5 flex-1 overflow-y-auto w-full" style="max-height: 360px;">
+            <!-- Default Empty State -->
+            <div class="h-full flex flex-col items-center justify-center text-center opacity-60 py-6">
+                <div class="w-10 h-10 rounded-full border border-dashed border-textSec flex items-center justify-center mb-2">
+                    <svg class="w-4 h-4 text-textSec" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+                </div>
+                <p class="text-xs font-medium text-textPri mb-0.5">Nada Selecionado</p>
+                <p class="text-[10px] text-textSec max-w-[180px]">Clique em um nó do grafo para inspecionar.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Floating Input Bar -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 pointer-events-none">
+        <div class="input-bar rounded-xl flex items-center gap-3 px-4 py-3 pointer-events-auto">
+            <!-- Agent Avatar / Context -->
+            <div class="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center shrink-0 border border-accent/20">
+                <svg class="w-4 h-4 text-accentLight" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+
+            <input
+                type="text"
+                id="canvas-input"
+                placeholder="Orquestre um novo fluxo, delegue a um agente ou faça uma pergunta..."
+                class="flex-1 bg-transparent text-sm text-white placeholder-textSec/50 focus:outline-none font-sans"
+                autocomplete="off"
+            />
+
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button class="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center text-textSec hover:text-white transition-colors" title="Attach context">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                </button>
+                <button class="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center text-textSec hover:text-white transition-colors" title="Voice">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                </button>
+                <div class="w-px h-4 bg-[#292524]/60 mx-0.5"></div>
+                <button class="w-8 h-8 rounded-lg bg-accent/20 hover:bg-accent/30 flex items-center justify-center text-accentLight transition-colors border border-accent/20">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Input hints -->
+        <div class="flex items-center justify-center gap-3 mt-2 opacity-60">
+            <span class="text-[10px] font-mono text-textSec/70">Shift + Enter nova linha</span>
+            <span class="w-1 h-1 rounded-full bg-textSec/30"></span>
+            <span class="text-[10px] font-mono text-textSec/70">Esc para cancelar</span>
+            <span class="w-1 h-1 rounded-full bg-textSec/30"></span>
+            <span class="text-[10px] font-mono text-accentLight/70">@ para mencionar agente</span>
+        </div>
+    </div>
+
+    <!-- Bottom-Right: Zoom + Mini Map -->
+    <div class="absolute bottom-6 right-5 z-40 flex flex-col items-end gap-3 pointer-events-none">
+
+        <!-- Zoom Controls -->
+        <div class="hud-panel rounded-lg p-1 flex flex-col gap-0.5 pointer-events-auto">
+            <button onclick="zoomCanvas(0.1)" class="w-8 h-8 rounded hover:bg-bgHover flex items-center justify-center text-textSec hover:text-white transition-colors" title="Zoom In">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </button>
+            <button onclick="zoomCanvas(-0.1)" class="w-8 h-8 rounded hover:bg-bgHover flex items-center justify-center text-textSec hover:text-white transition-colors" title="Zoom Out">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+            </button>
+            <div class="h-px bg-[#292524]/50 my-0.5 mx-1"></div>
+            <button onclick="resetCanvas()" class="w-8 h-8 rounded hover:bg-bgHover flex items-center justify-center text-textSec hover:text-white transition-colors" title="Fit View">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+        </div>
+
+        <!-- Mini Map -->
+        <div class="minimap rounded-lg w-40 h-28 relative overflow-hidden pointer-events-auto">
+            <div class="absolute inset-0 grid-bg opacity-30"></div>
+            <!-- Simplified nodes on minimap -->
+            <div class="absolute top-[15%] left-[50%] w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-accent/60 border border-accent/40"></div>
+            <div class="absolute top-[42%] left-[28%] w-4 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-accentLight/50 border border-accentLight/30"></div>
+            <div class="absolute top-[42%] left-[72%] w-4 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-textSec/40 border border-textSec/20"></div>
+            <div class="absolute top-[68%] left-[18%] w-5 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-semantic-success/40 border border-semantic-success/20"></div>
+            <div class="absolute top-[68%] left-[28%] w-5 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-accentLight/50 border border-accentLight/30"></div>
+            <div class="absolute top-[68%] left-[38%] w-5 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-textSec/30 border border-textSec/15"></div>
+            <div class="absolute top-[68%] left-[62%] w-5 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-textSec/30 border border-textSec/15"></div>
+            <div class="absolute top-[68%] left-[72%] w-5 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-semantic-success/40 border border-semantic-success/20"></div>
+            <div class="absolute top-[68%] left-[82%] w-5 h-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-textSec/30 border border-textSec/15"></div>
+            <!-- Viewport indicator -->
+            <div class="minimap-viewport absolute top-[10%] left-[10%] w-[80%] h-[80%] rounded pointer-events-none"></div>
+        </div>
+    </div>
+
+    <!-- Bottom-Left: Navigation Dock -->
+    <div class="absolute bottom-6 left-5 z-40 pointer-events-none">
+        <div class="hud-panel rounded-xl p-1.5 flex flex-col gap-1 pointer-events-auto">
+            <a href="#" class="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 text-accentLight flex items-center justify-center transition-colors" title="Canvas">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+            </a>
+            <a href="#" class="w-9 h-9 rounded-lg hover:bg-bgHover/50 text-textSec hover:text-white flex items-center justify-center transition-colors" title="Tasks">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </a>
+            <a href="#" class="w-9 h-9 rounded-lg hover:bg-bgHover/50 text-textSec hover:text-white flex items-center justify-center transition-colors" title="Runs">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </a>
+            <a href="#" class="w-9 h-9 rounded-lg hover:bg-bgHover/50 text-textSec hover:text-white flex items-center justify-center transition-colors" title="Agents">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </a>
+            <div class="h-px bg-[#292524]/50 my-0.5 mx-1"></div>
+            <a href="#" class="w-9 h-9 rounded-lg hover:bg-accent/10 text-accentLight hover:border hover:border-accent/30 flex items-center justify-center transition-colors" title="New Task">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <script>
+        // Mock Data for Inspector
+        const nodesData = {
+            'orch': {
+                type: 'orchestrator',
+                title: 'Orchestrator Core',
+                status: 'Active Supervisor',
+                uptime: '14d 02h 45m',
+                metrics: [
+                    { label: 'Connected Agents', val: 2 },
+                    { label: 'Active Work Units', val: 1 },
+                    { label: 'Pending Queue', val: 4 }
+                ],
+                logs: [
+                    "[SYS] Route calculation for task-099...",
+                    "[SYS] Allocated wu-002 to Codex-Builder",
+                    "[SYS] Agent Review-Bot idle, waiting for trigger",
+                    "[NET] Heartbeat: all agents responsive"
+                ]
+            },
+            'agent-1': {
+                type: 'agent',
+                name: 'Codex-Builder',
+                profile: 'Software Engineer (Go/Node)',
+                status: 'Running',
+                session: '02h 14m',
+                capabilities: ['FileSystem', 'Linter', 'Bash(Sandbox)', 'Git'],
+                currentTask: 'wu-002'
+            },
+            'agent-2': {
+                type: 'agent',
+                name: 'Review-Bot',
+                profile: 'QA / Security Analyst',
+                status: 'Idle',
+                session: '-',
+                capabilities: ['StaticAnalysis', 'GitRead', 'Playwright'],
+                currentTask: 'None'
+            },
+            'wu-001': {
+                type: 'wu',
+                id: 'wu-001',
+                title: 'Criar schema base',
+                objective: 'Define the SQL migration for events payload.',
+                status: 'Completed',
+                agent: 'System',
+                task: 'task-099',
+                depends: 'None',
+                criteria: [
+                    { t: 'SQL file generated', d: true },
+                    { t: 'Keys checked', d: true }
+                ]
+            },
+            'wu-002': {
+                type: 'wu',
+                id: 'wu-002',
+                title: 'Implementar envelope',
+                objective: 'Wrap standard API responses with context metadata.',
+                status: 'Running',
+                agent: 'Codex-Builder',
+                task: 'task-099',
+                depends: 'wu-001',
+                criteria: [
+                    { t: 'Go structs defined', d: true },
+                    { t: 'Middleware updated', d: false },
+                    { t: 'Unit tests attached', d: false }
+                ]
+            },
+            'wu-003': {
+                type: 'wu',
+                id: 'wu-003',
+                title: 'Adicionar middleware',
+                objective: 'Add logging and auth middleware to event router.',
+                status: 'Pending',
+                agent: 'Codex-Builder (Target)',
+                task: 'task-099',
+                depends: 'wu-002',
+                criteria: [
+                    { t: 'Middleware chain defined', d: false },
+                    { t: 'Auth checks implemented', d: false }
+                ]
+            },
+            'wu-004': {
+                type: 'wu',
+                id: 'wu-004',
+                title: 'Validar E2E',
+                objective: 'Run playwright suite on staging container.',
+                status: 'Pending',
+                agent: 'Review-Bot (Target)',
+                task: 'task-099',
+                depends: 'wu-002, wu-003',
+                criteria: [
+                    { t: 'All smoke tests pass', d: false }
+                ]
+            },
+            'wu-005': {
+                type: 'wu',
+                id: 'wu-005',
+                title: 'Setup CI pipeline',
+                objective: 'Configure GitHub Actions for automated testing.',
+                status: 'Completed',
+                agent: 'System',
+                task: 'task-099',
+                depends: 'None',
+                criteria: [{ t: 'Workflow file created', d: true }]
+            },
+            'wu-006': {
+                type: 'wu',
+                id: 'wu-006',
+                title: 'Documentar API',
+                objective: 'Generate OpenAPI spec and documentation.',
+                status: 'Pending',
+                agent: 'Review-Bot (Target)',
+                task: 'task-099',
+                depends: 'wu-003',
+                criteria: [
+                    { t: 'OpenAPI spec generated', d: false },
+                    { t: 'Docs deployed', d: false }
+                ]
+            },
+            'task-099': {
+                type: 'task',
+                id: 'task-099',
+                title: 'Event Envelope',
+                description: 'Implement the event envelope system for standardized messaging across agents.',
+                status: 'In Progress',
+                progress: '2/6',
+                created: '2024-01-15'
+            }
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('dag-canvas-container');
+        const innerCanvas = document.getElementById('dag-inner');
+        const inspector = document.getElementById('inspector-content');
+        const floatingInspector = document.getElementById('floating-inspector');
+        const liveInd = document.getElementById('live-indicator');
+        const nodeCards = document.querySelectorAll('.node-card');
+
+        // Zoom Logic
+        let scale = 1;
+        function updateTransform() {
+            innerCanvas.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+        window.zoomCanvas = function(delta) {
+            scale = Math.max(0.3, Math.min(2.5, scale + delta));
+            updateTransform();
+        }
+        window.resetCanvas = function() {
+            scale = 1;
+            updateTransform();
+        }
+        window.closeInspector = function() {
+            floatingInspector.classList.remove('active');
+            nodeCards.forEach(c => c.classList.remove('node-selected'));
+            liveInd.classList.add('hidden');
+        }
+
+        // Pan Logic
+        let isPanning = false;
+        let startX, startY;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.target === canvas || e.target.closest('#dag-canvas-container') === canvas) {
+                isPanning = true;
+                canvas.style.cursor = 'grabbing';
+                startX = e.pageX - canvas.offsetLeft;
+                startY = e.pageY - canvas.offsetTop;
+            }
+        });
+        canvas.addEventListener('mouseleave', () => { isPanning = false; canvas.style.cursor = 'grab'; });
+        canvas.addEventListener('mouseup', () => { isPanning = false; canvas.style.cursor = 'grab'; });
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            e.preventDefault();
+            const x = e.pageX - canvas.offsetLeft;
+            const y = e.pageY - canvas.offsetTop;
+            startX = x;
+            startY = y;
+        });
+
+        // Wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                zoomCanvas(delta);
+            }
+        }, { passive: false });
+
+        // Generate Inspector HTML based on Node Type
+        function renderInspector(id) {
+            const data = nodesData[id];
+            if (!data) return;
+
+            liveInd.classList.remove('hidden');
+
+            let html = '';
+            if (data.type === 'orchestrator') {
+                html = `
+                    <div class="mb-4 flex items-center justify-between">
+                        <div>
+                            <div class="text-[9px] font-mono text-accent mb-1 uppercase tracking-wider border border-accent/20 bg-accent/5 inline-block px-1.5 py-0.5 rounded">Supervisor</div>
+                            <h2 class="text-base font-bold text-white tracking-tight">${data.title}</h2>
+                        </div>
+                        <div class="w-8 h-8 rounded-lg bg-[#1C1C1C] border border-accent/30 shadow-glow flex items-center justify-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-accentLight animate-pulse"></span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        ${data.metrics.map(m => `
+                        <div class="bg-bgMain/80 border border-[#292524]/50 p-2 rounded-md">
+                            <p class="text-[9px] text-textSec uppercase tracking-wider mb-0.5">${m.label}</p>
+                            <p class="text-lg font-mono text-white">${m.val}</p>
+                        </div>`).join('')}
+                        <div class="bg-bgMain/80 border border-[#292524]/50 p-2 rounded-md">
+                            <p class="text-[9px] text-textSec uppercase tracking-wider mb-0.5">Uptime</p>
+                            <p class="text-xs font-mono text-textPri mt-1">${data.uptime}</p>
+                        </div>
+                    </div>
+                    <p class="text-[10px] font-bold text-white mb-2 uppercase tracking-wide border-b border-[#292524]/50 pb-1">Live Tail</p>
+                    <div class="bg-[#070707] rounded-md p-2.5 font-mono text-[10px] text-textSec border border-[#292524]/50 space-y-1.5">
+                        ${data.logs.map(l => `<div><span class="text-accentLight">${l.split(' ')[0]}</span> ${l.substring(l.indexOf(' ')+1)}</div>`).join('')}
+                        <div class="animate-pulse">_</div>
+                    </div>
+                `;
+            } else if (data.type === 'agent') {
+                const isRun = data.status === 'Running';
+                const statusColor = isRun ? 'text-accentLight border-accentLight/30 bg-accentLight/10' : 'text-textSec border-textSec/30 bg-textSec/10';
+                html = `
+                    <div class="mb-4 flex items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white tracking-tight mb-0.5">${data.name}</h2>
+                            <p class="text-[10px] text-textSec">${data.profile}</p>
+                        </div>
+                        <span class="inline-flex px-1.5 py-0.5 rounded border ${statusColor} text-[9px] font-bold uppercase tracking-wider shrink-0">
+                            ${data.status}
+                        </span>
+                    </div>
+                    <div class="space-y-3 mb-4 text-xs">
+                        <div class="flex justify-between border-b border-[#292524]/50 pb-1.5">
+                            <span class="text-textSec">Current Task</span>
+                            <span class="font-mono text-white flex items-center gap-1">${isRun ? '<span class="w-1 h-1 bg-accentLight rounded-full animate-pulse"></span>' : ''} ${data.currentTask}</span>
+                        </div>
+                        <div class="flex justify-between border-b border-[#292524]/50 pb-1.5">
+                            <span class="text-textSec">Session</span>
+                            <span class="font-mono text-white">${data.session}</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] font-bold text-white mb-2 uppercase tracking-wide">Capabilities</p>
+                    <div class="flex flex-wrap gap-1.5 mb-4">
+                        ${data.capabilities.map(c => `<span class="px-1.5 py-0.5 rounded bg-[#0A0A0A] border border-[#292524]/50 text-[10px] font-mono text-textSec">${c}</span>`).join('')}
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="flex-1 bg-white text-bgMain hover:bg-stone-200 font-medium text-xs py-1.5 rounded transition-colors ${!isRun?'opacity-50 cursor-not-allowed':''}">Ver Run</button>
+                        <button class="flex-1 bg-bgMain border border-[#292524]/50 hover:bg-[#292524]/30 text-white font-medium text-xs py-1.5 rounded transition-colors">Logs</button>
+                    </div>
+                `;
+            } else if (data.type === 'wu') {
+                const isRun = data.status === 'Running';
+                const isDone = data.status === 'Completed';
+                let sColor = isRun ? 'text-accentLight border-accentLight/30 bg-accentLight/10' : (isDone ? 'text-semantic-success border-semantic-success/30 bg-semantic-success/10' : 'text-textSec border-[#292524]/50 bg-[#292524]/20');
+                html = `
+                    <div class="mb-4 flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-mono bg-[#0A0A0A] px-1.5 py-0.5 rounded border border-[#292524]/50 text-textSec">${data.id}</span>
+                                <span class="text-[9px] text-textSec">in <a href="#" class="underline hover:text-white">${data.task}</a></span>
+                            </div>
+                            <h2 class="text-sm font-bold text-white leading-tight">${data.title}</h2>
+                        </div>
+                        <span class="inline-flex px-1.5 py-0.5 rounded border ${sColor} text-[9px] font-bold uppercase tracking-wider shrink-0 mt-0.5">
+                            ${data.status}
+                        </span>
+                    </div>
+                    <div class="bg-[#0A0A0A]/50 border border-[#292524]/50 rounded-md p-2.5 mb-3">
+                        <p class="text-[11px] text-textSec leading-relaxed">"${data.objective}"</p>
+                    </div>
+                    <div class="space-y-2 mb-3 text-[11px] border-y border-[#292524]/50 py-3">
+                        <div class="flex justify-between">
+                            <span class="text-textSec">Assigned</span>
+                            <span class="font-medium text-white">${data.agent}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-textSec">Depends</span>
+                            <span class="font-mono text-textSec">${data.depends}</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] font-bold text-white mb-2 uppercase tracking-wide">Criteria</p>
+                    <div class="space-y-1.5 mb-2">
+                        ${data.criteria.map(c => `
+                            <div class="flex items-start gap-2 text-xs">
+                                <div class="mt-0.5 w-3.5 h-3.5 rounded border ${c.d ? 'bg-semantic-success/20 border-semantic-success text-semantic-success' : 'border-[#44403C]/50'} flex items-center justify-center shrink-0">
+                                    ${c.d ? '<svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''}
+                                </div>
+                                <span class="${c.d ? 'text-textSec line-through' : 'text-textPri'}">${c.t}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (data.type === 'task') {
+                html = `
+                    <div class="mb-4 flex items-start justify-between gap-2">
+                        <div>
+                            <span class="text-[9px] font-mono text-semantic-info uppercase tracking-wider border border-semantic-info/20 bg-semantic-info/5 inline-block px-1.5 py-0.5 rounded mb-1">Task</span>
+                            <h2 class="text-base font-bold text-white tracking-tight">${data.title}</h2>
+                        </div>
+                        <span class="text-[9px] font-mono text-textSec mt-1">${data.id}</span>
+                    </div>
+                    <div class="bg-[#0A0A0A]/50 border border-[#292524]/50 rounded-md p-2.5 mb-3">
+                        <p class="text-[11px] text-textSec leading-relaxed">${data.description}</p>
+                    </div>
+                    <div class="space-y-2 mb-4 text-[11px]">
+                        <div class="flex justify-between">
+                            <span class="text-textSec">Status</span>
+                            <span class="font-medium text-accentLight">${data.status}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-textSec">Progress</span>
+                            <span class="font-mono text-white">${data.progress} WUs</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-textSec">Created</span>
+                            <span class="font-mono text-textSec">${data.created}</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-bgMain rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-accentLight h-full rounded-full" style="width: 33%"></div>
+                    </div>
+                    <p class="text-[9px] text-textSec mt-1.5 text-right">33% complete</p>
+                `;
+            }
+            inspector.innerHTML = html;
+        }
+
+        // Node Interaction with Floating Inspector positioning
+        nodeCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                nodeCards.forEach(c => c.classList.remove('node-selected'));
+                card.classList.add('node-selected');
+
+                const id = card.getAttribute('data-id');
+                renderInspector(id);
+
+                // Position inspector intelligently
+                const rect = card.getBoundingClientRect();
+                const inspectorWidth = 320;
+                const inspectorHeight = 400;
+                const padding = 20;
+
+                let left = rect.right + padding;
+                let top = rect.top;
+
+                // If too close to right edge, show on left
+                if (left + inspectorWidth > window.innerWidth - 20) {
+                    left = rect.left - inspectorWidth - padding;
+                }
+                // If too close to bottom, align to bottom of node
+                if (top + inspectorHeight > window.innerHeight - 20) {
+                    top = window.innerHeight - inspectorHeight - 20;
+                }
+                // If too close to top
+                if (top < 60) top = 60;
+
+                floatingInspector.style.left = left + 'px';
+                floatingInspector.style.top = top + 'px';
+                floatingInspector.classList.add('active');
+            });
+        });
+
+        // Click canvas background to deselect
+        canvas.addEventListener('click', (e) => {
+            if (e.target === canvas || e.target.closest('#dag-inner') === innerCanvas) {
+                closeInspector();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeInspector();
+                document.getElementById('canvas-input').blur();
+            }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('canvas-input').focus();
+            }
+        });
+
+        // Focus input on load (subtle)
+        setTimeout(() => {
+            document.getElementById('canvas-input').focus();
+        }, 500);
+    </script>
+</body>
+</html>
