@@ -1,36 +1,20 @@
-package coordination
+package prompt
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
-// PromptOrchestrator coordinates cross-module data gathering for prompt preparation.
-type PromptOrchestrator struct {
-	db            *sql.DB
-	promptService *promptmod.PromptService
-}
-
-// NewPromptOrchestrator creates a new prompt orchestrator.
-func NewPromptOrchestrator(db *sql.DB, promptService *promptmod.PromptService) *PromptOrchestrator {
-	return &PromptOrchestrator{
-		db:            db,
-		promptService: promptService,
-	}
-}
-
 // PrepareRunPrompt gathers run, work unit, task and session data and prepares the prompt.
-func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptmod.PrepareRunPromptInput) (*promptmod.PreparedRunPrompt, error) {
-	const op = "prompt_orchestrator.prepare_run_prompt"
+func (s *PromptService) PrepareRunPrompt(ctx context.Context, input PrepareRunPromptInput) (*PreparedRunPrompt, error) {
+	const op = "prompt_service.prepare_run_prompt"
 	if err := validation.RequiredUUID(input.RunID, "run_id", op); err != nil {
 		return nil, err
 	}
@@ -50,7 +34,7 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 		return nil, err
 	}
 
-	tx, err := dbcore.BeginTx(ctx, o.db, "prompt_orchestrator.begin_prepare")
+	tx, err := dbcore.BeginTx(ctx, s.db, "prompt_service.begin_prepare")
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +63,7 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "work_unit_id does not belong to task_id")
 	}
 
-	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
+	return s.PrepareAndPersistPrompt(ctx, tx, PrepareAndPersistInput{
 		Run:                    run,
 		WorkUnit:               wu,
 		Task:                   task,

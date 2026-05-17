@@ -114,7 +114,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := promptService.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -345,7 +345,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := promptService.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})

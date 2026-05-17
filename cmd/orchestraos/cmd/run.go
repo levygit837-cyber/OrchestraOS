@@ -95,7 +95,7 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to connect agent session: %w", err)
 		}
 
-		preparedPrompt, err := coordination.NewPromptOrchestrator(getDB(), bootstrap.PromptService(getDB())).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
+		preparedPrompt, err := bootstrap.PromptService(getDB()).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
 			RunID:          run.ID,
 			AgentSessionID: session.ID,
 		})
