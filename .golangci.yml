@@ -10,12 +10,14 @@ linters:
     - staticcheck
     - ineffassign
     - gocritic
-  disable:
-    # TODO: re-enable after fixing existing violations in a dedicated lint PR
     - forbidigo
     - misspell
 
 linters-settings:
+  forbidigo:
+    forbid:
+      - p: os\.Exit
+        msg: "use error return instead of os.Exit in library code"
   govet:
     enable-all: true
     disable:
@@ -27,6 +29,10 @@ issues:
     - migrations
     - vendor
     - .go
+  exclude-rules:
+    - path: cmd/
+      linters:
+        - forbidigo
   exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
