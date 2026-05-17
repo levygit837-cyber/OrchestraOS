@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	"google.golang.org/genai"
 )
 
@@ -65,7 +67,7 @@ func NewGeminiPlanner() (*GeminiPlanner, error) {
 }
 
 // Plan decomposes the given task into a GraphPlan using Gemini.
-func (p *GeminiPlanner) Plan(ctx context.Context, task *domain.Task) (*GraphPlan, error) {
+func (p *GeminiPlanner) Plan(ctx context.Context, task *task.Task) (*GraphPlan, error) {
 	op := "gemini_planner.plan"
 
 	prompt, err := PlannerPrompt(task)
@@ -118,7 +120,7 @@ func (p *GeminiPlanner) Plan(ctx context.Context, task *domain.Task) (*GraphPlan
 }
 
 // convertToGraphPlan transforms planner output into a GraphPlan with UUIDs and resolved dependencies.
-func (p *GeminiPlanner) convertToGraphPlan(task *domain.Task, output *plannerOutput) (*GraphPlan, error) {
+func (p *GeminiPlanner) convertToGraphPlan(task *task.Task, output *plannerOutput) (*GraphPlan, error) {
 	op := "gemini_planner.convert"
 
 	if output == nil {
@@ -128,7 +130,7 @@ func (p *GeminiPlanner) convertToGraphPlan(task *domain.Task, output *plannerOut
 	graphID := uuid.New().String()
 	wuCount := len(output.WorkUnits)
 
-	workUnits := make([]domain.WorkUnit, wuCount)
+	workUnits := make([]workunit.WorkUnit, wuCount)
 	idByIndex := make(map[int]string, wuCount)
 
 	// First pass: generate IDs
@@ -152,14 +154,14 @@ func (p *GeminiPlanner) convertToGraphPlan(task *domain.Task, output *plannerOut
 			profile = "default"
 		}
 
-		workUnits[i] = domain.WorkUnit{
+		workUnits[i] = workunit.WorkUnit{
 			ID:                   idByIndex[i],
 			TaskID:               task.ID,
 			TaskGraphID:          graphID,
 			Title:                wu.Title,
 			Objective:            wu.Objective,
 			AssignedAgentProfile: profile,
-			Status:               domain.WorkUnitStatusCreated,
+			Status:               workunit.StatusCreated,
 			OwnedPaths:           wu.OwnedPaths,
 			ReadPaths:            wu.ReadPaths,
 			AcceptanceCriteria:   wu.AcceptanceCriteria,

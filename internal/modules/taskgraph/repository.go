@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 type Repository struct {
@@ -23,7 +22,7 @@ func NewRepository(db db.DBTX) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) Create(graph *domain.TaskGraph) error {
+func (r *Repository) Create(graph *TaskGraph) error {
 	if graph.ID == "" {
 		graph.ID = uuid.New().String()
 	}
@@ -54,24 +53,24 @@ func (r *Repository) Create(graph *domain.TaskGraph) error {
 	return nil
 }
 
-func (r *Repository) GetByID(id string) (*domain.TaskGraph, error) {
+func (r *Repository) GetByID(id string) (*TaskGraph, error) {
 	row := r.db.QueryRow(QueryGetByID, id)
 	return r.scanTaskGraph(row)
 }
 
-func (r *Repository) GetActiveByTask(taskID string) (*domain.TaskGraph, error) {
+func (r *Repository) GetActiveByTask(taskID string) (*TaskGraph, error) {
 	row := r.db.QueryRow(QueryGetActiveByTask, taskID)
 	return r.scanTaskGraph(row)
 }
 
-func (r *Repository) ListByTask(taskID string) ([]domain.TaskGraph, error) {
+func (r *Repository) ListByTask(taskID string) ([]TaskGraph, error) {
 	rows, err := r.db.Query(QueryListByTask, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list task graphs: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var graphs []domain.TaskGraph
+	var graphs []TaskGraph
 	for rows.Next() {
 		graph, err := r.scanTaskGraph(rows)
 		if err != nil {
@@ -100,8 +99,8 @@ func (r *Repository) SupersedeActiveByTask(taskID string, updatedAt time.Time) e
 
 func (r *Repository) scanTaskGraph(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.TaskGraph, error) {
-	var graph domain.TaskGraph
+}) (*TaskGraph, error) {
+	var graph TaskGraph
 	var rationale, createdBy sql.NullString
 	err := scanner.Scan(
 		&graph.ID,
