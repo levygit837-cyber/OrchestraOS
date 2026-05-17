@@ -15,6 +15,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 const (
@@ -38,7 +40,7 @@ type groupedCriteria struct {
 	Weight   int
 }
 
-func BuildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
+func BuildLocalHeuristicGraphPlan(task *task.Task) (*GraphPlan, error) {
 	criteria, err := parseCriterionPlans(task.AcceptanceCriteria)
 	if err != nil {
 		return nil, err
@@ -52,7 +54,7 @@ func BuildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 	}
 
 	graphID := uuid.New().String()
-	workUnits := make([]domain.WorkUnit, len(groups))
+	workUnits := make([]workunit.WorkUnit, len(groups))
 	criterionGroup := map[int]int{}
 	for groupIndex, group := range groups {
 		for _, criterion := range group.Criteria {
@@ -61,14 +63,14 @@ func BuildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 	}
 
 	for i, group := range groups {
-		workUnits[i] = domain.WorkUnit{
+		workUnits[i] = workunit.WorkUnit{
 			ID:                   uuid.New().String(),
 			TaskID:               task.ID,
 			TaskGraphID:          graphID,
 			Title:                fmt.Sprintf("%s - Parte %d", task.Title, i+1),
 			Objective:            workUnitObjective(group.Criteria),
 			AssignedAgentProfile: "default",
-			Status:               domain.WorkUnitStatusCreated,
+			Status:               workunit.StatusCreated,
 			OwnedPaths:           []string{},
 			ReadPaths:            []string{},
 			AcceptanceCriteria:   criterionTexts(group.Criteria),
@@ -353,8 +355,8 @@ func validateWorkUnitDependencies(inputs []graphWorkUnitInput) error {
 }
 
 // TaskForGraphTest creates a minimal task for testing graph decomposition.
-func TaskForGraphTest(criteria []string) *domain.Task {
-	return &domain.Task{
+func TaskForGraphTest(criteria []string) *task.Task {
+	return &task.Task{
 		ID:                 uuid.New().String(),
 		Title:              "Task graph test",
 		AcceptanceCriteria: criteria,

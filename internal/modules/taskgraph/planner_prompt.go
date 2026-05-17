@@ -7,7 +7,7 @@ import (
 	"text/template"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 )
 
 const plannerPromptTemplate = `You are an expert software project planner. Decompose the following task into a directed acyclic graph (DAG) of work units.
@@ -78,9 +78,8 @@ var parsedPlannerPromptTemplate = template.Must(
 )
 
 // PlannerPromptInput holds the data for rendering the planner prompt.
-// TODO[ADR-0022]: migrar para *task.Task
 type PlannerPromptInput struct {
-	Task         *domain.Task
+	Task         *task.Task
 	MaxWorkUnits int
 }
 
@@ -101,8 +100,7 @@ func BuildPlannerPrompt(input PlannerPromptInput) (string, error) {
 }
 
 // PlannerPrompt returns a simple string prompt for the given task (convenience function).
-// TODO[ADR-0022]: migrar para *task.Task
-func PlannerPrompt(task *domain.Task) (string, error) {
+func PlannerPrompt(task *task.Task) (string, error) {
 	return BuildPlannerPrompt(PlannerPromptInput{Task: task, MaxWorkUnits: MaxGraphWorkUnits})
 }
 
