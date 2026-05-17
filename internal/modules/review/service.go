@@ -261,12 +261,12 @@ func (s *ReviewService) SubmitVerdict(ctx context.Context, reviewID string, inpu
 	}
 
 	payload, err := serialization.MarshalPayload("review_service.verdict_payload", map[string]interface{}{
-		"review_id":         review.ID,
-		"status":            review.Status,
-		"verdict_reason":    review.VerdictReason,
-		"evidence_refs":     review.EvidenceRefs,
-		"criteria_checked":  review.CriteriaChecked,
-		"completed_at":      review.CompletedAt,
+		"review_id":        review.ID,
+		"status":           review.Status,
+		"verdict_reason":   review.VerdictReason,
+		"evidence_refs":    review.EvidenceRefs,
+		"criteria_checked": review.CriteriaChecked,
+		"completed_at":     review.CompletedAt,
 	})
 	if err != nil {
 		return nil, err

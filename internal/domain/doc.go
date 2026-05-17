@@ -15,7 +15,7 @@
 //   - PromptSnapshot, ToolsetSnapshot
 //   - CheckpointTrigger, HeartbeatInput, CheckpointInput, AutoCheckpointInput,
 //     CheckpointSuggestion: shared checkpoint/heartbeat types used by agentsession
-//       and coordination packages
+//     and coordination packages
 //
 // # Dependencies
 //   - None (this is the innermost layer)

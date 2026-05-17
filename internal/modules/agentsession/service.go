@@ -44,8 +44,6 @@ type CreateAgentSessionInput struct {
 	RecoverableState json.RawMessage
 }
 
-
-
 func NewAgentSessionService(database *sql.DB, newAgentReader func(*sql.Tx) AgentReader) *AgentSessionService {
 	return &AgentSessionService{db: database, newAgentReader: newAgentReader}
 }

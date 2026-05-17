@@ -40,10 +40,10 @@ type WorkUnitLister interface {
 }
 
 type TaskGraphService struct {
-	db                *sql.DB
-	newTaskReader     func(dbcore.DBTX) TaskReader
+	db                 *sql.DB
+	newTaskReader      func(dbcore.DBTX) TaskReader
 	newWorkUnitCreator func(dbcore.DBTX) WorkUnitCreator
-	newWorkUnitLister func(dbcore.DBTX) WorkUnitLister
+	newWorkUnitLister  func(dbcore.DBTX) WorkUnitLister
 }
 
 type DecomposeTaskGraphInput struct {
@@ -68,10 +68,10 @@ func NewTaskGraphService(
 	newWorkUnitLister func(dbcore.DBTX) WorkUnitLister,
 ) *TaskGraphService {
 	return &TaskGraphService{
-		db:                database,
-		newTaskReader:     newTaskReader,
+		db:                 database,
+		newTaskReader:      newTaskReader,
 		newWorkUnitCreator: newWorkUnitCreator,
-		newWorkUnitLister: newWorkUnitLister,
+		newWorkUnitLister:  newWorkUnitLister,
 	}
 }
 

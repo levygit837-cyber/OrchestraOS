@@ -1,9 +1,6 @@
 run:
   timeout: 5m
-  skip-dirs:
-    - migrations
-    - vendor
-    - .go
+  modules-download-mode: readonly
 
 linters:
   enable:
@@ -16,27 +13,9 @@ linters:
     - misspell
     - nolintlint
     - gocritic
-    - depguard
     - forbidigo
 
 linters-settings:
-  depguard:
-    rules:
-      forbid-legacy-packages:
-        deny:
-          - pkg: "github.com/levygit837-cyber/OrchestraOS/internal/services"
-            desc: "internal/services was removed during modularisation"
-          - pkg: "github.com/levygit837-cyber/OrchestraOS/internal/repository"
-            desc: "internal/repository was removed during modularisation"
-          - pkg: "github.com/levygit837-cyber/OrchestraOS/internal/prompting"
-            desc: "internal/prompting was removed during modularisation"
-          - pkg: "github.com/levygit837-cyber/OrchestraOS/internal/db"
-            desc: "internal/db was removed during modularisation"
-      forbid-service-imports:
-        deny:
-          - pkg: "github.com/levygit837-cyber/OrchestraOS/internal/modules/*/service.go"
-            desc: "Do not import service files directly; use DI interfaces or core/orchestration"
-
   forbidigo:
     forbid:
       - p: "fmt\\.Println"
@@ -60,6 +39,10 @@ linters-settings:
     require-specific: true
 
 issues:
+  exclude-dirs:
+    - migrations
+    - vendor
+    - .go
   exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0

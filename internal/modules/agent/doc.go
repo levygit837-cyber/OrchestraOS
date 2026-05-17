@@ -29,8 +29,9 @@
 //   - FindOrCreate must be atomic (transaction) and handle unique-violation races.
 //
 // For full contracts, invariants, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, execution rules, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, execution rules, boundary rules
 //
 // Quick code reference: see ModuleContract in contract.go
 package agent

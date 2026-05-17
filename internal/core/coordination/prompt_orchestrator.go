@@ -85,7 +85,7 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 		Run:      runToDomain(run),
 		WorkUnit: wu,
 		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Task usar *task.Task diretamente.
-		Task:     taskToDomain(task),
+		Task:                   taskToDomain(task),
 		Session:                session,
 		PromptSnapshotID:       input.PromptSnapshotID,
 		ToolsetSnapshotID:      input.ToolsetSnapshotID,

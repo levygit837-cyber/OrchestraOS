@@ -66,7 +66,7 @@ func TestTaskTransitions(t *testing.T) {
 	tests := []struct {
 		name    string
 		from    domain.TaskStatus
-			to     domain.TaskStatus
+		to      domain.TaskStatus
 		ctx     statemachine.TransitionContext
 		wantErr bool
 	}{

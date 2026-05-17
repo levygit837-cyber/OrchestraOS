@@ -34,8 +34,9 @@
 //   - NEVER call run.Service or agentsession.Service methods directly.
 //
 // For full contracts, invariants, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, boundary rules
 //
 // Quick code reference: see ModuleContract in contract.go
 package trigger

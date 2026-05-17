@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
 // Store handles event storage and retrieval with validation

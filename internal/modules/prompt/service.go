@@ -33,14 +33,14 @@ type PrepareRunPromptInput struct {
 }
 
 type PrepareAndPersistInput struct {
-	Run                     *domain.Run
-	WorkUnit                *domain.WorkUnit
-	Task                    *domain.Task
-	Session                 *domain.AgentSession
-	PromptSnapshotID        string
-	ToolsetSnapshotID       string
-	PromptSnapshotEventID   string
-	ToolsetSnapshotEventID  string
+	Run                    *domain.Run
+	WorkUnit               *domain.WorkUnit
+	Task                   *domain.Task
+	Session                *domain.AgentSession
+	PromptSnapshotID       string
+	ToolsetSnapshotID      string
+	PromptSnapshotEventID  string
+	ToolsetSnapshotEventID string
 }
 
 type PreparedRunPrompt struct {

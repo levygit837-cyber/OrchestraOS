@@ -108,8 +108,8 @@ func BuildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 	inputs := make([]graphWorkUnitInput, 0, len(workUnits))
 	for _, wu := range workUnits {
 		inputs = append(inputs, graphWorkUnitInput{
-			ID:         wu.ID,
-			DependsOn:  wu.DependsOn,
+			ID:        wu.ID,
+			DependsOn: wu.DependsOn,
 		})
 	}
 	if err := validateWorkUnitDependencies(inputs); err != nil {

@@ -36,8 +36,9 @@
 //   - NEVER write SQL outside queries.go.
 //
 // For full contracts, invariants, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, state machine, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, state machine, boundary rules
 //
 // Quick code reference: see ModuleContract in contract.go
 package taskgraph

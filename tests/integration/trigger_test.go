@@ -9,10 +9,10 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 func TestTriggerServiceCreateAndList(t *testing.T) {
