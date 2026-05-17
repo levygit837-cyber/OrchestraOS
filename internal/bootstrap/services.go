@@ -27,7 +27,6 @@ func TaskService(db *sql.DB) *taskmod.TaskService {
 }
 
 // planWorkUnitToDomain converts a taskgraph PlanWorkUnit to a workunit.WorkUnit.
-// TODO[ADR-0022]: remove when orchestrator and bootstrap use local types directly.
 func planWorkUnitToDomain(pwu *taskgraphmod.PlanWorkUnit) *workunitmod.WorkUnit {
 	if pwu == nil {
 		return nil
@@ -48,7 +47,6 @@ func planWorkUnitToDomain(pwu *taskgraphmod.PlanWorkUnit) *workunitmod.WorkUnit 
 }
 
 // workUnitToPlan converts a workunit.WorkUnit to a taskgraph PlanWorkUnit.
-// TODO[ADR-0022]: remove when orchestrator and bootstrap use local types directly.
 func workUnitToPlan(wu *workunitmod.WorkUnit) taskgraphmod.PlanWorkUnit {
 	if wu == nil {
 		return taskgraphmod.PlanWorkUnit{}
@@ -144,7 +142,7 @@ func TaskGraphService(db *sql.DB) *taskgraphmod.TaskGraphService {
 }
 
 // workUnitCreatorAdapter bridges workunit.Repository to taskgraph.WorkUnitCreator.
-// TODO[ADR-0022]: remove when workunit and taskgraph share a common WorkUnit type.
+// workUnitCreatorAdapter bridges workunit.Repository to taskgraph.WorkUnitCreator.
 type workUnitCreatorAdapter struct {
 	repo *workunitmod.Repository
 }
@@ -154,7 +152,7 @@ func (a *workUnitCreatorAdapter) Create(wu *taskgraphmod.PlanWorkUnit) error {
 }
 
 // workUnitListerAdapter bridges workunit.Repository to taskgraph.WorkUnitLister.
-// TODO[ADR-0022]: remove when workunit and taskgraph share a common WorkUnit type.
+// workUnitListerAdapter bridges workunit.Repository to taskgraph.WorkUnitLister.
 type workUnitListerAdapter struct {
 	repo *workunitmod.Repository
 }
