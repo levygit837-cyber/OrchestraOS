@@ -174,6 +174,11 @@ func PromptService(db *sql.DB) *promptmod.PromptService {
 	return promptmod.NewPromptService(db)
 }
 
+// PromptOrchestrator creates a prompt orchestrator backed by PromptService.
+func PromptOrchestrator(db *sql.DB) *promptmod.PromptService {
+	return PromptService(db)
+}
+
 // ReviewService creates a ReviewService with standard dependencies.
 func ReviewService(db *sql.DB) *reviewmod.ReviewService {
 	return reviewmod.NewReviewService(db)
@@ -241,7 +246,7 @@ func OrchestratorService(db *sql.DB) *orchestratormod.Service {
 		RunService:          &runAdapter{svc: runSvc},
 		AgentService:        agentSvc,
 		AgentSessionService: &sessionAdapter{svc: sessionSvc},
-		PromptOrchestrator:  &promptAdapter{orch: coordination.NewPromptOrchestrator(db, promptSvc)},
+		PromptOrchestrator:  &promptAdapter{svc: promptSvc},
 		ReviewService:       &reviewAdapter{svc: reviewSvc},
 		TriggerService:      triggerSvc,
 		WorkUnitLister:      workunitmod.NewRepository(db),
@@ -330,11 +335,11 @@ func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, a
 }
 
 type promptAdapter struct {
-	orch *coordination.PromptOrchestrator
+	svc *promptmod.PromptService
 }
 
 func (a *promptAdapter) PrepareRunPrompt(ctx context.Context, input orchestratormod.PreparePromptInput) (*orchestratormod.PreparedPrompt, error) {
-	res, err := a.orch.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	res, err := a.svc.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID: input.RunID, AgentSessionID: input.AgentSessionID,
 	})
 	if err != nil {

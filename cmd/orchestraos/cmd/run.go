@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -95,7 +94,7 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to connect agent session: %w", err)
 		}
 
-		preparedPrompt, err := coordination.NewPromptOrchestrator(getDB(), bootstrap.PromptService(getDB())).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
+		preparedPrompt, err := bootstrap.PromptService(getDB()).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
 			RunID:          run.ID,
 			AgentSessionID: session.ID,
 		})

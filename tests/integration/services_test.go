@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
@@ -207,7 +206,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 
-	prepared, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	prepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -251,7 +250,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if storedToolset == nil || len(storedToolset.Tools) == 0 {
 		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
 	}
-	referenced, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	referenced, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -313,7 +312,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
 	}
-	reviewerPrepared, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	reviewerPrepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          reviewerRun.Value.ID,
 		AgentSessionID: reviewerSession.Value.ID,
 	})
