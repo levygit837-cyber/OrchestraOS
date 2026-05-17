@@ -12,15 +12,15 @@ Cada plano é autônomo com seu próprio agente e branch, seguindo o padrão Ral
 
 | # | Agente | Módulo | Status | Depende de |
 |---|--------|--------|--------|------------|
-| 01 | A01 | [task](01-task/plan.md) | 🔵 Pronto | — |
-| 02 | A02 | [run](02-run/plan.md) | 🔵 Pronto | #01 task |
-| 03 | A03 | [workunit](03-workunit/plan.md) | 🔵 Pronto | #01 task |
+| 01 | A01 | [task](01-task/plan.md) | 🟢 Concluído | — |
+| 02 | A02 | [run](02-run/plan.md) | 🟢 Concluído (PR #16 mergeado) | #01 task, #03 workunit |
+| 03 | A03 | [workunit](03-workunit/plan.md) | 🟢 Concluído | #01 task |
 | 04 | A04 | [taskgraph](04-taskgraph/plan.md) | 🔵 Pronto | #01 task, #03 workunit |
 | 05 | A05 | [agentsession](05-agentsession/plan.md) | 🔵 Pronto | #02 run, #06 agent |
-| 06 | A06 | [agent](06-agent/plan.md) | 🔵 Pronto | — |
-| 07 | A07 | [prompt](07-prompt/plan.md) | 🔵 Pronto | #01 task, #02 run, #03 workunit, #05 agentsession |
-| 08 | A08 | [trigger](08-trigger/plan.md) | 🔵 Pronto | #02 run, #05 agentsession, #03 workunit |
-| 09 | A09 | [review](09-review/plan.md) | 🔵 Pronto | #01 task, #02 run, #03 workunit |
+| 06 | A06 | [agent](06-agent/plan.md) | 🟢 Concluído | — |
+| 07 | A07 | [prompt](07-prompt/plan.md) | 🔴 Bloqueado | #01 task, #02 run, #03 workunit, #05 agentsession |
+| 08 | A08 | [trigger](08-trigger/plan.md) | 🔴 Bloqueado | #02 run, #05 agentsession, #03 workunit |
+| 09 | A09 | [review](09-review/plan.md) | 🔴 Bloqueado | #01 task, #02 run, #03 workunit |
 
 ### Legenda
 - 🔵 Pronto = plano criado, aguardando execução
@@ -117,7 +117,9 @@ Todo agente deve ler antes de executar:
 ## Status do Épico
 
 - **Início:** ___
-- **Módulos concluídos:** 0/9
-- **Adapters pendentes:** TBD
+- **Módulos concluídos:** 4/9 (A01 task, A02 run, A03 workunit, A06 agent)
+- **Adapters pendentes:** 34 (execute: `grep -rn "TODO[ADR-0022]" internal/`)
+- **Build:** ✅
+- **Testes:** ✅
 - **Build:** ___
 - **Testes:** ___
