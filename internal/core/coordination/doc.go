@@ -1,4 +1,4 @@
-// Package orchestration provides shared transition helpers used by all
+// Package coordination provides shared transition helpers used by all
 // domain modules.
 //
 // # Responsibility
@@ -25,4 +25,4 @@
 //
 // # Related Packages
 //   - All modules/: import this package for transitions and helpers
-package orchestration
+package coordination

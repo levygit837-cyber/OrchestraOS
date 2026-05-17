@@ -1,12 +1,19 @@
-package {{PACKAGE}}
+package {{MODULE_NAME}}
 
-// Add domain type aliases and constants here.
-// Example:
-//
-// import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
-//
-// type Status = domain.SomeStatus
-//
-// const (
-// 	StatusCreated = domain.SomeStatusCreated
-// )
+import "time"
+
+// Status represents the status of a {{MODULE_NAME}}.
+type Status string
+
+const (
+	StatusCreated Status = "created"
+	// TODO: add remaining statuses
+)
+
+// {{MODULE_NAME | Title}} is the primary entity of this module.
+type {{MODULE_NAME | Title}} struct {
+	ID        string    `json:"id"`
+	Status    Status    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}

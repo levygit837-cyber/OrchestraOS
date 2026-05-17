@@ -4,14 +4,32 @@ import (
 	_ "embed"
 )
 
-// CRITICAL RULES — read these before editing ANY file in this package:
-//   1. OrchestratorService is the ONLY component that may coordinate cross-module operations.
-//   2. NEVER import repositories directly; use only domain services injected via Dependencies.
-//   3. RunTask must be deterministic and fully auditable via events.
-//   4. Work units are executed sequentially in the first cut.
+// GLOBAL RULES (apply to ALL modules — do NOT remove):
+//   1. NEVER import internal/modules/* directly.
+//   2. NEVER import internal/domain for entity structs.
+//   3. NEVER write SQL outside queries.go.
+//   4. NEVER call panic() — return apperrors.Error.
+//   5. NEVER put business logic in repository.go.
+//   6. ALWAYS emit a domain event on mutation.
+//   7. ALWAYS validate inputs with core/validation on boundaries.
+//
+// MODULE-TYPE RULES (orchestrator is NOT a domain module — it coordinates them):
+//   - OrchestratorService is the ONLY component that may coordinate cross-module operations.
+//   - NEVER import repositories directly; use only domain services injected via Dependencies.
+//
+// MODULE-SPECIFIC RULES (orchestrator only):
+//   - RunTask must be deterministic and fully auditable via events.
+//   - Work units are executed sequentially in the first cut.
+//   - This is the ONLY module allowed to import core/coordination.
+//
+// ALLOWED core/* imports:
+//   - core/apperrors, core/db, core/validation, core/event
+//   - core/statemachine, core/transition, core/serialization
+//   - core/coordination (exclusive permission)
+// FORBIDDEN core/* imports:
+//   - None (orchestrator has broad permissions, but still must not abuse them)
 //
 // For full contracts, read CONTRACTS.md in this directory.
-// For purpose and dependencies, read README.md in this directory.
 
 //go:embed README.md
 var _readme string
@@ -19,7 +37,6 @@ var _readme string
 //go:embed CONTRACTS.md
 var _contracts string
 
-// ModuleContract marks this file as the entry point for LLM agents.
 var ModuleContract = struct {
 	Name    string
 	Purpose string
@@ -30,12 +47,12 @@ var ModuleContract = struct {
 
 // Event types emitted by the orchestrator.
 const (
-	EventTaskStarted        = "orchestrator.task_started"
-	EventWorkUnitStarted    = "orchestrator.work_unit_started"
-	EventWorkUnitCompleted  = "orchestrator.work_unit_completed"
-	EventWorkUnitFailed     = "orchestrator.work_unit_failed"
-	EventTaskCompleted      = "orchestrator.task_completed"
-	EventTaskFailed         = "orchestrator.task_failed"
+	EventTaskStarted       = "orchestrator.task_started"
+	EventWorkUnitStarted   = "orchestrator.work_unit_started"
+	EventWorkUnitCompleted = "orchestrator.work_unit_completed"
+	EventWorkUnitFailed    = "orchestrator.work_unit_failed"
+	EventTaskCompleted     = "orchestrator.task_completed"
+	EventTaskFailed        = "orchestrator.task_failed"
 )
 
 // Valid runtime types.

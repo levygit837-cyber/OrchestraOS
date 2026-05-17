@@ -147,7 +147,7 @@ UserMessage/CLI
      - `agent.completed` → `RunService.Complete()`
      - `agent.failed` → `RunService.Fail()`
      - `agent.tool_requested` → `EventService.Append()` (e futuramente PolicyEngine)
-   - Localização: `internal/core/orchestration/runtime_event_relay.go`
+   - Localização: `internal/core/coordination/runtime_event_relay.go`
    - Deve rodar em goroutine durante a vida da run.
 
 2. **Atualizar CLI `run start`**
@@ -166,7 +166,7 @@ UserMessage/CLI
    - Ler `ORCHESTRAOS_PLANNER_STRATEGY` como fallback.
 
 4. **Depreciar Commander**
-   - Marcar `internal/core/orchestration/commands.go` como `// Deprecated: use domain services instead`.
+   - Marcar `internal/core/coordination/commands.go` como `// Deprecated: use domain services instead`.
    - Migrar qualquer uso restante na CLI para serviços de domínio.
    - Não adicionar novas funcionalidades ao Commander.
 

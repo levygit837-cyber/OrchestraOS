@@ -40,7 +40,7 @@ Invalid transitions:
 
 Allowed:
 - Read and mutate the `task_graphs` table via `repository.go`.
-- Append events via `core/orchestration` helpers.
+- Append events via `core/transition` helpers.
 - Use `task.RequireByID` for cross-module reads.
 - Use `workunit.NewRepository(tx)` for work-unit creation during decomposition.
 
@@ -51,16 +51,20 @@ Forbidden:
 - Business logic inside `repository.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+- `internal/core/coordination`
+- `internal/modules/orchestrator`
 
 ---
 
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
-- `CodeValidation` for invalid graph plans.
-- `CodeConflict` for concurrent active graph creation.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Invalid graph plans |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Task or dependency not found |
+| `CodeConflict` | Concurrent active graph creation |
+| `CodePersistence` | Database errors |
 
 ---
 
@@ -73,25 +77,13 @@ Cross-module orchestration belongs ONLY to:
 
 ---
 
-## LLM Execution Rules
+## File Decomposition
 
-LLM executors MUST:
-
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
+No service decomposition at this time. `service.go` is the single file for graph lifecycle logic.
 
 ---
 
-## Forbidden Patterns
+## Related ADRs
 
-- Shared helpers inside the module (move to `core/` if reusable).
-- Hidden side effects (every write emits an event).
-- Cross-module mutations via service imports.
-- Business logic inside repositories.
-- Inline SQL strings.
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

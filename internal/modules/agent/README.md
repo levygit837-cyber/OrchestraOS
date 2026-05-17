@@ -41,15 +41,18 @@ RuntimeConfig → Runtime.Start → Runtime.Execute → Runtime.Stop
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `models.go` → `Agent`, `RuntimeType`, `AgentStatus` definitions and converters
-- `runtime.go` → `Runtime` interface and `RuntimeConfig`
-- `service.go` → AgentService (Create, GetByID, FindOrCreate) with persistence
-- `repository.go` → agent CRUD and query operations (uses context.Context)
-- `queries.go` → SQL constants for agents table
-- `validation.go` → input validation (profile, runtime_type, name)
+- `contract.go` → ModuleContract + hierarchical rules
+- `models.go` → `Agent`, `RuntimeType`, `AgentStatus` definitions
 - `events.go` → event-type mapping for agent lifecycle
-- `contract.go` → module contract and AgentReader interface
+- `queries.go` → SQL constants for agents table
+- `repository.go` → agent CRUD, no business logic
+- `service.go` → AgentService (Create, GetByID, FindOrCreate)
+- `validation.go` → input validation (profile, runtime_type, name)
+
+### Optional Files
+- `runtime.go` → `Runtime` interface and `RuntimeConfig`
 - `fake_runtime.go` → deterministic test double
 - `gemini_runtime.go` → Gemini inference runtime
 - `gemini_inference_test.go` → Gemini runtime tests
@@ -60,11 +63,13 @@ RuntimeConfig → Runtime.Start → Runtime.Execute → Runtime.Stop
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, orchestration, statemachine, validation, serialization, apperrors, transition)
-- `internal/domain`
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization`
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 
 Forbidden:
-- Direct imports of `internal/modules/*` (except DI interfaces via bootstrap).
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Business logic beyond runtime execution, planning, and agent management.
 
 ---

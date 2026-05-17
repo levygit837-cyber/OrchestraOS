@@ -1,41 +1,33 @@
-package {{PACKAGE}}
+package {{MODULE_NAME}}
 
 import (
 	"context"
 	"database/sql"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 )
 
-// Service is the domain service for {{MODULE_NAME}} operations.
-type Service struct {
+// {{MODULE_NAME | Title}}Service is the domain service for {{MODULE_NAME}} operations.
+type {{MODULE_NAME | Title}}Service struct {
 	db *sql.DB
 }
 
-// NewService creates a new service instance.
-func NewService(database *sql.DB) *Service {
-	return &Service{db: database}
+// New{{MODULE_NAME | Title}}Service creates a new service.
+func New{{MODULE_NAME | Title}}Service(database *sql.DB) *{{MODULE_NAME | Title}}Service {
+	return &{{MODULE_NAME | Title}}Service{db: database}
 }
 
-// Create handles creation of a new {{MODULE_NAME}}.
-func (s *Service) Create(ctx context.Context, input CreateInput) (*orchestration.OperationResult[string], error) {
-	// TODO: implement creation logic
-	_ = ctx
-	_ = input
-	tx, err := dbcore.BeginTx(ctx, s.db, "{{PACKAGE}}.create")
-	if err != nil {
-		return nil, err
-	}
-	defer dbcore.RollbackTx(tx)
-
-	// TODO: persist and emit event
-
-	return nil, apperrors.New(apperrors.CodeInternal, "{{PACKAGE}}.create", "not implemented")
+// Create creates a new {{MODULE_NAME}}.
+func (s *{{MODULE_NAME | Title}}Service) Create(ctx context.Context, input Create{{MODULE_NAME | Title}}Input) (*transition.OperationResult[*{{MODULE_NAME | Title}}], error) {
+	// TODO: implement
+	return nil, nil
 }
 
-// CreateInput holds the fields required to create a {{MODULE_NAME}}.
-type CreateInput struct {
+type Create{{MODULE_NAME | Title}}Input struct {
 	ID string
 }

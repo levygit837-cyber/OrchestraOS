@@ -30,8 +30,8 @@ func TestTransitionPackageIsLeaf(t *testing.T) {
 			if strings.HasPrefix(path, "github.com/levygit837-cyber/OrchestraOS/internal/modules/") {
 				t.Errorf("internal/core/transition imports module %q. transition must not import any module.", path)
 			}
-			if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration" {
-				t.Errorf("internal/core/transition imports internal/core/orchestration. transition must not import orchestration.")
+			if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/coordination" {
+				t.Errorf("internal/core/transition imports internal/core/coordination. transition must not import coordination.")
 			}
 		}
 	}

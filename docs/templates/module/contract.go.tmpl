@@ -1,16 +1,45 @@
-package {{PACKAGE}}
+package {{MODULE_NAME}}
 
 import _ "embed"
 
-// CRITICAL RULES — read these before editing ANY file in this package:
-//   1. {{INVARIANT}}
-//   2. {{INVARIANT}}
-//   3. {{INVARIANT}}
-//   4. NEVER call another module's Service methods directly.
-//   5. NEVER write SQL outside queries.go.
+// ============================================================================
+// GLOBAL RULES — apply to ALL modules in internal/modules/*
+// ============================================================================
+//   1. NEVER import internal/modules/* directly.
+//   2. NEVER import internal/domain for entity structs (ADR-0022).
+//   3. NEVER write SQL strings outside queries.go.
+//   4. NEVER call panic() — always return apperrors.Error.
+//   5. NEVER put business logic inside repository.go.
+//   6. NEVER call another module's Service methods — use DI interfaces or core/coordination.
+//   7. NEVER ignore errors without a documented reason.
+//   8. ALWAYS emit a domain event inside the same transaction for every mutation.
+//
+// ============================================================================
+// MODULE-TYPE RULES — apply to ALL domain modules
+// ============================================================================
+//   1. Status transitions MUST call core/statemachine.CanTransition before mutating.
+//   2. Terminal statuses (completed, failed, cancelled, stopped) are immutable.
+//   3. Every mutation MUST emit exactly one domain event.
+//   4. Input validation MUST use core/validation at module boundaries.
+//
+// ============================================================================
+// MODULE-SPECIFIC RULES — apply only to {{MODULE_NAME}}
+// ============================================================================
+//   1. [TODO: add specific rule 1]
+//   2. [TODO: add specific rule 2]
+//   3. [TODO: add specific rule 3]
+//
+// ============================================================================
+// ALLOWED / FORBIDDEN core/* IMPORTS
+// ============================================================================
+// ALLOWED: core/apperrors, core/db, core/validation, core/event
+// ALLOWED: core/statemachine, core/transition, core/serialization (if emitting events)
+// ALLOWED: core/eventstore (if reading events for deduplication)
+// FORBIDDEN: core/coordination (only orchestrator module may import this)
 //
 // For full contracts and state machine, read CONTRACTS.md in this directory.
 // For purpose and dependencies, read README.md in this directory.
+// ============================================================================
 
 //go:embed README.md
 var _readme string
@@ -24,5 +53,5 @@ var ModuleContract = struct {
 	Purpose string
 }{
 	Name:    "{{MODULE_NAME}}",
-	Purpose: "TODO: define one-line purpose for this module",
+	Purpose: "[TODO: one-line description]",
 }

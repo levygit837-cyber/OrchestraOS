@@ -188,7 +188,7 @@ Persiste eventos de task, run, agente, ferramentas, mensagens, checkpoints, arte
 - CLI, TUI, runtimes de agente e conectores futuros devem chamar serviços quando houver regra de dominio, transicao de estado, retry, timeout, cancelamento ou auditoria obrigatoria.
 - Repositorios continuam como primitivas de leitura e escrita, mas nao decidem transicoes, retry, timeout, conclusao ou compensacao.
 
-**Nota sobre arquitetura:** Conforme ADR 0022, módulos verticais em `internal/modules/` não se importam diretamente. Comunicação cross-module ocorre via `internal/core/orchestration/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
+**Nota sobre arquitetura:** Conforme ADR 0022, módulos verticais em `internal/modules/` não se importam diretamente. Comunicação cross-module ocorre via `internal/core/coordination/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
 
 ### Agent Task Ledger
 

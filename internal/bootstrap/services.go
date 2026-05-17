@@ -6,7 +6,7 @@ import (
 
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -25,7 +25,7 @@ import (
 func TaskService(db *sql.DB) *taskmod.TaskService {
 	return taskmod.NewTaskService(db,
 		func(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error {
-			return orchestration.CancelTaskDependents(ctx, tx, taskID, input)
+			return coordination.CancelTaskDependents(ctx, tx, taskID, input)
 		},
 	)
 }
@@ -71,7 +71,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 		func(tx *sql.Tx) runmod.TaskReader { return &taskReaderAdapter{repo: taskmod.NewRepository(tx)} },
 		func(tx *sql.Tx) runmod.WorkUnitReader { return workunitmod.NewRepository(tx) },
 		func(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error {
-			return orchestration.TransitionRunWithWorkUnit(ctx, tx, run, target, input)
+			return coordination.TransitionRunWithWorkUnit(ctx, tx, run, target, input)
 		},
 	)
 }
@@ -149,8 +149,8 @@ func TriggerService(db *sql.DB) *triggermod.TriggerService {
 }
 
 // RuntimeEventRelay creates a RuntimeEventRelay wired to domain services.
-func RuntimeEventRelay(db *sql.DB) *orchestration.RuntimeEventRelay {
-	return orchestration.NewRuntimeEventRelay(
+func RuntimeEventRelay(db *sql.DB) *coordination.RuntimeEventRelay {
+	return coordination.NewRuntimeEventRelay(
 		db,
 		AgentSessionService(db),
 		RunService(db),
@@ -175,7 +175,7 @@ func OrchestratorService(db *sql.DB) *orchestratormod.Service {
 		RunService:          &runAdapter{svc: runSvc},
 		AgentService:        agentSvc,
 		AgentSessionService: &sessionAdapter{svc: sessionSvc},
-		PromptOrchestrator:  &promptAdapter{orch: orchestration.NewPromptOrchestrator(db, promptSvc)},
+		PromptOrchestrator:  &promptAdapter{orch: coordination.NewPromptOrchestrator(db, promptSvc)},
 		ReviewService:       &reviewAdapter{svc: reviewSvc},
 		TriggerService:      triggerSvc,
 		WorkUnitLister:      &wuListerAdapter{db: db},
@@ -269,7 +269,7 @@ func (a *sessionAdapter) Stop(ctx context.Context, sessionID string, input trans
 }
 
 type promptAdapter struct {
-	orch *orchestration.PromptOrchestrator
+	orch *coordination.PromptOrchestrator
 }
 
 func (a *promptAdapter) PrepareRunPrompt(ctx context.Context, input orchestratormod.PreparePromptInput) (*orchestratormod.PreparedPrompt, error) {

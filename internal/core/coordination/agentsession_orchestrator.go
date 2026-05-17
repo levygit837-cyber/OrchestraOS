@@ -1,4 +1,4 @@
-package orchestration
+package coordination
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func ValidateRunForSessionCreation(ctx context.Context, tx *sql.Tx, runID string
 		return err
 	}
 	if run.Status == domain.RunStatusCompleted || run.Status == domain.RunStatusFailed || run.Status == domain.RunStatusCancelled {
-		return apperrors.New(apperrors.CodeInvalidTransition, "orchestration.validate_run_for_session", "cannot create session for terminal run")
+		return apperrors.New(apperrors.CodeInvalidTransition, "coordination.validate_run_for_session", "cannot create session for terminal run")
 	}
 	return nil
 }
@@ -29,7 +29,7 @@ func ValidateRunForSessionCreation(ctx context.Context, tx *sql.Tx, runID string
 func AgentSessionTimeout(ctx context.Context, tx *sql.Tx, session *domain.AgentSession, recoverableState json.RawMessage, input transition.TransitionInput) (*domain.EventEnvelope, bool, error) {
 	if len(recoverableState) > 0 {
 		if err := agentsessionmod.NewRepository(tx).UpdateRecoverableState(session.ID, recoverableState); err != nil {
-			return nil, false, apperrors.Wrap(apperrors.CodePersistence, "orchestration.agent_session_timeout.update_state", err)
+			return nil, false, apperrors.Wrap(apperrors.CodePersistence, "coordination.agent_session_timeout.update_state", err)
 		}
 	}
 

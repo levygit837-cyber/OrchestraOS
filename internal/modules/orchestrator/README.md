@@ -37,20 +37,26 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `service.go` → OrchestratorService with RunTask and dependencies
+- `contract.go` → ModuleContract + hierarchical rules
 - `models.go` → RunTaskOptions, RunTaskResult, and auxiliary types
-- `validation.go` → input validation for options
 - `events.go` → event-type mapping for orchestrator lifecycle
-- `contract.go` → module contract
 - `queries.go` → SQL constants (if needed for orchestrator-specific tables)
+- `service.go` → OrchestratorService with RunTask and dependencies
+- `validation.go` → input validation for options
+
+### Optional Files
+- None at this time.
 
 ---
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, event, orchestration, statemachine, validation, serialization, apperrors, transition)
-- `internal/domain`
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization`
+- `internal/core/coordination` (ONLY module allowed to import this package)
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 - `internal/modules/*` services (via DI interfaces, never direct repository imports)
 
 Forbidden:

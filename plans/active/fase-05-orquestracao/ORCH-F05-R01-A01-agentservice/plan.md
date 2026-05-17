@@ -12,7 +12,7 @@
 - **Migrations:** Goose v3 (pressly/goose/v3)
 - **Arquitetura:** Event Sourcing parcial + State Machine + Módulos Verticais
 - **Padrões:** Cada módulo tem service.go + repository.go + queries.go + models.go + events.go + contract.go
-- **Regra de Ouro:** Zero imports cross-module. Apenas internal/core/orchestration/ pode importar múltiplos módulos.
+- **Regra de Ouro:** Zero imports cross-module. Apenas internal/core/coordination/ pode importar múltiplos módulos.
 
 ## Documentação Obrigatória
 ANTES de escrever código, leia:
@@ -111,7 +111,7 @@ Crie o módulo `internal/modules/agent/` como um módulo de domínio completo, s
 - `internal/modules/task/`, `run/`, `workunit/`, `taskgraph/`, `prompt/` (exceto para ler como referência)
 - `cmd/` — pertence a rodada futura
 - `internal/services/orchestrator_service.go` — não existe ainda, rodada futura
-- `internal/core/orchestration/` — não altere sem necessidade crítica
+- `internal/core/coordination/` — não altere sem necessidade crítica
 
 ## Ralph Loop — Execução Iterativa (OBRIGATÓRIO)
 

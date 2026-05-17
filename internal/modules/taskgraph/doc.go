@@ -19,7 +19,7 @@
 // # Dependencies
 //   - core/db: transaction helpers
 //   - core/eventstore: event storage
-//   - core/orchestration: TransitionInput, OperationResult
+//   - core/coordination: TransitionInput, OperationResult
 //   - core/validation: input validation
 //   - domain: TaskGraph, TaskGraphStatus
 //

@@ -56,7 +56,7 @@ Rules enforced by `core/statemachine.CanTransition`:
 
 Allowed:
 - Read and mutate the `tasks` table via `repository.go`.
-- Append events via `core/orchestration` helpers.
+- Append events via `core/transition` helpers.
 - Call `core/statemachine.CanTransition` for validation.
 - Use `run.NewRepository(tx)` and `workunit.NewRepository(tx)` for cascade reads/writes.
 
@@ -67,17 +67,21 @@ Forbidden:
 - Business logic inside `repository.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+- `internal/core/coordination`
+- `internal/modules/orchestrator`
 
 ---
 
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
-- `CodeNotFound` for missing tasks.
-- `CodeInvalidTransition` for illegal status changes.
-- Validation errors must be deterministic and idempotent.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Invalid input syntax |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Task does not exist |
+| `CodeInvalidTransition` | State machine violation |
+| `CodeConflict` | Idempotency / concurrency violation |
+| `CodePersistence` | Database errors |
 
 ---
 
@@ -90,26 +94,13 @@ Cross-module orchestration belongs ONLY to:
 
 ---
 
-## LLM Execution Rules
+## File Decomposition
 
-LLM executors MUST:
-
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
+No service decomposition at this time. `service.go` is the single file for task lifecycle logic.
 
 ---
 
-## Forbidden Patterns
+## Related ADRs
 
-- Shared helpers inside the module (move to `core/` if reusable).
-- Hidden side effects (every write emits an event).
-- Cross-module mutations via service imports.
-- Bypassing the state machine.
-- Business logic inside repositories.
-- Inline SQL strings.
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

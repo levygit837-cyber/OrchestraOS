@@ -15,7 +15,7 @@
 // # Dependencies
 //   - core/db: transaction helpers
 //   - core/eventstore: event storage
-//   - core/orchestration: TransitionInput, OperationResult, state transitions
+//   - core/coordination: TransitionInput, OperationResult, state transitions
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
 //   - domain: Run, RunStatus, RunResult

@@ -10,6 +10,8 @@
 - Duplicate active/triggered triggers are suppressed: `persistDetectedTrigger` checks for an existing similar trigger (same type, run/session, anomaly) before inserting.
 - All read operations (`ListActive`, `ListByRun`) accept and propagate `context.Context`.
 
+---
+
 ## State Machine
 
 Valid transitions:
@@ -23,6 +25,8 @@ Invalid transitions:
 - Any transition from `resolved` or `dismissed`.
 - Any transition not listed in the valid table.
 
+---
+
 ## Execution Rules
 
 - Always validate inputs before mutation.
@@ -31,6 +35,8 @@ Invalid transitions:
 - State transitions must be atomic (single transaction).
 - Detectors must be pure functions (no I/O, no mutation, no randomness).
 - `persistDetectedTrigger` must deduplicate against existing active/triggered triggers before creating a new one.
+
+---
 
 ## Boundary Rules
 
@@ -45,12 +51,24 @@ Forbidden:
 - Inline SQL outside `queries.go`.
 - Business logic inside `repository.go`.
 
+Cross-module orchestration belongs ONLY to:
+- `internal/core/coordination`
+- `internal/modules/orchestrator`
+
+---
+
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
-- `CodeNotFound` for missing triggers.
-- `CodeInvalidTransition` for illegal status changes.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Invalid input syntax |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Missing triggers |
+| `CodeInvalidTransition` | State machine violation |
+| `CodeConflict` | Idempotency / concurrency violation |
+| `CodePersistence` | Database errors |
+
+---
 
 ## Persistence Rules
 
@@ -60,24 +78,21 @@ Forbidden:
 - Use `core/db.BeginTx` / `CommitTx` / `RollbackTx` for transactions.
 - All query methods accept `context.Context` and use `QueryContext`.
 
-## LLM Execution Rules
+---
 
-LLM executors MUST:
+## File Decomposition
 
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
+No service decomposition at this time. `service.go` is the single file for trigger lifecycle logic.
 
-## Forbidden Patterns
+### `detectors.go`
+Deterministic anomaly detectors extracted for reuse and testability.
 
-- Shared helpers inside the module (move to `core/` if reusable).
-- Hidden side effects (every write emits an event).
-- Cross-module mutations via service imports.
-- Non-deterministic detectors (time.Now without injection, randomness).
-- Business logic inside repositories.
-- Inline SQL strings.
+### `thresholds.go`
+ThresholdConfig defaults and validation extracted for reuse across detectors and service.
+
+---
+
+## Related ADRs
+
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

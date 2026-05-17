@@ -41,13 +41,18 @@ starting → running → stopping → stopped
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
+- `contract.go` → ModuleContract + hierarchical rules
 - `models.go` → domain type aliases (`Status`)
 - `events.go` → event-type mapping for session status transitions
-- `fetch.go` → read helpers
 - `queries.go` → SQL constants for agent_sessions
-- `repository.go` → session CRUD
+- `repository.go` → session CRUD, no business logic
 - `service.go` → session lifecycle, creation, connect, disconnect, resume, stop, timeout, fail
+- `validation.go` → input validation
+
+### Optional Files
+- `fetch.go` → read helpers
 - `service_heartbeat.go` → heartbeat event append and projection update
 - `service_checkpoint.go` → manual checkpoint with recoverable state persistence
 - `checkpoint_policy.go` → automatic and suggested checkpoint logic
@@ -56,14 +61,15 @@ starting → running → stopping → stopped
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, orchestration, statemachine, validation, serialization, apperrors)
-- `internal/domain`
-- `internal/core/event` (indirectly via orchestration)
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization`
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 - `internal/modules/run` (repository only for Run pause on timeout)
 
 Forbidden:
+- `internal/modules/*` (direct imports, except `run.Repository` for cascade)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `run.Service`
-- Cross-module mutations outside `core/orchestration`
 
 ---
 
@@ -76,14 +82,3 @@ Forbidden:
 5. State transitions MUST use `core/statemachine.CanTransition`.
 6. Every mutation MUST emit an event.
 7. SQL belongs only in `queries.go`.
-
-## Important Note on Shared Types
-
-The following types were moved to `internal/domain` so they can be shared with `core/orchestration` without cross-module imports:
-- `CheckpointTrigger`
-- `HeartbeatInput`
-- `CheckpointInput`
-- `AutoCheckpointInput`
-- `CheckpointSuggestion`
-
-Use `domain.HeartbeatInput`, `domain.CheckpointInput`, etc. instead of local package types.

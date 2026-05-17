@@ -54,7 +54,6 @@ Configured → Starting → Running → Stopping → Stopped
 Allowed:
 - Implement the `Runtime` interface.
 - Call external APIs (Gemini) for inference.
-- Use `internal/domain` types for input/output.
 - Read and mutate the `agents` table via `repository.go`.
 - Append events via `core/transition` helpers.
 - Export `AgentReader` interface for cross-module reads (used by `agentsession/`).
@@ -62,24 +61,25 @@ Allowed:
 Forbidden:
 - Direct mutation of `tasks`, `work_units`, `runs`, or `agent_sessions` tables.
 - Calling service methods from other modules.
-- Importing `internal/modules/*` (except DI interfaces via bootstrap).
+- Importing `internal/modules/*`.
 - Business logic beyond runtime execution, planning, and agent management.
 - Inline SQL outside `queries.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+- `internal/core/coordination`
+- `internal/modules/orchestrator`
 
 ---
 
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw HTTP errors leaked outside the module.
-- No raw database errors leaked outside the module.
-- `CodeValidation` for invalid runtime configuration or agent input.
-- `CodeExternal` for Gemini API failures.
-- `CodeNotFound` for missing agents.
-- `CodePersistence` for database operation failures.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Invalid runtime configuration or agent input |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Missing agents |
+| `CodeExternal` | Gemini API failures |
+| `CodePersistence` | Database operation failures |
 
 ---
 
@@ -94,28 +94,13 @@ Cross-module orchestration belongs ONLY to:
 
 ---
 
-## LLM Execution Rules
+## File Decomposition
 
-LLM executors MUST:
-
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the assigned task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
-9. Every mutation MUST emit an event.
+No service decomposition at this time. `service.go` is the single file for agent management.
 
 ---
 
-## Forbidden Patterns
+## Related ADRs
 
-- Adding database or orchestration imports (except via core/*).
-- Cross-module mutations.
-- Business logic inside runtime implementations.
-- Partial plan returns from `GeminiPlanner`.
-- Inline SQL strings.
-- Bypassing transaction boundaries.
-- Silent errors (always wrap with `apperrors.Wrap`).
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

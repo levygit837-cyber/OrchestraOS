@@ -16,7 +16,7 @@
 - [x] `internal/modules/task/fetch.go` retorna `*Task`
 - [x] `internal/modules/task/events.go` usa `Status` local
 - [x] `internal/modules/task/validation_test.go` usa `Priority`, `RiskLevel` locais
-- [x] `internal/core/orchestration/prompt_orchestrator.go` tem conversão inline `task→domain`
+- [x] `internal/core/coordination/prompt_orchestrator.go` tem conversão inline `task→domain`
 - [x] `cmd/orchestraos/cmd/task.go` usa `task.Priority` / `task.RiskLevel`
 - [x] `tests/integration/*` substituíram `domain.TaskStatusX` → `task.StatusX`, `domain.PriorityP2` → `task.PriorityP2`
 - [x] `go build ./...` passa
@@ -30,7 +30,7 @@ Os adapters de conversão `task.Task → domain.Task` ainda existem porque as in
 | Arquivo | Adapter | Motivo |
 |---------|---------|--------|
 | `internal/bootstrap/services.go:33-49` | `taskToDomain()` | `orchestrator.TaskServiceReader`, `run.TaskReader`, `workunit.TaskReader` exigem `*domain.Task` |
-| `internal/core/orchestration/prompt_orchestrator.go:86-97` | inline `&domain.Task{}` | `prompt.PrepareAndPersistInput.Task` é `*domain.Task` |
+| `internal/core/coordination/prompt_orchestrator.go:86-97` | inline `&domain.Task{}` | `prompt.PrepareAndPersistInput.Task` é `*domain.Task` |
 | `internal/bootstrap/services.go:128` | `PlannerPrompt(task *domain.Task)` | `taskgraphmod.PlannerPrompt` exige `*domain.Task` |
 
 **Para eliminar esses adapters, as seguintes interfaces precisam ser migradas:**
@@ -62,9 +62,9 @@ Os adapters de conversão `task.Task → domain.Task` ainda existem porque as in
 - [ ] `internal/modules/run/service_retry.go` usa `Status`, `Result` locais
 - [ ] `internal/modules/run/fetch.go` retorna `*Run`
 - [ ] `internal/modules/run/events.go` usa `Status` e `Result` locais
-- [ ] `internal/core/orchestration/agentsession_orchestrator.go` usa `runmod.StatusX`
-- [ ] `internal/core/orchestration/cascade.go` usa `runmod.StatusCancelled`, `runmod.ResultForStatus()`
-- [ ] `internal/core/orchestration/helpers.go` usa `runmod.Status`, `runmod.Result`
+- [ ] `internal/core/coordination/agentsession_orchestrator.go` usa `runmod.StatusX`
+- [ ] `internal/core/coordination/cascade.go` usa `runmod.StatusCancelled`, `runmod.ResultForStatus()`
+- [ ] `internal/core/coordination/helpers.go` usa `runmod.Status`, `runmod.Result`
 - [ ] `tests/integration/*` substituíram `domain.RunStatusX` → `run.StatusX`
 - [ ] `go build ./...` passa
 - [ ] `go test ./...` passa
@@ -110,7 +110,7 @@ Os adapters de conversão `task.Task → domain.Task` ainda existem porque as in
 - [ ] `internal/modules/agentsession/service_checkpoint.go` usa `Status` local
 - [ ] `internal/modules/agentsession/service_heartbeat.go` usa `Status` local
 - [ ] `internal/modules/agentsession/checkpoint_policy.go` usa `AgentSession` local
-- [ ] `internal/core/orchestration/prompt_orchestrator.go` tem adapter `toDomainAgentSession()`
+- [ ] `internal/core/coordination/prompt_orchestrator.go` tem adapter `toDomainAgentSession()`
 - [ ] `internal/modules/orchestrator/models.go` interface `SessionManager` usa `*agentsessionmod.AgentSession`
 - [ ] `tests/integration/*` ajustados
 - [ ] `go build ./...` passa
@@ -136,7 +136,7 @@ Os adapters de conversão `task.Task → domain.Task` ainda existem porque as in
 
 - [ ] Verificar que `internal/modules/prompt/types.go` NÃO tem aliases para `domain.PromptSnapshot` / `domain.ToolsetSnapshot`
 - [ ] Se houver aliases, convertê-los para structs locais
-- [ ] `internal/core/orchestration/prompt_orchestrator.go`: adapters para prompt types se necessário
+- [ ] `internal/core/coordination/prompt_orchestrator.go`: adapters para prompt types se necessário
 - [ ] `tests/integration/*` ajustados
 - [ ] `go build ./...` passa
 - [ ] `go test ./...` passa
@@ -192,7 +192,7 @@ Os adapters de conversão `task.Task → domain.Task` ainda existem porque as in
 
 ## Sessão 11 — Finalização e Testes de Arquitetura
 
-- [ ] Remover adapters temporários `toDomainXxx()` de `internal/core/orchestration/*`
+- [ ] Remover adapters temporários `toDomainXxx()` de `internal/core/coordination/*`
 - [ ] Adicionar teste: `internal/modules/*` não importa `internal/domain` para structs de entidade (exceto `EventEnvelope`)
 - [ ] Adicionar teste: `internal/domain/types.go` não contém structs de entidade concretas
 - [ ] `./scripts/verify-contracts.sh` passa

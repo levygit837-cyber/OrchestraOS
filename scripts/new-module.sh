@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # new-module.sh creates a new module from the template in docs/templates/module/.
+# Follows ADR-0025 (Module Standardization) structure.
 # Usage: ./scripts/new-module.sh <module-name>
 # Example: ./scripts/new-module.sh billing
 
@@ -21,7 +22,8 @@ fi
 
 mkdir -p "${MODULE_PATH}"
 
-for file in doc.go README.md CONTRACTS.md contract.go models.go events.go queries.go repository.go service.go; do
+# ADR-0025: 10 mandatory files for every module
+for file in doc.go contract.go README.md CONTRACTS.md models.go events.go queries.go repository.go service.go validation.go; do
     src="${TEMPLATE_DIR}/${file}.tmpl"
     if [ ! -f "${src}" ]; then
         src="${TEMPLATE_DIR}/${file}"
@@ -42,9 +44,10 @@ for file in doc.go README.md CONTRACTS.md contract.go models.go events.go querie
 done
 
 echo "Created module '${MODULE_NAME}' at ${MODULE_PATH}"
+echo "Following ADR-0025 (Module Standardization) with 10 mandatory files."
 echo "Next steps:"
 echo "  1. Edit ${MODULE_PATH}/README.md and fill in responsibilities"
 echo "  2. Edit ${MODULE_PATH}/CONTRACTS.md and define invariants"
-echo "  3. Implement models.go, queries.go, repository.go, and service.go"
+echo "  3. Implement models.go, queries.go, repository.go, service.go, validation.go"
 echo "  4. Add the service factory to internal/bootstrap/services.go"
 echo "  5. Run: go test ./${MODULE_PATH}"

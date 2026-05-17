@@ -38,7 +38,6 @@ Invalid transitions:
 - Verdict submission updates `completed_at` timestamp.
 - Idempotency: duplicate event append returns the existing envelope without error.
 - `Create` must check for existing active reviews across work_unit_id, run_id, and task_id before inserting.
-- `derefString` (formerly `sqlString`) converts `*string` to `string`; empty string is stored as NULL by the event store.
 
 ---
 
@@ -56,18 +55,21 @@ Forbidden:
 - Business logic inside `repository.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+- `internal/core/coordination`
+- `internal/modules/orchestrator`
 
 ---
 
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
-- `CodeValidation` for invalid gate types or verdicts.
-- `CodeInvalidTransition` for illegal status changes.
-- `CodeNotFound` for missing reviews.
-- `CodeConflict` for duplicate active reviews.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Invalid gate types or verdicts |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Missing reviews |
+| `CodeInvalidTransition` | State machine violation |
+| `CodeConflict` | Duplicate active reviews |
+| `CodePersistence` | Database errors |
 
 ---
 
@@ -81,25 +83,13 @@ Cross-module orchestration belongs ONLY to:
 
 ---
 
-## LLM Execution Rules
+## File Decomposition
 
-LLM executors MUST:
-
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
+No service decomposition at this time. `service.go` is the single file for review lifecycle logic.
 
 ---
 
-## Forbidden Patterns
+## Related ADRs
 
-- Shared helpers inside the module (move to `core/` if reusable).
-- Hidden side effects.
-- Cross-module mutations via service imports.
-- Business logic inside repositories.
-- Inline SQL strings.
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

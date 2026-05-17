@@ -37,7 +37,7 @@ Antes de propor a estrutura, identifiquei as dependências cruzadas entre os arq
 
 ```mermaid
 graph TD
-    subgraph "core/orchestration/"
+    subgraph "core/coordination/"
         CO[TransitionInput<br>OperationResult<br>AppendTransition<br>GetTask/GetRun/etc.]
     end
 
@@ -161,7 +161,7 @@ internal/services/              # REMOVIDO — todos os serviços migrados para 
 | Pacote | Arquivos | Linhas | LLM lê tudo? |
 |---|---|---|---|
 | `core/db/` | 3 | ~150 | Só quando precisa de transações |
-| `core/orchestration/` | 3 | ~500 | Só para transições cross-domain |
+| `core/coordination/` | 3 | ~500 | Só para transições cross-domain |
 | `core/validation/` | 1 | ~80 | Só para validação de input |
 | `core/serialization/` | 1 | ~20 | Raramente |
 | `core/eventstore/` | 4 | ~400 | Só para persistência de eventos |
@@ -243,7 +243,7 @@ Em vez de um único `svckit/`, a infraestrutura foi dividida em pacotes especial
 | Pacote | Responsabilidade |
 |---|---|
 | `core/db/` | `BeginTx`, `CommitTx`, `RollbackTx`, `EnsureRowsAffected`, `AcquireAdvisoryTxLock`, `DBTX` |
-| `core/orchestration/` | `TransitionInput`, `OperationResult[T]`, `TransitionPayload`, `RequireFinalAudit`, `IsFinalStatus`, `TransitionContext`, `AppendServiceEvent` |
+| `core/coordination/` | `TransitionInput`, `OperationResult[T]`, `TransitionPayload`, `RequireFinalAudit`, `IsFinalStatus`, `TransitionContext`, `AppendServiceEvent` |
 | `core/validation/` | `RequiredUUID`, `OptionalUUID`, `RequiredText`, `StringList`, `Priority`, `RiskLevel`, `Runtime` |
 | `core/serialization/` | `MarshalPayload` |
 | `core/eventstore/` | `Store`, `Repository`, `Validator` — persistência com JSON-Schema |
@@ -271,7 +271,7 @@ Em vez de um único `svckit/`, a infraestrutura foi dividida em pacotes especial
 A migração deve ser **incremental e verificável** (conforme AGENTS.md: "mudanças pequenas, verificáveis e reversíveis"):
 
 ### Fase 1: Extração da infraestrutura core (zero-risk)
-- Criar `core/db/`, `core/orchestration/`, `core/validation/`, `core/serialization/`, `core/statemachine/`, `core/eventstore/`
+- Criar `core/db/`, `core/coordination/`, `core/validation/`, `core/serialization/`, `core/statemachine/`, `core/eventstore/`
 - Manter `services/` original intacto compilando (ambos coexistem temporariamente)
 - ✅ `go build ./...` + testes
 

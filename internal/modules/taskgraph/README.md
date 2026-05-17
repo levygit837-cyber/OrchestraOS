@@ -35,15 +35,21 @@ active → superseded
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `models.go` → domain type aliases (`Status`)
+- `contract.go` → ModuleContract + hierarchical rules
+- `models.go` → domain types (`TaskGraph`, `Status`)
+- `events.go` → event-type mapping for graph lifecycle
+- `queries.go` → SQL constants for task_graphs
+- `repository.go` → task-graph CRUD, no business logic
+- `service.go` → decomposition orchestration, graph lifecycle, idempotency
+- `validation.go` → input validation
+
+### Optional Files
 - `planner.go` → Planner interface definition
 - `gemini_planner.go` → Gemini LLM planner implementation
 - `planner_prompt.go` → prompt rendering for LLM planner
 - `planner_validator.go` → plan validation logic
-- `queries.go` → SQL constants for task_graphs
-- `repository.go` → task-graph CRUD
-- `service.go` → decomposition orchestration, graph lifecycle, idempotency
 - `heuristic.go` → local heuristic decomposition from acceptance criteria
 - `task_graph_service_test.go` → service tests
 
@@ -51,15 +57,15 @@ active → superseded
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, eventstore, orchestration, validation, serialization, apperrors)
-- `internal/domain`
-- `internal/modules/task` (for `RequireByID` / task reads)
-- `internal/modules/workunit` (for work-unit creation during decomposition)
-- `internal/modules/agent` (for `GeminiPlanner` runtime)
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization`
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
+- DI interfaces only: `TaskReader` (from `task/`), `WorkUnitWriter` (from `workunit/`)
 
 Forbidden:
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `task.Service` or `workunit.Service`
-- Cross-module mutations outside `core/orchestration`
 
 ---
 
@@ -69,5 +75,5 @@ Forbidden:
 2. Modify only files related to the assigned task.
 3. Preserve all invariants listed above.
 4. Avoid architectural refactors.
-5. Every graph creation must emit an event via `core/orchestration`.
+5. Every graph creation must emit an event via `core/transition`.
 6. SQL belongs only in `queries.go`.

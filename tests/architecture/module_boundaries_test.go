@@ -61,7 +61,7 @@ func TestModuleBoundaries(t *testing.T) {
 
 					allowed, ok := allowedModuleImports[modName]
 					if !ok || !allowed[importedMod] {
-						t.Errorf("module %q imports %q, which is not in the allowed list. Cross-module imports are forbidden. Use internal/core/orchestration/ or internal/services/ for cross-module coordination", modName, importedMod)
+						t.Errorf("module %q imports %q, which is not in the allowed list. Cross-module imports are forbidden. Use internal/core/coordination/ or internal/services/ for cross-module coordination", modName, importedMod)
 					}
 				}
 			}
@@ -69,7 +69,7 @@ func TestModuleBoundaries(t *testing.T) {
 	}
 }
 
-func TestModulesDoNotImportOrchestration(t *testing.T) {
+func TestModulesDoNotImportCoordination(t *testing.T) {
 	modulesDir := "../../internal/modules"
 	entries, err := os.ReadDir(modulesDir)
 	if err != nil {
@@ -95,11 +95,11 @@ func TestModulesDoNotImportOrchestration(t *testing.T) {
 			for _, file := range pkg.Files {
 				for _, imp := range file.Imports {
 					path := strings.Trim(imp.Path.Value, `"`)
-					if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration" {
-						// The orchestrator module is allowed to import orchestration as it is the
+					if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/coordination" {
+						// The orchestrator module is allowed to import coordination as it is the
 						// central coordinator that consumes RuntimeEventRelay and PromptOrchestrator.
 						if modName != "orchestrator" {
-							t.Errorf("module %q imports internal/core/orchestration. Modules must not import orchestration directly. Use internal/core/transition/ for shared types.", modName)
+							t.Errorf("module %q imports internal/core/coordination. Modules must not import coordination directly. Use internal/core/transition/ for shared types.", modName)
 						}
 					}
 				}

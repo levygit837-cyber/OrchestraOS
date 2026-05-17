@@ -208,26 +208,3 @@ func (s *TaskService) transition(ctx context.Context, taskID string, target Stat
 	}
 	return &transition.OperationResult[*Task]{Value: task, Event: event, Duplicate: duplicate}, nil
 }
-
-func ValidateCreateTaskInput(input CreateTaskInput) error {
-	op := "task_service.validate_create"
-	if err := validation.OptionalUUID(input.ID, "task_id", op); err != nil {
-		return err
-	}
-	if err := validation.OptionalUUID(input.EventID, "event_id", op); err != nil {
-		return err
-	}
-	if err := validation.RequiredText(input.Title, "title", op); err != nil {
-		return err
-	}
-	if err := validation.Priority(string(input.Priority), op); err != nil {
-		return err
-	}
-	if err := validation.RiskLevel(string(input.RiskLevel), op); err != nil {
-		return err
-	}
-	if err := validation.StringList(input.AcceptanceCriteria, "acceptance_criteria", op, false); err != nil {
-		return err
-	}
-	return nil
-}

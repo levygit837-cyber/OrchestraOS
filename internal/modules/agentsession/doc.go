@@ -18,7 +18,7 @@
 //
 // # Dependencies
 //   - core/db: transaction helpers
-//   - core/orchestration: TransitionInput, OperationResult
+//   - core/coordination: TransitionInput, OperationResult
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
 //   - domain: AgentSession, AgentSessionStatus, HeartbeatInput, CheckpointInput, etc.

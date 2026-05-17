@@ -33,25 +33,31 @@ Critical invariants:
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
+- `contract.go` → ModuleContract + hierarchical rules
 - `models.go` → aliases for domain types and constants
-- `queries.go` → SQL constants for reviews table
-- `repository.go` → review CRUD (context-aware queries)
-- `service.go` → review lifecycle service (Create, Start, SubmitVerdict)
 - `events.go` → event type constants
+- `queries.go` → SQL constants for reviews table
+- `repository.go` → review CRUD, no business logic
+- `service.go` → review lifecycle service (Create, Start, SubmitVerdict)
 - `validation.go` → input validation for reviews
-- `contract.go` → module contract for LLM agents
+
+### Optional Files
+- None at this time.
 
 ---
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, apperrors, validation, transition, serialization, statemachine)
-- `internal/domain`
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization`
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 
 Forbidden:
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of service logic from other modules.
-- Cross-module mutations outside `core/orchestration`.
 
 ---
 
@@ -61,4 +67,6 @@ Forbidden:
 2. Modify only files related to the assigned task.
 3. Preserve all invariants listed above.
 4. Avoid architectural refactors.
-5. SQL belongs only in `queries.go`.
+5. State transitions MUST use `core/statemachine.CanTransition`.
+6. Every mutation MUST emit an event.
+7. SQL belongs only in `queries.go`.

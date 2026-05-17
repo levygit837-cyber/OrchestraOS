@@ -42,7 +42,7 @@ Rules enforced by `core/statemachine.CanTransition`:
 
 Allowed:
 - Read own tables via `repository.go`.
-- Append events via `core/orchestration` helpers.
+- Append events via `core/coordination` helpers.
 - Call `core/statemachine.CanTransition` for validation.
 - Use DI interfaces (`TaskReader`, `WorkUnitReader`, `TaskGraphManager`) to read other aggregates.
 
@@ -53,7 +53,7 @@ Forbidden:
 - Business logic inside `repository.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+- `internal/core/coordination`
 
 ---
 

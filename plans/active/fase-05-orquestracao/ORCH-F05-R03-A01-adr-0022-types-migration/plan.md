@@ -24,14 +24,14 @@ Migrar **cada struct de entidade e seus tipos associados** de `internal/domain/t
 
 | Entidade | Módulo Destino | Structs + Tipos | Consumidores Cruzados |
 |----------|---------------|-----------------|----------------------|
-| `Task` | `internal/modules/task/` | `Task`, `TaskStatus`, `Priority`, `RiskLevel` | orchestrator, bootstrap, cmd, core/orchestration, tests |
-| `Run` | `internal/modules/run/` | `Run`, `RunStatus`, `RunResult` | orchestrator, bootstrap, core/orchestration, tests |
-| `WorkUnit` | `internal/modules/workunit/` | `WorkUnit`, `WorkUnitStatus` | orchestrator, bootstrap, core/orchestration, tests |
+| `Task` | `internal/modules/task/` | `Task`, `TaskStatus`, `Priority`, `RiskLevel` | orchestrator, bootstrap, cmd, core/coordination, tests |
+| `Run` | `internal/modules/run/` | `Run`, `RunStatus`, `RunResult` | orchestrator, bootstrap, core/coordination, tests |
+| `WorkUnit` | `internal/modules/workunit/` | `WorkUnit`, `WorkUnitStatus` | orchestrator, bootstrap, core/coordination, tests |
 | `TaskGraph` | `internal/modules/taskgraph/` | `TaskGraph`, `TaskGraphStatus` | orchestrator, bootstrap, tests |
-| `AgentSession` | `internal/modules/agentsession/` | `AgentSession`, `AgentSessionStatus` | orchestrator, bootstrap, core/orchestration, tests |
+| `AgentSession` | `internal/modules/agentsession/` | `AgentSession`, `AgentSessionStatus` | orchestrator, bootstrap, core/coordination, tests |
 | `Agent` | `internal/modules/agent/` | `Agent`, `AgentRuntimeType` | orchestrator, bootstrap, tests |
-| `PromptFragment`, `PromptFragmentRef`, `PromptSnapshot` | `internal/modules/prompt/` | (já parcialmente local) | core/orchestration, tests |
-| `ToolsetTool`, `ToolsetSnapshot` | `internal/modules/prompt/` | (já parcialmente local) | core/orchestration, tests |
+| `PromptFragment`, `PromptFragmentRef`, `PromptSnapshot` | `internal/modules/prompt/` | (já parcialmente local) | core/coordination, tests |
+| `ToolsetTool`, `ToolsetSnapshot` | `internal/modules/prompt/` | (já parcialmente local) | core/coordination, tests |
 | `Trigger` | `internal/modules/trigger/` | `Trigger`, `TriggerType`, `TriggerStatus`, `AnomalyType`, `ResolutionAction`, `ThresholdConfig` | orchestrator, tests |
 | `Review` | `internal/modules/review/` | `Review`, `ReviewStatus`, `ReviewDecision`, `ValidationGate`, `ReviewCriteriaChecked` | orchestrator, tests |
 
@@ -66,7 +66,7 @@ Para cada entidade `X`:
    - `*_test.go`: atualizar construção de structs e constantes
 
 3. **Criar/Atualizar adapters nos consumidores cruzados**
-   - Se um consumidor (ex: `core/orchestration/prompt_orchestrator.go`) precisa de `*domain.Task` mas o módulo agora retorna `*task.Task`, criar uma **função adapter temporária** no consumidor:
+   - Se um consumidor (ex: `core/coordination/prompt_orchestrator.go`) precisa de `*domain.Task` mas o módulo agora retorna `*task.Task`, criar uma **função adapter temporária** no consumidor:
      ```go
      // TODO: remover quando prompt module for totalmente desacoplado de domain.Task
      func toDomainTask(t *task.Task) *domain.Task { ... }
@@ -100,7 +100,7 @@ Para cada entidade `X`:
 4. `internal/modules/task/fetch.go`: retornar `*Task`.
 5. `internal/modules/task/events.go`: usar `Status` local.
 6. `internal/modules/task/validation_test.go`: usar `Priority` e `RiskLevel` locais.
-7. `internal/core/orchestration/prompt_orchestrator.go`: criar adapter `toDomainTask()` para o `prompt` module.
+7. `internal/core/coordination/prompt_orchestrator.go`: criar adapter `toDomainTask()` para o `prompt` module.
 8. `cmd/orchestraos/cmd/task.go`: usar `task.Priority` e `task.RiskLevel`.
 9. `tests/integration/*`: substituir `domain.PriorityP2` → `task.PriorityP2`, `domain.TaskStatusCreated` → `task.StatusCreated`, etc.
 10. Build + Test + Commit.
@@ -115,9 +115,9 @@ Para cada entidade `X`:
 **Ações:**
 1. `internal/modules/run/models.go`: definir `Run`, `Status`, `Result` localmente.
 2. `internal/modules/run/repository.go`, `service.go`, `fetch.go`, `events.go`, `service_retry.go`: usar tipos locais.
-3. `internal/core/orchestration/agentsession_orchestrator.go`: usar `runmod.StatusCompleted` etc.
-4. `internal/core/orchestration/cascade.go`: usar `runmod.StatusCancelled` e `runmod.ResultForStatus()`.
-5. `internal/core/orchestration/helpers.go`: atualizar `UpdateRunProjection` para `runmod.Status` e `runmod.Result`.
+3. `internal/core/coordination/agentsession_orchestrator.go`: usar `runmod.StatusCompleted` etc.
+4. `internal/core/coordination/cascade.go`: usar `runmod.StatusCancelled` e `runmod.ResultForStatus()`.
+5. `internal/core/coordination/helpers.go`: atualizar `UpdateRunProjection` para `runmod.Status` e `runmod.Result`.
 6. `tests/integration/*`: substituir `domain.RunStatusRunning` → `run.StatusRunning`, etc.
 7. Build + Test + Commit.
 
@@ -131,7 +131,7 @@ Para cada entidade `X`:
 **Ações:**
 1. `internal/modules/workunit/models.go`: definir `WorkUnit`, `Status` localmente.
 2. `internal/modules/workunit/repository.go`, `service.go`, `fetch.go`, `service_create.go`, `validation.go`: usar tipos locais.
-3. `internal/core/orchestration/cascade.go`: atualizar workunit references.
+3. `internal/core/coordination/cascade.go`: atualizar workunit references.
 4. `internal/modules/orchestrator/service.go`: atualizar `executeWorkUnit` e `topologicalSort` para `workunitmod.WorkUnit`.
 5. `internal/modules/orchestrator/models.go`: atualizar `WorkUnitLister` interface.
 6. `tests/integration/*`: ajustar referências.
@@ -159,7 +159,7 @@ Para cada entidade `X`:
 **Ações:**
 1. `internal/modules/agentsession/models.go`: definir `AgentSession`, `Status` localmente.
 2. Atualizar `repository.go`, `service.go`, `fetch.go`, `service_checkpoint.go`, `service_heartbeat.go`, `checkpoint_policy.go`.
-3. `internal/core/orchestration/prompt_orchestrator.go`: adapter `toDomainAgentSession()`.
+3. `internal/core/coordination/prompt_orchestrator.go`: adapter `toDomainAgentSession()`.
 4. `internal/modules/orchestrator/models.go`: `SessionManager` interface.
 5. Build + Test + Commit.
 
@@ -228,7 +228,7 @@ Para cada entidade `X`:
 **Pré-requisito:** Sessão 10 concluída.
 
 **Ações:**
-1. Identificar e remover todos os adapters temporários `toDomainXxx()` em `core/orchestration/` e outros lugares.
+1. Identificar e remover todos os adapters temporários `toDomainXxx()` em `core/coordination/` e outros lugares.
 2. Se um consumidor ainda precisa de `domain.Task`, reavaliar: ele deveria usar `taskmod.Task` diretamente ou o contrato deveria ser redefinido.
 3. Adicionar teste de arquitetura: garantir que `internal/modules/*` NÃO importe `internal/domain` para structs de entidade (exceto `EventEnvelope`).
 4. Adicionar teste de arquitetura: garantir que `internal/domain/types.go` NÃO contenha structs de entidade concretas.

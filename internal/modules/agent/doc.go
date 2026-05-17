@@ -24,7 +24,7 @@
 //   - Every runtime must implement the Runtime interface completely.
 //   - FakeRuntime responses must be deterministic for the same input.
 //   - GeminiPlanner returns either a fully valid GraphPlan or an error — no partial plans.
-//   - NEVER import internal/modules/* or internal/core/orchestration.
+//   - NEVER import internal/modules/* or internal/core/coordination.
 //   - NEVER mutate tasks, work_units, runs, or agent_sessions tables directly.
 //   - FindOrCreate must be atomic (transaction) and handle unique-violation races.
 //

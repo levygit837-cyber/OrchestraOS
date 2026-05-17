@@ -36,7 +36,7 @@ O projeto construiu **Prompt Composer com 15+ fragmentos versionados** (M3) e **
 `GeminiRuntime` emite eventos em um `chan` Go interno. Nenhuma goroutine consome esse canal e roteia para `AgentSessionService.Checkpoint()`. Isso viola a ADR 0011 (checkpoints como fronteira canônica) e impede auditoria real.
 
 #### Problema C: Commander legado coexistindo com Domain Services
-`internal/core/orchestration/commands.go` (Commander) e os serviços de domínio (`internal/modules/*/service.go`) fazem a mesma coisa: transições atômicas com eventos. O Commander não tem idempotência, retry, nem validação de `owned_paths`. Sua existência cria duas fontes de verdade para transições.
+`internal/core/coordination/commands.go` (Commander) e os serviços de domínio (`internal/modules/*/service.go`) fazem a mesma coisa: transições atômicas com eventos. O Commander não tem idempotência, retry, nem validação de `owned_paths`. Sua existência cria duas fontes de verdade para transições.
 
 #### Problema D: ADR 0022 aprovada mas não implementada (e talvez prematura)
 A ADR 0022 (Módulos Verticais LLM-Optimized) estabeleceu que módulos em `internal/modules/*` **não podem se importar**. O código atual viola essa regra massivamente:

@@ -40,29 +40,35 @@ created → planned → scheduled → blocked → running → validating → com
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `models.go` → domain type aliases (`Status`)
+- `contract.go` → ModuleContract + hierarchical rules
+- `models.go` → domain types (`WorkUnit`, `Status`)
 - `events.go` → event-type mapping for work-unit status transitions
-- `fetch.go` → read helpers
 - `queries.go` → SQL constants for work_units
-- `repository.go` → work-unit CRUD
+- `repository.go` → work-unit CRUD, no business logic
 - `service.go` → work-unit lifecycle (assign, block, schedule, start, validate, complete, fail, cancel)
-- `service_create.go` → batch creation of work units and manual task-graph activation
 - `validation.go` → dependency validation (DAG acyclicity), owned-path availability checks
+
+### Optional Files
+- `fetch.go` → read helpers
+- `service_create.go` → batch creation of work units and manual task-graph activation
 - `validation_test.go` → invariant and rule tests
 
 ---
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, orchestration, statemachine, validation, serialization, apperrors)
-- `internal/domain`
-- `internal/core/event` (indirectly via orchestration)
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization`
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 - DI interfaces only: `TaskReader` (from `task/`), `TaskGraphManager` (from `taskgraph/`)
 
 Forbidden:
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `task.Service` or `taskgraph.Service`
-- Cross-module mutations outside `core/orchestration`
+- Cross-module mutations outside `core/coordination`
 
 ---
 

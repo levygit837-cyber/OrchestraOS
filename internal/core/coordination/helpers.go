@@ -1,4 +1,4 @@
-package orchestration
+package coordination
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func UpdateRunProjection(ctx context.Context, tx *sql.Tx, runID string, status d
 
 	res, err := tx.ExecContext(ctx, QueryRunUpdateStatus, runID, status, startedAt, finishedAt, resultStr, failureReason, now)
 	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "orchestration.update_run_projection", err)
+		return apperrors.Wrap(apperrors.CodePersistence, "coordination.update_run_projection", err)
 	}
-	return dbcore.EnsureRowsAffected(res, "run", "orchestration.update_run_projection")
+	return dbcore.EnsureRowsAffected(res, "run", "coordination.update_run_projection")
 }

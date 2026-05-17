@@ -56,9 +56,9 @@ func TestModuleContract(t *testing.T) {
 			t.Errorf("module %q: contract.go must contain '//go:embed CONTRACTS.md'", modName)
 		}
 
-		// Must contain a CRITICAL RULES header so LLM agents see the cheat sheet.
-		if !strings.Contains(contractText, "CRITICAL RULES") {
-			t.Errorf("module %q: contract.go must contain 'CRITICAL RULES' header with the essential rules", modName)
+		// Must contain a GLOBAL RULES header so LLM agents see the cheat sheet.
+		if !strings.Contains(contractText, "GLOBAL RULES") {
+			t.Errorf("module %q: contract.go must contain 'GLOBAL RULES' header with the essential rules", modName)
 		}
 
 		// Must contain an explicit instruction to read the markdown files.

@@ -1,4 +1,4 @@
-package orchestration
+package coordination
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 		return nil
 	}
 	if wuTarget == domain.WorkUnitStatusRunning {
-		if err := dbcore.AcquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskID, "orchestration.work_unit_path_lock"); err != nil {
+		if err := dbcore.AcquireAdvisoryTxLock(ctx, tx, "work_unit_paths:"+wu.TaskID, "coordination.work_unit_path_lock"); err != nil {
 			return err
 		}
 		if err := workunitmod.ValidateDependenciesCompleted(ctx, tx, wu); err != nil {
@@ -52,7 +52,7 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 		}
 	}
 	if wuTarget == domain.WorkUnitStatusCompleted && len(wu.AcceptanceCriteria) == 0 && input.Justification == "" {
-		return apperrors.New(apperrors.CodeInvalidInput, "orchestration.run_workunit_sync", "related work unit completion requires acceptance criteria or explicit justification")
+		return apperrors.New(apperrors.CodeInvalidInput, "coordination.run_workunit_sync", "related work unit completion requires acceptance criteria or explicit justification")
 	}
 	if err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(wu.Status), string(wuTarget), transition.TransitionContext(input)); err != nil {
 		if wuTarget == domain.WorkUnitStatusFailed && wu.Status == domain.WorkUnitStatusCreated {
@@ -65,9 +65,9 @@ func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *domain.Run,
 	}
 	res, err := tx.ExecContext(ctx, workunitmod.QueryUpdateStatus, wu.ID, wuTarget, time.Now().UTC())
 	if err != nil {
-		return apperrors.Wrap(apperrors.CodePersistence, "orchestration.run_workunit_sync.update_work_unit", err)
+		return apperrors.Wrap(apperrors.CodePersistence, "coordination.run_workunit_sync.update_work_unit", err)
 	}
-	return dbcore.EnsureRowsAffected(res, "work unit", "orchestration.run_workunit_sync.update_work_unit")
+	return dbcore.EnsureRowsAffected(res, "work unit", "coordination.run_workunit_sync.update_work_unit")
 }
 
 func workUnitEventTypeForStatus(status domain.WorkUnitStatus) string {

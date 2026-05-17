@@ -75,7 +75,7 @@ internal/
 **Módulos verticais NUNCA importam outros módulos diretamente.**
 
 Comunicação cross-module ocorre exclusivamente via:
-1. `internal/core/orchestration/` - Helpers cross-domain (TransitionInput, OperationResult, RuntimeEventRelay)
+1. `internal/core/coordination/` - Helpers cross-domain (TransitionInput, OperationResult, RuntimeEventRelay)
 2. `internal/bootstrap/services.go` - Adapters que conectam módulos sem dependências diretas
 
 ## Benefícios da Migração
@@ -98,7 +98,7 @@ Comunicação cross-module ocorre exclusivamente via:
 ### 4. Testabilidade
 - Cada módulo pode ser testado isoladamente
 - Mocks e stubs são mais fáceis de criar
-- Testes de integração podem focar em interações via core/orchestration
+- Testes de integração podem focar em interações via core/coordination
 
 ## Como Funciona a Comunicação Cross-Module
 

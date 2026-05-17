@@ -12,7 +12,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -39,7 +39,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Service lifecycle",
-		Description:        "Validate service orchestration",
+		Description:        "Validate service coordination",
 		Priority:           taskmod.PriorityP1,
 		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"run completes with validation evidence"},
@@ -207,7 +207,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 
-	prepared, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	prepared, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -251,7 +251,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if storedToolset == nil || len(storedToolset.Tools) == 0 {
 		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
 	}
-	referenced, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	referenced, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -313,7 +313,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
 	}
-	reviewerPrepared, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	reviewerPrepared, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          reviewerRun.Value.ID,
 		AgentSessionID: reviewerSession.Value.ID,
 	})

@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
@@ -42,7 +42,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	// 1. Create task
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "E2E Integration Test Task",
-		Description: "Validate full orchestration flow",
+		Description: "Validate full coordination flow",
 		Priority:    taskmod.PriorityP1,
 		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
@@ -114,7 +114,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -148,7 +148,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := orchestration.RelayConfig{
+	relayConfig := coordination.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,
@@ -274,7 +274,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	// 1. Create task
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "E2E Gemini Integration Test",
-		Description: "Validate Gemini runtime through full orchestration flow",
+		Description: "Validate Gemini runtime through full coordination flow",
 		Priority:    taskmod.PriorityP1,
 		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
@@ -345,7 +345,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -380,7 +380,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := orchestration.RelayConfig{
+	relayConfig := coordination.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,

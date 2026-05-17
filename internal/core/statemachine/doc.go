@@ -15,6 +15,6 @@
 //   - core/apperrors: error typing
 //
 // # Related Packages
-//   - core/orchestration/: calls CanTransition before executing transitions
+//   - core/coordination/: calls CanTransition before executing transitions
 //   - All modules/: may reference aggregate constants
 package statemachine
