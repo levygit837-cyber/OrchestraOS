@@ -2,12 +2,11 @@ package trigger
 
 import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // DefaultThresholds returns conservative default thresholds.
-func DefaultThresholds() domain.ThresholdConfig {
-	return domain.ThresholdConfig{
+func DefaultThresholds() ThresholdConfig {
+	return ThresholdConfig{
 		StallSeconds:    300,
 		LoopRepetitions: 5,
 		TokenMax:        100000,
@@ -17,7 +16,7 @@ func DefaultThresholds() domain.ThresholdConfig {
 }
 
 // ValidateThresholds validates that threshold values are positive and reasonable.
-func ValidateThresholds(cfg domain.ThresholdConfig) error {
+func ValidateThresholds(cfg ThresholdConfig) error {
 	if cfg.StallSeconds < 1 {
 		return apperrors.New(apperrors.CodeInvalidInput, "trigger.validate_thresholds", "stall_seconds must be >= 1")
 	}

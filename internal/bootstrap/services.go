@@ -170,18 +170,13 @@ func (a *agentReaderAdapter) GetByID(ctx context.Context, id string) (*agentmod.
 	return a.repo.GetByID(ctx, id)
 }
 
-// agentSessionReaderAdapter wraps agentsession.Repository to return domain.AgentSession for cross-module compatibility.
-// TODO[ADR-0022]: remove when trigger.AgentSessionReader uses *agentsession.AgentSession directly.
+// agentSessionReaderAdapter wraps agentsession.Repository to return *agentsession.AgentSession for trigger module.
 type agentSessionReaderAdapter struct {
 	repo *agentsessionmod.Repository
 }
 
-func (a *agentSessionReaderAdapter) GetByID(id string) (*domain.AgentSession, error) {
-	session, err := a.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return agentSessionToDomain(session), nil
+func (a *agentSessionReaderAdapter) GetByID(id string) (*agentsessionmod.AgentSession, error) {
+	return a.repo.GetByID(id)
 }
 
 // runToDomain converts a local run.Run to domain.Run for cross-module compatibility.
@@ -209,18 +204,13 @@ func runToDomain(r *runmod.Run) *domain.Run {
 	}
 }
 
-// runReaderAdapter wraps run.Repository to return domain.Run for cross-module compatibility.
-// TODO[ADR-0022]: remover quando trigger.RunReader usar *run.Run diretamente.
+// runReaderAdapter wraps run.Repository to return *run.Run for trigger module.
 type runReaderAdapter struct {
 	repo *runmod.Repository
 }
 
-func (a *runReaderAdapter) GetByID(id string) (*domain.Run, error) {
-	r, err := a.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return runToDomain(r), nil
+func (a *runReaderAdapter) GetByID(id string) (*runmod.Run, error) {
+	return a.repo.GetByID(id)
 }
 
 // agentManagerAdapter wraps agent.AgentService to implement orchestrator.AgentManager with domain.Agent.
@@ -568,15 +558,10 @@ func (a *wuListerAdapter) ListByTaskGraph(graphID string) ([]domain.WorkUnit, er
 }
 
 // workUnitReaderAdapter bridges trigger.WorkUnitReader to workunit.Repository.
-// TODO[ADR-0022]: remove when trigger.WorkUnitReader uses *workunit.WorkUnit directly.
 type workUnitReaderAdapter struct{ repo *workunitmod.Repository }
 
-func (a *workUnitReaderAdapter) GetByID(id string) (*domain.WorkUnit, error) {
-	wu, err := a.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return workunitToDomain(wu), nil
+func (a *workUnitReaderAdapter) GetByID(id string) (*workunitmod.WorkUnit, error) {
+	return a.repo.GetByID(id)
 }
 
 type runtimeAdapter struct{ r agentmod.Runtime }

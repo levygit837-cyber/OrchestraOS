@@ -3,24 +3,22 @@ package trigger
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // StallDetector detects when no events have been emitted for a threshold duration.
 type StallDetector struct{}
 
 // Detect returns a trigger if the time since the last event (or run start) exceeds thresholdSeconds.
-func (d StallDetector) Detect(lastEventAt *time.Time, startedAt time.Time, now time.Time, thresholdSeconds int) *domain.Trigger {
+func (d StallDetector) Detect(lastEventAt *time.Time, startedAt time.Time, now time.Time, thresholdSeconds int) *Trigger {
 	reference := startedAt
 	if lastEventAt != nil && lastEventAt.After(reference) {
 		reference = *lastEventAt
 	}
 	if now.Sub(reference) >= time.Duration(thresholdSeconds)*time.Second {
-		anomaly := domain.AnomalyTypeStall
-		return &domain.Trigger{
-			TriggerType: domain.TriggerTypeAnomaly,
-			Status:      domain.TriggerStatusTriggered,
+		anomaly := AnomalyStall
+		return &Trigger{
+			TriggerType: TypeAnomaly,
+			Status:      StatusTriggered,
 			AnomalyType: &anomaly,
 			ThresholdValue: mustMarshal(map[string]interface{}{
 				"stall_seconds": thresholdSeconds,
@@ -39,7 +37,7 @@ type LoopDetector struct{}
 
 // Detect returns a trigger if the last threshold event types are identical.
 // It skips trigger events to avoid infinite loops.
-func (d LoopDetector) Detect(eventTypes []string, threshold int, now time.Time) *domain.Trigger {
+func (d LoopDetector) Detect(eventTypes []string, threshold int, now time.Time) *Trigger {
 	if threshold < 2 || len(eventTypes) < threshold {
 		return nil
 	}
@@ -60,10 +58,10 @@ func (d LoopDetector) Detect(eventTypes []string, threshold int, now time.Time) 
 			return nil
 		}
 	}
-	anomaly := domain.AnomalyTypeLoop
-	return &domain.Trigger{
-		TriggerType: domain.TriggerTypeAnomaly,
-		Status:      domain.TriggerStatusTriggered,
+	anomaly := AnomalyLoop
+	return &Trigger{
+		TriggerType: TypeAnomaly,
+		Status:      StatusTriggered,
 		AnomalyType: &anomaly,
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"loop_repetitions": threshold,
@@ -80,7 +78,7 @@ func (d LoopDetector) Detect(eventTypes []string, threshold int, now time.Time) 
 type DriftDetector struct{}
 
 // Detect returns a trigger for each accessed path outside the allowed scope.
-func (d DriftDetector) Detect(ownedPaths, readPaths, accessedPaths []string, now time.Time) *domain.Trigger {
+func (d DriftDetector) Detect(ownedPaths, readPaths, accessedPaths []string, now time.Time) *Trigger {
 	allowed := make(map[string]bool)
 	for _, p := range ownedPaths {
 		allowed[normalizePath(p)] = true
@@ -98,10 +96,10 @@ func (d DriftDetector) Detect(ownedPaths, readPaths, accessedPaths []string, now
 	if len(driftPaths) == 0 {
 		return nil
 	}
-	anomaly := domain.AnomalyTypeDrift
-	return &domain.Trigger{
-		TriggerType: domain.TriggerTypeAnomaly,
-		Status:      domain.TriggerStatusTriggered,
+	anomaly := AnomalyDrift
+	return &Trigger{
+		TriggerType: TypeAnomaly,
+		Status:      StatusTriggered,
 		AnomalyType: &anomaly,
 		CurrentValue: mustMarshal(map[string]interface{}{
 			"drift_paths": driftPaths,
@@ -114,7 +112,7 @@ func (d DriftDetector) Detect(ownedPaths, readPaths, accessedPaths []string, now
 type PathViolationDetector struct{}
 
 // Detect returns a trigger for each modified path outside owned_paths.
-func (d PathViolationDetector) Detect(ownedPaths, modifiedPaths []string, now time.Time) *domain.Trigger {
+func (d PathViolationDetector) Detect(ownedPaths, modifiedPaths []string, now time.Time) *Trigger {
 	owned := make(map[string]bool)
 	for _, p := range ownedPaths {
 		owned[normalizePath(p)] = true
@@ -129,10 +127,10 @@ func (d PathViolationDetector) Detect(ownedPaths, modifiedPaths []string, now ti
 	if len(violations) == 0 {
 		return nil
 	}
-	anomaly := domain.AnomalyTypePathViolation
-	return &domain.Trigger{
-		TriggerType: domain.TriggerTypeAnomaly,
-		Status:      domain.TriggerStatusTriggered,
+	anomaly := AnomalyPathViolation
+	return &Trigger{
+		TriggerType: TypeAnomaly,
+		Status:      StatusTriggered,
 		AnomalyType: &anomaly,
 		CurrentValue: mustMarshal(map[string]interface{}{
 			"violation_paths": violations,
@@ -145,14 +143,14 @@ func (d PathViolationDetector) Detect(ownedPaths, modifiedPaths []string, now ti
 type TokenThresholdDetector struct{}
 
 // Detect returns a trigger if currentTokens > maxTokens.
-func (d TokenThresholdDetector) Detect(currentTokens, maxTokens int, now time.Time) *domain.Trigger {
+func (d TokenThresholdDetector) Detect(currentTokens, maxTokens int, now time.Time) *Trigger {
 	if currentTokens <= maxTokens {
 		return nil
 	}
-	anomaly := domain.AnomalyTypeTokenExceeded
-	return &domain.Trigger{
-		TriggerType: domain.TriggerTypeThreshold,
-		Status:      domain.TriggerStatusTriggered,
+	anomaly := AnomalyTokenExceeded
+	return &Trigger{
+		TriggerType: TypeThreshold,
+		Status:      StatusTriggered,
 		AnomalyType: &anomaly,
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"token_max": maxTokens,
@@ -168,14 +166,14 @@ func (d TokenThresholdDetector) Detect(currentTokens, maxTokens int, now time.Ti
 type StepsThresholdDetector struct{}
 
 // Detect returns a trigger if currentSteps > maxSteps.
-func (d StepsThresholdDetector) Detect(currentSteps, maxSteps int, now time.Time) *domain.Trigger {
+func (d StepsThresholdDetector) Detect(currentSteps, maxSteps int, now time.Time) *Trigger {
 	if currentSteps <= maxSteps {
 		return nil
 	}
-	anomaly := domain.AnomalyTypeStepsExceeded
-	return &domain.Trigger{
-		TriggerType: domain.TriggerTypeThreshold,
-		Status:      domain.TriggerStatusTriggered,
+	anomaly := AnomalyStepsExceeded
+	return &Trigger{
+		TriggerType: TypeThreshold,
+		Status:      StatusTriggered,
 		AnomalyType: &anomaly,
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"steps_max": maxSteps,
@@ -191,15 +189,15 @@ func (d StepsThresholdDetector) Detect(currentSteps, maxSteps int, now time.Time
 type TimeThresholdDetector struct{}
 
 // Detect returns a trigger if now-startedAt exceeds maxSeconds.
-func (d TimeThresholdDetector) Detect(startedAt time.Time, now time.Time, maxSeconds int) *domain.Trigger {
+func (d TimeThresholdDetector) Detect(startedAt time.Time, now time.Time, maxSeconds int) *Trigger {
 	if startedAt.IsZero() || now.Sub(startedAt) < time.Duration(maxSeconds)*time.Second {
 		return nil
 	}
 	elapsed := int(now.Sub(startedAt).Seconds())
-	anomaly := domain.AnomalyTypeTimeExceeded
-	return &domain.Trigger{
-		TriggerType: domain.TriggerTypeThreshold,
-		Status:      domain.TriggerStatusTriggered,
+	anomaly := AnomalyTimeExceeded
+	return &Trigger{
+		TriggerType: TypeThreshold,
+		Status:      StatusTriggered,
 		AnomalyType: &anomaly,
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"time_max_seconds": maxSeconds,

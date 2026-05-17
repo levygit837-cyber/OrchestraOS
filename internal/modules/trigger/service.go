@@ -19,24 +19,24 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // RunReader abstracts run reads to avoid cyclic imports.
-// TODO[ADR-0022]: migrar para *run.Run quando run module desacoplar de domain.Run
 type RunReader interface {
-	GetByID(id string) (*domain.Run, error)
+	GetByID(id string) (*runmod.Run, error)
 }
 
 // AgentSessionReader abstracts agent-session reads to avoid cyclic imports.
-// TODO[ADR-0022]: migrar para *agentsession.AgentSession.
 type AgentSessionReader interface {
-	GetByID(id string) (*domain.AgentSession, error)
+	GetByID(id string) (*agentsessionmod.AgentSession, error)
 }
 
 // WorkUnitReader abstracts work-unit reads to avoid cyclic imports.
-// TODO[ADR-0022]: migrar para *workunit.WorkUnit
 type WorkUnitReader interface {
-	GetByID(id string) (*domain.WorkUnit, error)
+	GetByID(id string) (*workunitmod.WorkUnit, error)
 }
 
 // TriggerService manages trigger lifecycle and anomaly detection.
@@ -47,7 +47,7 @@ type TriggerService struct {
 	newWorkUnitReader     func(dbcore.DBTX) WorkUnitReader
 	newEventStore         func(executor dbcore.DBTX) (*eventstore.Store, error)
 	clock                 func() time.Time
-	thresholds            domain.ThresholdConfig
+	thresholds            ThresholdConfig
 }
 
 // CreateTriggerInput holds all fields needed to create a trigger.
@@ -57,12 +57,12 @@ type CreateTriggerInput struct {
 	RunID            string
 	TaskID           string
 	AgentSessionID   string
-	TriggerType      domain.TriggerType
-	Status           domain.TriggerStatus
-	AnomalyType      *domain.AnomalyType
+	TriggerType      Type
+	Status           Status
+	AnomalyType      *AnomalyType
 	ThresholdValue   json.RawMessage
 	CurrentValue     json.RawMessage
-	ResolutionAction *domain.ResolutionAction
+	ResolutionAction *ResolutionAction
 }
 
 // NewTriggerService creates a new TriggerService with default thresholds and clock.
@@ -89,17 +89,17 @@ func (s *TriggerService) SetClock(fn func() time.Time) {
 }
 
 // SetThresholds overrides the threshold config for testing.
-func (s *TriggerService) SetThresholds(cfg domain.ThresholdConfig) {
+func (s *TriggerService) SetThresholds(cfg ThresholdConfig) {
 	s.thresholds = cfg
 }
 
 // Create persists a new trigger and emits a domain event.
-func (s *TriggerService) Create(ctx context.Context, input CreateTriggerInput) (*transition.OperationResult[*domain.Trigger], error) {
+func (s *TriggerService) Create(ctx context.Context, input CreateTriggerInput) (*transition.OperationResult[*Trigger], error) {
 	if input.ID == "" {
 		input.ID = uuid.New().String()
 	}
 	if input.Status == "" {
-		input.Status = domain.TriggerStatusActive
+		input.Status = StatusActive
 	}
 	if err := validateCreateTriggerInput(input); err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (s *TriggerService) Create(ctx context.Context, input CreateTriggerInput) (
 	}
 	defer dbcore.RollbackTx(tx)
 
-	trigger := &domain.Trigger{
+	trigger := &Trigger{
 		ID:               input.ID,
 		RunID:            nilIfEmpty(input.RunID),
 		TaskID:           nilIfEmpty(input.TaskID),
@@ -157,11 +157,11 @@ func (s *TriggerService) Create(ctx context.Context, input CreateTriggerInput) (
 	if err := dbcore.CommitTx(tx, "trigger_service.commit_create"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.Trigger]{Value: trigger, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*Trigger]{Value: trigger, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
 // EvaluateRun evaluates a run for anomalies and persists detected triggers.
-func (s *TriggerService) EvaluateRun(ctx context.Context, runID string) ([]*domain.Trigger, error) {
+func (s *TriggerService) EvaluateRun(ctx context.Context, runID string) ([]*Trigger, error) {
 	if err := validation.RequiredUUID(runID, "run_id", "trigger_service.evaluate_run"); err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (s *TriggerService) EvaluateRun(ctx context.Context, runID string) ([]*doma
 	}
 
 	now := s.clock()
-	var detected []*domain.Trigger
+	var detected []*Trigger
 
 	// Stall detection
 	lastEventAt := lastEventTime(events)
@@ -218,7 +218,7 @@ func (s *TriggerService) EvaluateRun(ctx context.Context, runID string) ([]*doma
 		detected = append(detected, stepTrigger)
 	}
 
-	var result []*domain.Trigger
+	var result []*Trigger
 	for _, t := range detected {
 		created, err := s.persistDetectedTrigger(ctx, tx, t)
 		if err != nil {
@@ -234,7 +234,7 @@ func (s *TriggerService) EvaluateRun(ctx context.Context, runID string) ([]*doma
 }
 
 // EvaluateSession evaluates an agent session for heartbeat timeout and stall.
-func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) ([]*domain.Trigger, error) {
+func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) ([]*Trigger, error) {
 	if err := validation.RequiredUUID(sessionID, "session_id", "trigger_service.evaluate_session"); err != nil {
 		return nil, err
 	}
@@ -250,15 +250,15 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 		return nil, err
 	}
 
-	var detected []*domain.Trigger
+	var detected []*Trigger
 	now := s.clock()
 
 	// Heartbeat timeout
 	if session.LastHeartbeatAt == nil {
-		anomaly := domain.AnomalyTypeStall
-		detected = append(detected, &domain.Trigger{
-			TriggerType:    domain.TriggerTypeHeartbeatTimeout,
-			Status:         domain.TriggerStatusTriggered,
+		anomaly := AnomalyStall
+		detected = append(detected, &Trigger{
+			TriggerType:    TypeHeartbeatTimeout,
+			Status:         StatusTriggered,
 			AnomalyType:    &anomaly,
 			AgentSessionID: &sessionID,
 			RunID:          &session.RunID,
@@ -272,10 +272,10 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 			TriggeredAt: &now,
 		})
 	} else if now.Sub(*session.LastHeartbeatAt) >= time.Duration(s.thresholds.StallSeconds)*time.Second {
-		anomaly := domain.AnomalyTypeStall
-		detected = append(detected, &domain.Trigger{
-			TriggerType:    domain.TriggerTypeHeartbeatTimeout,
-			Status:         domain.TriggerStatusTriggered,
+		anomaly := AnomalyStall
+		detected = append(detected, &Trigger{
+			TriggerType:    TypeHeartbeatTimeout,
+			Status:         StatusTriggered,
 			AnomalyType:    &anomaly,
 			AgentSessionID: &sessionID,
 			RunID:          &session.RunID,
@@ -290,7 +290,7 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 		})
 	}
 
-	var result []*domain.Trigger
+	var result []*Trigger
 	for _, t := range detected {
 		created, err := s.persistDetectedTrigger(ctx, tx, t)
 		if err != nil {
@@ -306,7 +306,7 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 }
 
 // EvaluateWorkUnit evaluates a work unit for drift and path violations.
-func (s *TriggerService) EvaluateWorkUnit(ctx context.Context, workUnitID string) ([]*domain.Trigger, error) {
+func (s *TriggerService) EvaluateWorkUnit(ctx context.Context, workUnitID string) ([]*Trigger, error) {
 	if err := validation.RequiredUUID(workUnitID, "work_unit_id", "trigger_service.evaluate_workunit"); err != nil {
 		return nil, err
 	}
@@ -330,7 +330,7 @@ func (s *TriggerService) EvaluateWorkUnit(ctx context.Context, workUnitID string
 	accessedPaths, modifiedPaths := extractPathsFromEvents(events)
 
 	now := s.clock()
-	var detected []*domain.Trigger
+	var detected []*Trigger
 
 	if drift := (DriftDetector{}).Detect(wu.OwnedPaths, wu.ReadPaths, accessedPaths, now); drift != nil {
 		drift.TaskID = &wu.TaskID
@@ -342,7 +342,7 @@ func (s *TriggerService) EvaluateWorkUnit(ctx context.Context, workUnitID string
 		detected = append(detected, violation)
 	}
 
-	var result []*domain.Trigger
+	var result []*Trigger
 	for _, t := range detected {
 		created, err := s.persistDetectedTrigger(ctx, tx, t)
 		if err != nil {
@@ -358,29 +358,29 @@ func (s *TriggerService) EvaluateWorkUnit(ctx context.Context, workUnitID string
 }
 
 // Resolve marks a trigger as resolved.
-func (s *TriggerService) Resolve(ctx context.Context, triggerID string, action domain.ResolutionAction, reason string) (*transition.OperationResult[*domain.Trigger], error) {
-	return s.transition(ctx, triggerID, domain.TriggerStatusResolved, action, reason)
+func (s *TriggerService) Resolve(ctx context.Context, triggerID string, action ResolutionAction, reason string) (*transition.OperationResult[*Trigger], error) {
+	return s.transition(ctx, triggerID, StatusResolved, action, reason)
 }
 
 // Dismiss marks a trigger as dismissed.
-func (s *TriggerService) Dismiss(ctx context.Context, triggerID string, reason string) (*transition.OperationResult[*domain.Trigger], error) {
-	return s.transition(ctx, triggerID, domain.TriggerStatusDismissed, "", reason)
+func (s *TriggerService) Dismiss(ctx context.Context, triggerID string, reason string) (*transition.OperationResult[*Trigger], error) {
+	return s.transition(ctx, triggerID, StatusDismissed, "", reason)
 }
 
 // ListActive returns all active or triggered triggers.
-func (s *TriggerService) ListActive(ctx context.Context) ([]*domain.Trigger, error) {
+func (s *TriggerService) ListActive(ctx context.Context) ([]*Trigger, error) {
 	return NewRepository(s.db).ListActive(ctx)
 }
 
 // ListByRun returns all triggers for a run.
-func (s *TriggerService) ListByRun(ctx context.Context, runID string) ([]*domain.Trigger, error) {
+func (s *TriggerService) ListByRun(ctx context.Context, runID string) ([]*Trigger, error) {
 	if err := validation.RequiredUUID(runID, "run_id", "trigger_service.list_by_run"); err != nil {
 		return nil, err
 	}
 	return NewRepository(s.db).ListByRun(ctx, runID)
 }
 
-func (s *TriggerService) transition(ctx context.Context, triggerID string, target domain.TriggerStatus, action domain.ResolutionAction, reason string) (*transition.OperationResult[*domain.Trigger], error) {
+func (s *TriggerService) transition(ctx context.Context, triggerID string, target Status, action ResolutionAction, reason string) (*transition.OperationResult[*Trigger], error) {
 	op := "trigger_service.transition"
 	if err := validation.RequiredUUID(triggerID, "trigger_id", op); err != nil {
 		return nil, err
@@ -398,7 +398,7 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 	}
 
 	fromStatus := trigger.Status
-	if fromStatus == domain.TriggerStatusResolved || fromStatus == domain.TriggerStatusDismissed {
+	if fromStatus == StatusResolved || fromStatus == StatusDismissed {
 		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "cannot transition from terminal status")
 	}
 	if target == fromStatus {
@@ -407,11 +407,11 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 
 	now := s.clock()
 	var resolvedAt *time.Time
-	if target == domain.TriggerStatusResolved || target == domain.TriggerStatusDismissed {
+	if target == StatusResolved || target == StatusDismissed {
 		resolvedAt = &now
 	}
 
-	var resolutionPtr *domain.ResolutionAction
+	var resolutionPtr *ResolutionAction
 	if action != "" {
 		resolutionPtr = &action
 	}
@@ -451,14 +451,14 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 	if err := dbcore.CommitTx(tx, "trigger_service.commit_transition"); err != nil {
 		return nil, err
 	}
-	return &transition.OperationResult[*domain.Trigger]{Value: trigger, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*Trigger]{Value: trigger, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *TriggerService) persistDetectedTrigger(ctx context.Context, tx *sql.Tx, trigger *domain.Trigger) (*domain.Trigger, error) {
+func (s *TriggerService) persistDetectedTrigger(ctx context.Context, tx *sql.Tx, trigger *Trigger) (*Trigger, error) {
 	trigger.ID = uuid.New().String()
 	trigger.CreatedAt = s.clock()
 	if trigger.Status == "" {
-		trigger.Status = domain.TriggerStatusTriggered
+		trigger.Status = StatusTriggered
 	}
 
 	// Deduplication: skip if a similar active/triggered trigger already exists
@@ -499,7 +499,7 @@ func (s *TriggerService) persistDetectedTrigger(ctx context.Context, tx *sql.Tx,
 	return trigger, nil
 }
 
-func (s *TriggerService) requireRunByID(tx *sql.Tx, id string) (*domain.Run, error) {
+func (s *TriggerService) requireRunByID(tx *sql.Tx, id string) (*runmod.Run, error) {
 	run, err := s.newRunReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "run.get", err)
@@ -510,7 +510,7 @@ func (s *TriggerService) requireRunByID(tx *sql.Tx, id string) (*domain.Run, err
 	return run, nil
 }
 
-func (s *TriggerService) requireSessionByID(tx *sql.Tx, id string) (*domain.AgentSession, error) {
+func (s *TriggerService) requireSessionByID(tx *sql.Tx, id string) (*agentsessionmod.AgentSession, error) {
 	session, err := s.newAgentSessionReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "agentsession.get", err)
@@ -521,7 +521,7 @@ func (s *TriggerService) requireSessionByID(tx *sql.Tx, id string) (*domain.Agen
 	return session, nil
 }
 
-func (s *TriggerService) requireWorkUnitByID(tx *sql.Tx, id string) (*domain.WorkUnit, error) {
+func (s *TriggerService) requireWorkUnitByID(tx *sql.Tx, id string) (*workunitmod.WorkUnit, error) {
 	wu, err := s.newWorkUnitReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "workunit.get", err)
@@ -646,14 +646,14 @@ func ptrValue(s *string) string {
 	return *s
 }
 
-func ptrValueString(a *domain.AnomalyType) string {
+func ptrValueString(a *AnomalyType) string {
 	if a == nil {
 		return ""
 	}
 	return string(*a)
 }
 
-func ptrValueStringToPtr(a *domain.AnomalyType) *string {
+func ptrValueStringToPtr(a *AnomalyType) *string {
 	if a == nil {
 		return nil
 	}

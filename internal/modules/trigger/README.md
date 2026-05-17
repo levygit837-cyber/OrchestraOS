@@ -52,8 +52,9 @@ Critical invariants:
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
-- DI interface types: `run.Run`, `agentsession.AgentSession`, `workunit.WorkUnit`
-  — see ADR-0026: types may be imported ONLY for DI interface return types.
+- `internal/modules/run`: DI interface return type `*run.Run` in RunReader (ADR-0026)
+- `internal/modules/agentsession`: DI interface return type `*agentsession.AgentSession` in AgentSessionReader (ADR-0026)
+- `internal/modules/workunit`: DI interface return type `*workunit.WorkUnit` in WorkUnitReader (ADR-0026)
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports

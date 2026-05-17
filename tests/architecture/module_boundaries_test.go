@@ -31,7 +31,8 @@ var allowedModuleImports = map[string]map[string]bool{
 	"workunit":     {"task": true, "taskgraph": true},
 	"taskgraph":    {"task": true, "workunit": true},
 	"agentsession": {"agent": true},
-	"orchestrator": {"review": true, "taskgraph": true, "workunit": true},
+	"orchestrator": {"review": true, "taskgraph": true, "workunit": true, "trigger": true},
+	"trigger":      {"agentsession": true, "run": true, "workunit": true},
 }
 
 // leafModules must not import any other module under internal/modules/.
