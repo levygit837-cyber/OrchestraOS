@@ -11,6 +11,6 @@
 //   - core/apperrors: error typing
 //
 // # Related Packages
-//   - core/coordination/: uses MarshalPayload when building transition events
+//   - core/transition/: uses MarshalPayload when building transition events
 //   - modules/*: service methods use it to persist structured data
 package serialization

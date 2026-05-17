@@ -92,7 +92,7 @@ func TestModuleBoundaries(t *testing.T) {
 							"module %q imports %q, which is not in the allowed list. "+
 								"Cross-module imports are allowed ONLY for DI interface return types (ADR-0026). "+
 								"If this import is for a DI interface type, add it to allowedModuleImports and document in the migration plan. "+
-								"If this import is for a service/repository/business logic, refactor to use DI or move to core/coordination.",
+								"If this import is for a service/repository/business logic, refactor to use DI or move to the orchestrator module.",
 							modName, importedMod,
 						)
 					}
@@ -129,11 +129,7 @@ func TestModulesDoNotImportCoordination(t *testing.T) {
 				for _, imp := range file.Imports {
 					path := strings.Trim(imp.Path.Value, `"`)
 					if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/coordination" {
-						// The orchestrator module is allowed to import coordination as it is the
-						// central coordinator that consumes RuntimeEventRelay and PromptOrchestrator.
-						if modName != "orchestrator" {
-							t.Errorf("module %q imports internal/core/coordination. Modules must not import coordination directly. Use internal/core/transition/ for shared types.", modName)
-						}
+						t.Errorf("module %q imports internal/core/coordination. coordination was removed per ADR-0028. Use internal/core/transition/ for shared types.", modName)
 					}
 				}
 			}

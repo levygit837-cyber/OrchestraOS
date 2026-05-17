@@ -29,7 +29,7 @@ import _ "embed"
 //   - core/apperrors, core/db, core/validation, core/event
 //   - core/serialization
 // FORBIDDEN core/* imports:
-//   - core/coordination (reserved for orchestrator module only)
+//   - core/transition (shared types)
 //   - core/statemachine (prompt does not manage lifecycle states)
 //
 // For full contracts, read CONTRACTS.md in this directory.

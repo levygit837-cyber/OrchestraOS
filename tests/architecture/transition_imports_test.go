@@ -31,7 +31,7 @@ func TestTransitionPackageIsLeaf(t *testing.T) {
 				t.Errorf("internal/core/transition imports module %q. transition must not import any module.", path)
 			}
 			if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/coordination" {
-				t.Errorf("internal/core/transition imports internal/core/coordination. transition must not import coordination.")
+				t.Errorf("internal/core/transition imports internal/core/coordination. coordination was removed per ADR-0028.")
 			}
 		}
 	}

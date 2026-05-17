@@ -14,7 +14,7 @@
 //
 // # Dependencies
 //   - core/db: transaction helpers
-//   - core/coordination: OperationResult
+//   - core/transition: OperationResult
 //   - core/validation: input validation
 //   - domain: PromptSnapshot, ToolsetSnapshot
 //

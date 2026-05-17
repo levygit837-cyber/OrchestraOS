@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
@@ -23,7 +22,7 @@ import (
 
 // TaskService creates a TaskService with standard dependencies.
 func TaskService(db *sql.DB) *taskmod.TaskService {
-	return taskmod.NewTaskService(db, coordination.CancelTaskDependents)
+	return taskmod.NewTaskService(db, orchestratormod.CancelTaskDependents)
 }
 
 // planWorkUnitToDomain converts a taskgraph PlanWorkUnit to a workunit.WorkUnit.
