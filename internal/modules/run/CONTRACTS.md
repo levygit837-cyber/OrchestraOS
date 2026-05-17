@@ -48,7 +48,7 @@ Invalid transitions:
 
 Allowed:
 - Read and mutate the `runs` table via `repository.go`.
-- Append events via `core/orchestration` helpers.
+- Append events via `core/transition` helpers.
 - Call `core/statemachine.CanTransition` for validation.
 - Use DI interfaces (`TaskReader`, `WorkUnitReader`) for cross-module reads.
 - Reference `workunit.EventTypeForStatus` for event naming.
@@ -60,17 +60,21 @@ Forbidden:
 - Business logic inside `repository.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+- `internal/core/coordination`
+- `internal/modules/orchestrator`
 
 ---
 
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
-- `CodeNotFound` for missing runs.
-- `CodeInvalidTransition` for illegal status changes.
-- Retryable errors must be marked explicitly.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Invalid input syntax |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Run does not exist |
+| `CodeInvalidTransition` | State machine violation |
+| `CodeConflict` | Idempotency / concurrency violation |
+| `CodePersistence` | Database errors |
 
 ---
 
@@ -83,26 +87,19 @@ Cross-module orchestration belongs ONLY to:
 
 ---
 
-## LLM Execution Rules
+## File Decomposition
 
-LLM executors MUST:
+### `service_retry.go`
+Created because `service.go` exceeded 300 lines. Extracted retry orchestration with backoff and idempotency logic.
 
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
+### `retry.go`
+Retry policy and backoff definitions extracted for reuse across `service.go` and `service_retry.go`.
+
+No further decomposition at this time.
 
 ---
 
-## Forbidden Patterns
+## Related ADRs
 
-- Shared helpers inside the module (move to `core/` if reusable).
-- Hidden side effects (every write emits an event).
-- Cross-module mutations via service imports.
-- Bypassing the state machine.
-- Business logic inside repositories.
-- Inline SQL strings.
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

@@ -41,29 +41,34 @@ created → triaged → planned → scheduled → sandbox_preparing → running
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `models.go` → domain type aliases (`Status`, `Priority`, `RiskLevel`)
+- `contract.go` → ModuleContract + hierarchical rules (global, type, specific)
+- `models.go` → domain types (`Task`, `Status`, `Priority`, `RiskLevel`)
 - `events.go` → event-type mapping for task status transitions
-- `fetch.go` → `RequireByID` exported helper used as `TaskReader` by other modules
 - `queries.go` → SQL constants for tasks
-- `repository.go` → task CRUD
+- `repository.go` → task CRUD, no business logic
 - `service.go` → task lifecycle logic, cancellation cascade
+- `validation.go` → input validation (`Status`, `Priority`, `RiskLevel`, `CreateTaskInput`)
+
+### Optional Files
+- `fetch.go` → `RequireByID` exported helper used as `TaskReader` by other modules
 - `validation_test.go` → input validation tests
 
 ---
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, orchestration, statemachine, validation, serialization, apperrors)
-- `internal/domain`
-- `internal/core/event` (indirectly via orchestration)
-- `internal/modules/run` (repository only for cancellation cascade)
-- `internal/modules/workunit` (repository only for cancellation cascade)
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization` (event emission)
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 
 Forbidden:
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `run.Service` or `workunit.Service`
-- Cross-module mutations outside `core/orchestration`
-- `internal/services` or `internal/repository` (removed)
+- Cross-module mutations outside `core/coordination`
+- Inline SQL outside `queries.go`
 
 ---
 
@@ -74,5 +79,5 @@ Forbidden:
 3. Preserve all invariants listed above.
 4. Avoid architectural refactors — keep changes minimal and localized.
 5. State transitions MUST use `core/statemachine.CanTransition`.
-6. Every mutation MUST emit an event via `core/orchestration` helpers.
+6. Every mutation MUST emit an event via `core/transition` helpers.
 7. SQL belongs only in `queries.go`.

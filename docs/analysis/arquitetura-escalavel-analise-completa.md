@@ -32,7 +32,7 @@ O projeto está **adiantado** em relação à documentação em alguns aspectos,
 - **Mudança crítica:** De camadas técnicas para módulos por domínio
 - Cada módulo é autônomo: `internal/modules/<entity>/`
 - **Regra de Ouro:** Módulos NUNCA importam outros módulos diretamente
-- Comunicação via `internal/core/orchestration` ou interfaces DI
+- Comunicação via `internal/core/coordination` ou interfaces DI
 
 #### ADR 0023: Hybrid Intelligent Orchestrator
 - **Sistema Go Determinístico:** OrchestratorService como gatekeeper
@@ -146,7 +146,7 @@ internal/modules/<entity>/
 ### 3.3. Padrão de Comunicação Cross-Module
 
 **Regra de Ouro (ADR 0022):**
-> Nenhum módulo pode importar diretamente outro módulo. Comunicação via `internal/core/orchestration` ou interfaces DI.
+> Nenhum módulo pode importar diretamente outro módulo. Comunicação via `internal/core/coordination` ou interfaces DI.
 
 **Exemplo de Implementação (bootstrap/services.go):**
 ```go
@@ -161,7 +161,7 @@ func (a *taskAdapter) GetByID(ctx context.Context, id string) (*domain.Task, err
 }
 ```
 
-**Componentes de Orquestração Compartilhados (internal/core/orchestration):**
+**Componentes de Orquestração Compartilhados (internal/core/coordination):**
 - `TransitionInput`: Payload builder para transições
 - `OperationResult[T]`: Wrapper genérico (value + event + duplicate)
 - `RuntimeEventRelay`: Relay eventos de runtime para serviços
@@ -421,7 +421,7 @@ flowchart TD
 
 - **Cada nova feature = novo módulo vertical**
 - **Nunca editar módulos existentes** exceto para correções
-- **Comunicação cross-module via core/orchestration**
+- **Comunicação cross-module via core/coordination**
 - **Tipos compartilhados em internal/domain**
 - **Helpers compartilhados em internal/core**
 

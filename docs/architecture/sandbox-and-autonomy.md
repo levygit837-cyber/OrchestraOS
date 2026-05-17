@@ -1,93 +1,84 @@
 # Sandbox e Autonomia
 
+> Este documento detalha a implementacao operacional do sandbox.
+> Para a decisao arquitetural e politica de autonomia, consulte [ADR 0004: Sandbox e Autonomia Inicial](/docs/adr/0004-sandbox-and-autonomy.md).
+
 ## Objetivo
 
-Proteger o projeto contra erro acidental e reduzir risco de execucao de codigo potencialmente malicioso.
+Detalhes de execucao do isolamento por task e das restricoes do container.
 
-No MVP local, Docker + git worktree oferecem isolamento pratico, mas nao devem ser tratados como fronteira perfeita de seguranca. Quando o risco aumentar, o sandbox deve evoluir para gVisor ou Firecracker.
+## Worktree
 
-## Camadas de Isolamento
+Diretorio por task:
 
-### Worktree
+- Local: `~/.local/share/orchestraos/worktrees/{repo_id}/{task_id}`
+- Servidor: `/var/lib/orchestraos/worktrees/{repo_id}/{task_id}`
 
-Cada task executa em um worktree proprio e branch propria. Isso evita conflitos diretos entre agentes e permite revisar, descartar ou integrar mudancas de forma independente.
+Prefixo de branch recomendado para runtime Codex/CLI:
 
-### Container
+```text
+codex/task-{task_id}-{slug}
+```
 
-Cada agente executa em um container separado. Regras iniciais:
+## Container
 
-- Nao usar container privilegiado.
-- Nao montar Docker socket.
-- Nao montar home do usuario.
+Regras operacionais do Docker para agentes:
+
+- Sem `--privileged`.
+- Sem montagem do Docker socket.
+- Sem montagem da home do usuario.
 - Montar apenas o worktree da task e diretorios explicitamente aprovados.
-- Usar usuario nao-root quando possivel.
-- Aplicar limite de CPU, memoria, processos e tempo de execucao.
-- Bloquear ou limitar rede por padrao.
-- Injetar segredos apenas por aprovacao e com escopo minimo.
-- Registrar comandos, saidas relevantes e exit codes.
+- Usuario nao-root quando possivel (`--user 1000:1000`).
+- Limites de CPU (`--cpus`), memoria (`--memory`), processos (`--pids-limit`) e tempo (`--timeout`).
+- Rede bloqueada por padrao (`--network none`) ou liberada por allowlist.
+- Segredos injetados via variaveis de ambiente temporarias, nao persistidas em imagem ou volume.
 
-### Rede
+## Rede
 
-Rede deve ser negada por padrao para tasks de baixo risco que nao precisam de internet. Quando necessaria, deve ser liberada por politica ou aprovacao, preferencialmente com allowlist.
+- Default: `--network none`.
+- Quando necessario: criar rede bridge dedicada por task com allowlist de destinos.
+- Registrar todo trafego liberado no Event Store.
 
-### Segredos
+## Segredos
 
-Segredos nao devem ser copiados para worktrees, logs, prompts ou artefatos. O Orchestrator deve controlar injecao temporaria de credenciais e registrar qual politica permitiu o acesso.
+- Nunca copiar para worktrees, logs, prompts ou artefatos.
+- Injetar via `docker run -e` ou mounts temporarios em `/run/secrets`.
+- Registrar qual politica permitiu o acesso no Event Store.
 
-### Ferramentas
+## Ferramentas
 
-Toda ferramenta deve ter classificacao de risco. Ferramentas de leitura e validacao podem ser autoaprovadas em escopos seguros. Ferramentas destrutivas, externas ou com segredos exigem aprovacao.
+Classificacao de risco operacional:
 
-## Politica Inicial de Autonomia
+| Risco    | Exemplos                                                | Aprovacao                         |
+|----------|---------------------------------------------------------|-----------------------------------|
+| `safe`   | Ler arquivo, listar diretorio, formatar codigo          | Auto-aprovada pelo Go             |
+| `low`    | Executar testes locais, compilar                        | Auto-aprovada no worktree da task |
+| `medium` | Acessar rede restrita, instalar dependencia             | Agente Inteligente (ADR 0023)     |
+| `high`   | Escrever fora do worktree, push, PR, comando destrutivo | Escalonar para humano             |
 
-Nivel aprovado para o MVP:
+## Checkpoints Operacionais
 
-- **Nivel 2**: IA implementa em sandbox com revisao humana.
+O agente deve registrar checkpoints antes de:
 
-Permitido por padrao no MVP:
-
-- Ler arquivos do worktree da task.
-- Consultar docs versionadas do projeto.
-- Editar arquivos dentro do worktree da task.
-- Rodar validacoes locais sem rede quando disponiveis.
-- Produzir diff, resumo e evidencias.
-
-Exige aprovacao explicita:
-
-- Acessar rede.
-- Instalar dependencias externas.
-- Ler ou usar segredos.
-- Escrever fora do worktree da task.
-- Fazer push para remoto.
-- Abrir PR.
-- Executar comandos destrutivos.
-- Alterar politicas de autonomia.
-- Interagir com sistemas externos alem do escopo da task.
-
-Nao aprovado no MVP:
-
-- **Nivel 4**: executar tarefas operacionais de baixo risco sem revisao.
-- **Nivel 5**: operar dominios aprovados com autonomia ampla.
-
-Nivel 3 pode ser habilitado por task ou ADR especifica quando o sistema ja conseguir abrir PRs com testes e evidencias, sempre com trilha de auditoria.
-
-## Checkpoints
-
-Agentes devem parar em checkpoints seguros para:
-
-- Ler mensagens pendentes do Orchestrator.
-- Confirmar mudanca de escopo.
+- Mudar de foco de implementacao.
 - Solicitar aprovacao de ferramenta.
-- Registrar progresso.
-- Validar se a task ainda esta dentro da politica permitida.
+- Produzir diff relevante.
+- Encerrar uma work unit.
+
+Cada checkpoint deve ser persistido via `AgentSessionService.Checkpoint()` (ADR 0011).
 
 ## Encerramento e Limpeza
 
-Ao finalizar uma task, o Orchestrator deve:
+Fluxo de finalizacao de task:
 
-- Coletar diff, logs e evidencias.
-- Registrar validacoes.
-- Encerrar o processo do agente.
-- Parar e remover container.
-- Manter ou remover worktree conforme politica de retencao.
-- Enviar status à CLI/GitHub.
+1. Coletar diff, logs e evidencias.
+2. Registrar validacoes no Event Store.
+3. Encerrar processo do agente.
+4. Parar e remover container.
+5. Manter ou remover worktree conforme politica de retencao.
+6. Enviar status à CLI/GitHub.
+
+## Evolucao
+
+- gVisor ou Firecracker como evolucao de sandbox quando o risco aumentar.
+- Politica de autonomia evolui conforme ADR 0004.

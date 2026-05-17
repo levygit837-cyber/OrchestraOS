@@ -286,10 +286,10 @@ type EventEnvelope struct {
 type TriggerType string
 
 const (
-	TriggerTypeThreshold       TriggerType = "threshold"
-	TriggerTypeAnomaly         TriggerType = "anomaly"
+	TriggerTypeThreshold        TriggerType = "threshold"
+	TriggerTypeAnomaly          TriggerType = "anomaly"
 	TriggerTypeHeartbeatTimeout TriggerType = "heartbeat_timeout"
-	TriggerTypePolicy          TriggerType = "policy"
+	TriggerTypePolicy           TriggerType = "policy"
 )
 
 type TriggerStatus string
@@ -323,27 +323,27 @@ const (
 )
 
 type Trigger struct {
-	ID              string           `json:"id"`
-	RunID           *string          `json:"run_id,omitempty"`
-	TaskID          *string          `json:"task_id,omitempty"`
-	AgentSessionID  *string          `json:"agent_session_id,omitempty"`
-	TriggerType     TriggerType      `json:"trigger_type"`
-	Status          TriggerStatus    `json:"status"`
-	AnomalyType     *AnomalyType     `json:"anomaly_type,omitempty"`
-	ThresholdValue  json.RawMessage  `json:"threshold_value,omitempty"`
-	CurrentValue    json.RawMessage  `json:"current_value,omitempty"`
-	TriggeredAt     *time.Time       `json:"triggered_at,omitempty"`
-	ResolvedAt      *time.Time       `json:"resolved_at,omitempty"`
+	ID               string            `json:"id"`
+	RunID            *string           `json:"run_id,omitempty"`
+	TaskID           *string           `json:"task_id,omitempty"`
+	AgentSessionID   *string           `json:"agent_session_id,omitempty"`
+	TriggerType      TriggerType       `json:"trigger_type"`
+	Status           TriggerStatus     `json:"status"`
+	AnomalyType      *AnomalyType      `json:"anomaly_type,omitempty"`
+	ThresholdValue   json.RawMessage   `json:"threshold_value,omitempty"`
+	CurrentValue     json.RawMessage   `json:"current_value,omitempty"`
+	TriggeredAt      *time.Time        `json:"triggered_at,omitempty"`
+	ResolvedAt       *time.Time        `json:"resolved_at,omitempty"`
 	ResolutionAction *ResolutionAction `json:"resolution_action,omitempty"`
-	CreatedAt       time.Time        `json:"created_at"`
+	CreatedAt        time.Time         `json:"created_at"`
 }
 
 type ThresholdConfig struct {
-	StallSeconds       int `json:"stall_seconds"`
-	LoopRepetitions    int `json:"loop_repetitions"`
-	TokenMax           int `json:"token_max"`
-	StepsMax           int `json:"steps_max"`
-	TimeMaxSeconds     int `json:"time_max_seconds"`
+	StallSeconds    int `json:"stall_seconds"`
+	LoopRepetitions int `json:"loop_repetitions"`
+	TokenMax        int `json:"token_max"`
+	StepsMax        int `json:"steps_max"`
+	TimeMaxSeconds  int `json:"time_max_seconds"`
 }
 
 type ReviewStatus string
@@ -373,18 +373,18 @@ type ReviewCriteriaChecked struct {
 }
 
 type Review struct {
-	ID               string                   `json:"id"`
-	RunID            *string                  `json:"run_id,omitempty"`
-	WorkUnitID       *string                  `json:"work_unit_id,omitempty"`
-	TaskID           *string                  `json:"task_id,omitempty"`
-	AgentSessionID   *string                  `json:"agent_session_id,omitempty"`
-	ReviewerAgentID  *string                  `json:"reviewer_agent_id,omitempty"`
-	GateType         ValidationGate           `json:"gate_type"`
-	Status           ReviewStatus             `json:"status"`
-	VerdictReason    string                   `json:"verdict_reason,omitempty"`
-	EvidenceRefs     []string                 `json:"evidence_refs,omitempty"`
-	CriteriaChecked  []ReviewCriteriaChecked  `json:"criteria_checked,omitempty"`
-	CreatedAt        time.Time                `json:"created_at"`
-	UpdatedAt        time.Time                `json:"updated_at"`
-	CompletedAt      *time.Time               `json:"completed_at,omitempty"`
+	ID              string                  `json:"id"`
+	RunID           *string                 `json:"run_id,omitempty"`
+	WorkUnitID      *string                 `json:"work_unit_id,omitempty"`
+	TaskID          *string                 `json:"task_id,omitempty"`
+	AgentSessionID  *string                 `json:"agent_session_id,omitempty"`
+	ReviewerAgentID *string                 `json:"reviewer_agent_id,omitempty"`
+	GateType        ValidationGate          `json:"gate_type"`
+	Status          ReviewStatus            `json:"status"`
+	VerdictReason   string                  `json:"verdict_reason,omitempty"`
+	EvidenceRefs    []string                `json:"evidence_refs,omitempty"`
+	CriteriaChecked []ReviewCriteriaChecked `json:"criteria_checked,omitempty"`
+	CreatedAt       time.Time               `json:"created_at"`
+	UpdatedAt       time.Time               `json:"updated_at"`
+	CompletedAt     *time.Time              `json:"completed_at,omitempty"`
 }

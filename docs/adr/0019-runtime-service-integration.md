@@ -16,7 +16,7 @@ O problema central e que nenhum dos dois esta integrado ao fluxo operacional:
 
 - Nao existe componente que conecte: `TaskGraphService` → `PromptService` → `RunService` → `AgentSessionService` → `Runtime` → relay de eventos. Cada passo requer intervencao manual via CLI.
 
-A ADR 0017 definiu que servicos de dominio sao a fronteira obrigatoria para comandos que alteram estado. A ADR 0016 definiu que transicoes de status devem passar por servicos internos. A ADR 0011 definiu que `AgentSessionService` e a unidade canonica de checkpoints. Essas decisoes precisam ser aplicadas ao fluxo de execucao com runtime real.
+A ADR 0022 (LLM-Optimized Module Architecture) e a ADR 0024 formalizaram que servicos de dominio em modulos verticais (`internal/modules/*/service.go`) sao a fronteira obrigatoria para comandos que alteram estado. A ADR 0016 definiu que transicoes de status devem passar por servicos internos. A ADR 0011 definiu que `AgentSessionService` e a unidade canonica de checkpoints. Essas decisoes precisam ser aplicadas ao fluxo de execucao com runtime real.
 
 ## Decisao
 
@@ -58,14 +58,14 @@ Esse comportamento ja existe em `TaskGraphService.buildPlan()` e deve ser preser
 
 ### Unificacao do Commander com Domain Services
 
-O pacote `internal/orchestration/commands.go` (`Commander`) foi criado antes da camada de servicos de dominio (ADR 0017). Ambos fazem transicoes atomicas com eventos, mas o `Commander` nao implementa:
+O pacote `internal/core/coordination/` contem helpers cross-module (como cancelamento em cascata e prompt orchestration). O antigo `Commander` em `internal/orchestration/commands.go` foi removido quando os servicos de dominio passaram a ser a fronteira obrigatoria para transicoes de estado (ADR 0024). Servicos de dominio em `internal/modules/*/service.go` agora implementam:
 
 - idempotencia por `event_id`;
 - retry com backoff;
 - validacao de `owned_paths`;
 - atualizacao de work units relacionadas ao transicionar runs.
 
-O `Commander` deve ser depreciado. Transicoes de estado devem usar exclusivamente os servicos de dominio. A CLI e qualquer futuro componente devem chamar `RunService`, `TaskService`, `WorkUnitService` e `AgentSessionService` para comandos operacionais.
+Transicoes de estado devem usar exclusivamente os servicos de dominio nos modulos verticais. A CLI e qualquer futuro componente devem chamar `RunService`, `TaskService`, `WorkUnitService` e `AgentSessionService` para comandos operacionais.
 
 ## Consequencias
 
@@ -73,7 +73,7 @@ O `Commander` deve ser depreciado. Transicoes de estado devem usar exclusivament
 - Checkpoints do `GeminiRuntime` atualizam a sessao conforme ADR 0011.
 - O planner LLM pode ser ativado via CLI ou variavel de ambiente sem mudanca de codigo.
 - O fallback automatico garante que falhas do LLM nao bloqueiem o fluxo de decomposicao.
-- O `Commander` nao deve receber novas funcionalidades. Codigo existente que o utilize deve migrar para servicos de dominio.
+- O `Commander` foi removido. Codigo existente deve chamar servicos de dominio em `internal/modules/*/service.go`.
 - Testes de integracao que validem o fluxo completo (Task → Graph → Prompt → Run → AgentSession → Runtime → Checkpoint → Complete) passam a ser viaveis.
 
 ## Alternativas consideradas

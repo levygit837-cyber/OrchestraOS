@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // Repository handles agent persistence
@@ -22,7 +21,7 @@ func NewRepository(db db.DBTX) *Repository {
 }
 
 // Create inserts a new agent
-func (r *Repository) Create(agent *domain.Agent) error {
+func (r *Repository) Create(agent *Agent) error {
 	if agent.ID == "" {
 		agent.ID = uuid.New().String()
 	}
@@ -50,26 +49,26 @@ func (r *Repository) Create(agent *domain.Agent) error {
 }
 
 // GetByID retrieves an agent by ID
-func (r *Repository) GetByID(ctx context.Context, id string) (*domain.Agent, error) {
+func (r *Repository) GetByID(ctx context.Context, id string) (*Agent, error) {
 	row := r.db.QueryRowContext(ctx, QueryGetByID, id)
 	return r.scanAgent(row)
 }
 
 // FindByProfileAndRuntime finds an active agent by profile and runtime type
-func (r *Repository) FindByProfileAndRuntime(profile string, runtimeType domain.AgentRuntimeType) (*domain.Agent, error) {
+func (r *Repository) FindByProfileAndRuntime(profile string, runtimeType RuntimeType) (*Agent, error) {
 	row := r.db.QueryRow(QueryFindByProfileAndRuntime, profile, runtimeType)
 	return r.scanAgent(row)
 }
 
 // List retrieves all agents
-func (r *Repository) List() ([]*domain.Agent, error) {
+func (r *Repository) List() ([]*Agent, error) {
 	rows, err := r.db.Query(QueryList)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "repository.list", err)
 	}
 	defer rows.Close()
 
-	var agents []*domain.Agent
+	var agents []*Agent
 	for rows.Next() {
 		agent, err := r.scanAgent(rows)
 		if err != nil {
@@ -83,8 +82,8 @@ func (r *Repository) List() ([]*domain.Agent, error) {
 
 func (r *Repository) scanAgent(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.Agent, error) {
-	var agent domain.Agent
+}) (*Agent, error) {
+	var agent Agent
 	var capabilities, allowedTools, defaultPromptFragments []string
 	var status string
 	var createdAt, updatedAt time.Time

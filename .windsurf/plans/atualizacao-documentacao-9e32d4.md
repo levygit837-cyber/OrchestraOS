@@ -22,7 +22,7 @@ A documentação do OrchestraOS contém referências desatualizadas a `internal/
 
 | Arquivo | Linhas | Problema | Ação |
 |--------|--------|----------|------|
-| architecture/orchestration.md | 181 | Referencia `internal/services` como fronteira de comando | Atualizar para `internal/modules/*` e `internal/core/orchestration` |
+| architecture/orchestration.md | 181 | Referencia `internal/services` como fronteira de comando | Atualizar para `internal/modules/*` e `internal/core/coordination` |
 | architecture/repo-structure.md | 12, 25 | Descreve estrutura inicial com `internal/services/` | **REESCREVER** para refletir estrutura atual com módulos verticais |
 | architecture/module_index.md | 28 | Menciona `common.go` foi eliminado e `internal/services` | Atualizar para refletir estrutura atual de módulos |
 | architecture/orchestrator-observation-api.md | 425 | Exemplo de código com caminho antigo | Atualizar exemplo de código |
@@ -50,7 +50,7 @@ A documentação do OrchestraOS contém referências desatualizadas a `internal/
 
 ### Fase 1: Atualizar Referências Críticas (PRIORIDADE ALTA)
 
-**Objetivo:** Corrigir todas as referências a `internal/services/` para `internal/modules/` ou `internal/core/orchestration/`.
+**Objetivo:** Corrigir todas as referências a `internal/services/` para `internal/modules/` ou `internal/core/coordination/`.
 
 #### 1.1 ADRs que precisam de atualização
 
@@ -80,7 +80,7 @@ A documentação do OrchestraOS contém referências desatualizadas a `internal/
 #### 1.2 Documentação de Arquitetura
 
 **architecture/orchestration.md**
-- Linha 181: Substituir `internal/services` → `internal/modules/*` e `internal/core/orchestration`
+- Linha 181: Substituir `internal/services` → `internal/modules/*` e `internal/core/coordination`
 - Adicionar seção explicando a mudança para Vertical Slices
 
 **architecture/repo-structure.md**
@@ -132,7 +132,7 @@ A documentação do OrchestraOS contém referências desatualizadas a `internal/
 #### 1.3 Roadmap e Implementação
 
 **implementation/roadmap.md**
-- Linha 150: `internal/services/runtime_relay.go` → `internal/core/orchestration/runtime_event_relay.go`
+- Linha 150: `internal/services/runtime_relay.go` → `internal/core/coordination/runtime_event_relay.go`
 - Linha 246: `internal/services/orchestrator_service.go` → `internal/modules/orchestrator/service.go`
 - Linhas 396-398, 406: Atualizar referências a services
 - Linhas 502-503: Atualizar referências a services
@@ -182,7 +182,7 @@ Conteúdo:
 - Contexto: Por que a migração foi necessária (ADR 0022)
 - O que mudou: De layered architecture para vertical slice architecture
 - Quando ocorreu: Data aproximada da migração
-- Como funciona agora: Padrão de módulos verticais, comunicação via core/orchestration
+- Como funciona agora: Padrão de módulos verticais, comunicação via core/coordination
 - Benefícios: Isolamento de contexto para LLMs, escalabilidade, testabilidade
 - Referências: ADR 0022, docs/development/CODING_STANDARDS.md
 
@@ -226,7 +226,7 @@ grep -r "domain services" docs/ -i
 
 #### 5.3 Consistência de Terminologia
 - Garantir uso consistente de "módulo vertical", "vertical slice", "domain module"
-- Garantir uso consistente de "core/orchestration" para helpers cross-domain
+- Garantir uso consistente de "core/coordination" para helpers cross-domain
 
 ## Ordem de Execução
 

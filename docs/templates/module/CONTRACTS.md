@@ -2,97 +2,71 @@
 
 ## Invariants
 
-- {{INVARIANT}}
-- {{INVARIANT}}
-- {{INVARIANT}}
-- {{INVARIANT}}
-
-Violating invariants is considered a **CRITICAL FAILURE**.
+1. [TODO: invariant 1]
+2. [TODO: invariant 2]
+3. [TODO: invariant 3]
 
 ---
 
 ## State Machine
 
-Valid transitions:
+### States
 
-{{VALID_TRANSITIONS}}
+```
+[TODO: list all possible statuses]
+```
 
-Invalid transitions:
+### Valid Transitions
 
-{{INVALID_TRANSITIONS}}
+```
+[TODO: add valid transitions, e.g.]
+created → running → completed
+      ↘ failed
+```
 
-Rules enforced by `core/statemachine.CanTransition`:
-1. Terminal statuses cannot transition to any other status.
-2. `completed` transitions require evidence, validation event, or justification.
-3. No transition is allowed unless explicitly listed above.
+### Invalid Transitions
 
----
-
-## Execution Rules
-
-- Always validate state before mutation (`CanTransition`).
-- Never bypass the state machine.
-- Never update an entity without emitting a domain event.
-- State transitions must be atomic (single transaction).
-- Idempotency: duplicate event append returns the existing envelope without error.
+```
+[TODO: list explicitly forbidden transitions]
+terminal → any (terminal statuses are immutable)
+```
 
 ---
 
 ## Boundary Rules
 
-Allowed:
-- Read own tables via `repository.go`.
-- Append events via `core/orchestration` helpers.
-- Call `core/statemachine.CanTransition` for validation.
-
-Forbidden:
-- Direct mutation of another module's tables.
-- Calling another module's service methods.
-- Inline SQL outside `queries.go`.
-- Business logic inside `repository.go`.
-
-Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+1. NEVER call `Service` methods from other modules directly.
+2. NEVER mutate tables belonging to other modules.
+3. NEVER write SQL outside `queries.go`.
+4. ALWAYS validate inputs at module boundaries using `core/validation`.
+5. ALWAYS wrap database errors with `apperrors.Wrap`.
 
 ---
 
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
-- Validation errors must be deterministic and idempotent.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Invalid input syntax |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Entity does not exist |
+| `CodeInvalidTransition` | State machine violation |
+| `CodeConflict` | Idempotency / concurrency violation |
+| `CodePersistence` | Database errors |
 
 ---
 
-## Persistence Rules
+## File Decomposition
 
-- All writes must go through `repository.go`.
-- SQL belongs only in `queries.go`.
-- No business logic inside repositories — pure CRUD + row-scanning.
-- Use `core/db.BeginTx` / `CommitTx` / `RollbackTx` for transactions.
+[TODO: document any service_*.go files here]
 
----
-
-## LLM Execution Rules
-
-LLM executors MUST:
-
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
+### service_[sub].go
+- **Reason:** [why was service.go decomposed?]
+- **Rules:** [any specific rules for this sub-file]
 
 ---
 
-## Forbidden Patterns
+## Related ADRs
 
-- Shared helpers inside the module (move to `core/` if reusable).
-- Hidden side effects (every write emits an event).
-- Cross-module mutations.
-- Bypassing the state machine.
-- Business logic inside repositories.
-- Inline SQL strings.
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

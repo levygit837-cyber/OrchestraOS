@@ -93,9 +93,9 @@ func TestReviewServiceStartAndSubmitVerdict(t *testing.T) {
 		}
 
 		result, err := reviewService.SubmitVerdict(ctx, review.Value.ID, reviewmod.SubmitVerdictInput{
-			AgentID:  "agent-reviewer",
-			Verdict:  verdict,
-			Reason:   "test verdict",
+			AgentID:      "agent-reviewer",
+			Verdict:      verdict,
+			Reason:       "test verdict",
 			EvidenceRefs: []string{"evidence:1"},
 			CriteriaChecked: []domain.ReviewCriteriaChecked{
 				{Criterion: "tests pass", Passed: true},

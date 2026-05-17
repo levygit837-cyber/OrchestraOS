@@ -26,6 +26,7 @@
 //   - NEVER write inline SQL — all persistence goes through core/eventstore.
 //
 // For full contracts, invariants, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, execution rules, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, execution rules, boundary rules
 package event

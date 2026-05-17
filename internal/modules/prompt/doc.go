@@ -14,7 +14,7 @@
 //
 // # Dependencies
 //   - core/db: transaction helpers
-//   - core/orchestration: OperationResult
+//   - core/coordination: OperationResult
 //   - core/validation: input validation
 //   - domain: PromptSnapshot, ToolsetSnapshot
 //
@@ -32,8 +32,9 @@
 //   - NEVER write SQL outside queries.go.
 //
 // For full contracts, invariants, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, execution rules, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, execution rules, boundary rules
 //
 // Quick code reference: see ModuleContract in contract.go
 package prompt

@@ -49,5 +49,3 @@ type RuntimeStatus struct {
 	CurrentStep   int
 	LastHeartbeat int64 // unix timestamp
 }
-
-

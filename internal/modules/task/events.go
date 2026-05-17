@@ -1,9 +1,7 @@
 package task
 
-import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
-
-func EventTypeForStatus(status domain.TaskStatus) string {
-	if status == domain.TaskStatusRunning {
+func EventTypeForStatus(status Status) string {
+	if status == StatusRunning {
 		return "task.started"
 	}
 	return "task." + string(status)

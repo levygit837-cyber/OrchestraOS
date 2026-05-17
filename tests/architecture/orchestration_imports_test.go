@@ -9,18 +9,18 @@ import (
 	"testing"
 )
 
-// allowedOrchestrationImporters lists packages that are allowed to import modules.
+// allowedCoordinationImporters lists packages that are allowed to import modules.
 // All other packages under internal/ must not import internal/modules/* directly.
-var allowedOrchestrationImporters = []string{
-	"internal/core/orchestration",
+var allowedCoordinationImporters = []string{
+	"internal/core/coordination",
 	"internal/bootstrap",
 	"cmd",
 }
 
-func TestOnlyOrchestrationImportsModules(t *testing.T) {
+func TestOnlyCoordinationImportsModules(t *testing.T) {
 	internalDir := "../../internal"
 	allowed := map[string]bool{}
-	for _, p := range allowedOrchestrationImporters {
+	for _, p := range allowedCoordinationImporters {
 		allowed[p] = true
 	}
 
@@ -68,7 +68,7 @@ func TestOnlyOrchestrationImportsModules(t *testing.T) {
 				for _, imp := range file.Imports {
 					path := strings.Trim(imp.Path.Value, `"`)
 					if strings.HasPrefix(path, "github.com/levygit837-cyber/OrchestraOS/internal/modules/") {
-						t.Errorf("package %q imports module %q. Only %v may import modules directly.", relPath, path, allowedOrchestrationImporters)
+						t.Errorf("package %q imports module %q. Only %v may import modules directly.", relPath, path, allowedCoordinationImporters)
 					}
 				}
 			}

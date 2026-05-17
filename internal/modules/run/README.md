@@ -40,29 +40,36 @@ created → running → validating → completed
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `models.go` → domain type aliases (`Status`, `Result`)
+- `contract.go` → ModuleContract + hierarchical rules
+- `models.go` → domain types (`Run`, `Status`, `Result`)
 - `events.go` → event-type mapping and `ResultForStatus` helper
-- `fetch.go` → read helpers
 - `queries.go` → SQL constants for runs
-- `repository.go` → run CRUD
+- `repository.go` → run CRUD, no business logic
 - `service.go` → run lifecycle, status transitions, work-unit cascade sync
-- `service_retry.go` → retry orchestration with backoff and idempotency
+- `validation.go` → input validation
+
+### Optional Files
+- `fetch.go` → read helpers
 - `retry.go` → retry policy and backoff definitions
+- `service_retry.go` → retry orchestration with backoff and idempotency
 
 ---
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, eventstore, orchestration, statemachine, validation, serialization, apperrors)
-- `internal/domain`
-- `internal/core/event` (indirectly via orchestration)
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/statemachine`, `core/transition`, `core/serialization`
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 - `internal/modules/workunit` (for `EventTypeForStatus` and validation helpers)
 - DI interfaces only: `TaskReader` (from `task/`), `WorkUnitReader` (from `workunit/`)
 
 Forbidden:
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `task.Service` or `workunit.Service`
-- Cross-module mutations outside `core/orchestration`
+- Cross-module mutations outside `core/coordination`
 
 ---
 

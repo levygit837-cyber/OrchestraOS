@@ -10,7 +10,7 @@
 ## Checklist de Execução
 
 - [x] 1. Ler documentação obrigatória: ADR 0020, ADR 0021, ADR 0023, `docs/implementation/roadmap.md` (Fase 5), `AGENTS.md`
-- [x] 2. Analisar código existente: `internal/bootstrap/services.go`, `internal/core/orchestration/runtime_relay.go`, `internal/modules/*/service.go`, `cmd/orchestraos/cmd/run.go`
+- [x] 2. Analisar código existente: `internal/bootstrap/services.go`, `internal/core/coordination/runtime_relay.go`, `internal/modules/*/service.go`, `cmd/orchestraos/cmd/run.go`
 - [x] 3. Criar estrutura do módulo: `internal/modules/orchestrator/doc.go`, `contract.go`, `models.go`
 - [x] 4. Implementar `internal/modules/orchestrator/service.go`:
   - `OrchestratorService` struct com todas as dependências injetadas

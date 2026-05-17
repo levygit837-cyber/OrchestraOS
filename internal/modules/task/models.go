@@ -1,36 +1,53 @@
 package task
 
-import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
-
-type Status = domain.TaskStatus
-type Priority = domain.Priority
-type RiskLevel = domain.RiskLevel
-
-const (
-	StatusCreated          = domain.TaskStatusCreated
-	StatusTriaged          = domain.TaskStatusTriaged
-	StatusPlanned          = domain.TaskStatusPlanned
-	StatusScheduled        = domain.TaskStatusScheduled
-	StatusSandboxPreparing = domain.TaskStatusSandboxPreparing
-	StatusRunning          = domain.TaskStatusRunning
-	StatusWaitingApproval  = domain.TaskStatusWaitingApproval
-	StatusPaused           = domain.TaskStatusPaused
-	StatusValidating       = domain.TaskStatusValidating
-	StatusCompleted        = domain.TaskStatusCompleted
-	StatusFailed           = domain.TaskStatusFailed
-	StatusCancelled        = domain.TaskStatusCancelled
+import (
+	"time"
 )
 
-const (
-	PriorityP0 = domain.PriorityP0
-	PriorityP1 = domain.PriorityP1
-	PriorityP2 = domain.PriorityP2
-	PriorityP3 = domain.PriorityP3
-)
+type Status string
 
 const (
-	RiskLevelLow      = domain.RiskLevelLow
-	RiskLevelMedium   = domain.RiskLevelMedium
-	RiskLevelHigh     = domain.RiskLevelHigh
-	RiskLevelCritical = domain.RiskLevelCritical
+	StatusCreated          Status = "created"
+	StatusTriaged          Status = "triaged"
+	StatusPlanned          Status = "planned"
+	StatusScheduled        Status = "scheduled"
+	StatusSandboxPreparing Status = "sandbox_preparing"
+	StatusRunning          Status = "running"
+	StatusWaitingApproval  Status = "waiting_approval"
+	StatusPaused           Status = "paused"
+	StatusValidating       Status = "validating"
+	StatusCompleted        Status = "completed"
+	StatusFailed           Status = "failed"
+	StatusCancelled        Status = "cancelled"
 )
+
+type Priority string
+
+const (
+	PriorityP0 Priority = "P0"
+	PriorityP1 Priority = "P1"
+	PriorityP2 Priority = "P2"
+	PriorityP3 Priority = "P3"
+)
+
+type RiskLevel string
+
+const (
+	RiskLevelLow      RiskLevel = "low"
+	RiskLevelMedium   RiskLevel = "medium"
+	RiskLevelHigh     RiskLevel = "high"
+	RiskLevelCritical RiskLevel = "critical"
+)
+
+type Task struct {
+	ID                   string    `json:"id"`
+	Title                string    `json:"title"`
+	Description          string    `json:"description"`
+	Status               Status    `json:"status"`
+	Priority             Priority  `json:"priority"`
+	RiskLevel            RiskLevel `json:"risk_level"`
+	CreatedFromMessageID string    `json:"created_from_message_id"`
+	AcceptanceCriteria   []string  `json:"acceptance_criteria"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}

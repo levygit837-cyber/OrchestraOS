@@ -31,14 +31,14 @@ type CreateAgentInput struct {
 	Capabilities           []string
 	AllowedTools           []string
 	DefaultPromptFragments []string
-	RuntimeType            domain.AgentRuntimeType
+	RuntimeType            RuntimeType
 }
 
 func NewAgentService(database *sql.DB) *AgentService {
 	return &AgentService{db: database}
 }
 
-func (s *AgentService) Create(ctx context.Context, input CreateAgentInput) (*transition.OperationResult[*domain.Agent], error) {
+func (s *AgentService) Create(ctx context.Context, input CreateAgentInput) (*transition.OperationResult[*Agent], error) {
 	op := "agent_service.create"
 
 	if err := ValidateName(input.Name, op); err != nil {
@@ -57,7 +57,7 @@ func (s *AgentService) Create(ctx context.Context, input CreateAgentInput) (*tra
 	}
 	defer dbcore.RollbackTx(tx)
 
-	agent := &domain.Agent{
+	agent := &Agent{
 		ID:                     input.ID,
 		Name:                   input.Name,
 		Profile:                input.Profile,
@@ -100,10 +100,10 @@ func (s *AgentService) Create(ctx context.Context, input CreateAgentInput) (*tra
 		return nil, err
 	}
 
-	return &transition.OperationResult[*domain.Agent]{Value: agent, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
+	return &transition.OperationResult[*Agent]{Value: agent, Event: &appendResult.Event, Duplicate: appendResult.Duplicate}, nil
 }
 
-func (s *AgentService) GetByID(ctx context.Context, id string) (*domain.Agent, error) {
+func (s *AgentService) GetByID(ctx context.Context, id string) (*Agent, error) {
 	op := "agent_service.get_by_id"
 	if err := validation.RequiredUUID(id, "agent_id", op); err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (s *AgentService) GetByID(ctx context.Context, id string) (*domain.Agent, e
 	return agent, nil
 }
 
-func (s *AgentService) FindOrCreate(ctx context.Context, profile string, runtimeType domain.AgentRuntimeType) (*domain.Agent, error) {
+func (s *AgentService) FindOrCreate(ctx context.Context, profile string, runtimeType RuntimeType) (*Agent, error) {
 	op := "agent_service.find_or_create"
 
 	if err := ValidateProfile(profile, op); err != nil {
@@ -150,7 +150,7 @@ func (s *AgentService) FindOrCreate(ctx context.Context, profile string, runtime
 
 	// Atomically create; if a concurrent call already created it, the unique
 	// constraint will raise a violation that we handle by selecting again.
-	agent = &domain.Agent{
+	agent = &Agent{
 		ID:          uuid.New().String(),
 		Name:        profile + " agent",
 		Profile:     profile,

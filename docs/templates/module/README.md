@@ -2,15 +2,13 @@
 
 ## Purpose
 
+[TODO: describe what this module is responsible for]
+
 This module is responsible for:
-- {{RESPONSIBILITY}}
-- {{RESPONSIBILITY}}
-- {{RESPONSIBILITY}}
+- [TODO: list responsibilities]
 
 This module DOES NOT:
-- {{NON_RESPONSIBILITY}}
-- {{NON_RESPONSIBILITY}}
-- {{NON_RESPONSIBILITY}}
+- [TODO: list non-responsibilities]
 
 ---
 
@@ -20,33 +18,45 @@ This module is governed by CONTRACTS.md.
 You MUST read it before making any modification.
 
 Critical invariants:
-- {{INVARIANT}}
-- {{INVARIANT}}
-- {{INVARIANT}}
+- [TODO: list 2-3 critical invariants]
+
+State Flow:
+```
+[TODO: add state machine diagram if applicable]
+```
 
 ---
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `models.go` → domain type aliases and constants
-- `events.go` → event-type mappings for status transitions
-- `queries.go` → SQL constants (SELECT / INSERT / UPDATE)
-- `repository.go` → database reads and writes
-- `service.go` → domain logic, state transitions, orchestration calls
+- `contract.go` → ModuleContract + hierarchical rules (global, type, specific)
+- `models.go` → domain types (structs, enums, constants)
+- `events.go` → event-type mapping for status transitions
+- `queries.go` → SQL constants
+- `repository.go` → pure CRUD, no business logic
+- `service.go` → main domain logic, transactions, event emission
+- `validation.go` → input validation
+
+### Decomposed Files (service.go > 300 lines)
+- [TODO: list if applicable, e.g. `service_create.go`]
+
+### Optional Files
+- `fetch.go` → RequireByID exported for DI by other modules
 
 ---
 
 ## Allowed Dependencies
 
-- `internal/core/*`
-- `internal/domain`
-- `internal/core/event` (indirectly via orchestration)
-- {{ALLOWED_MODULE}}
+- `internal/core/*`: apperrors, db, validation, event, statemachine, transition, serialization, eventstore
+- `internal/domain`: ONLY EventEnvelope and generic types (never entity structs)
 
 Forbidden:
-- Direct imports of other modules' service logic
-- Cross-module mutations outside `core/orchestration`
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
+- Inline SQL outside `queries.go`
+- Direct mutation of other module's tables
 
 ---
 
@@ -56,5 +66,6 @@ Forbidden:
 2. Modify only files related to the assigned task.
 3. Preserve all invariants listed above.
 4. Avoid architectural refactors — keep changes minimal and localized.
-5. Every mutation MUST emit an event via `core/orchestration` helpers.
-6. SQL belongs only in `queries.go`.
+5. State transitions MUST use `core/statemachine.CanTransition`.
+6. Every mutation MUST emit an event via `core/transition` helpers.
+7. SQL belongs only in `queries.go`.

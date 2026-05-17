@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // Repository handles task persistence
@@ -27,7 +26,7 @@ func NewRepository(db db.DBTX) *Repository {
 }
 
 // Create inserts a new task
-func (r *Repository) Create(task *domain.Task) error {
+func (r *Repository) Create(task *Task) error {
 	if task.ID == "" {
 		task.ID = uuid.New().String()
 	}
@@ -64,21 +63,21 @@ func (r *Repository) Create(task *domain.Task) error {
 }
 
 // GetByID retrieves a task by ID
-func (r *Repository) GetByID(id string) (*domain.Task, error) {
+func (r *Repository) GetByID(id string) (*Task, error) {
 	row := r.db.QueryRow(QueryGetByID, id)
 
 	return r.scanTask(row)
 }
 
 // List retrieves all tasks
-func (r *Repository) List() ([]domain.Task, error) {
+func (r *Repository) List() ([]Task, error) {
 	rows, err := r.db.Query(QueryList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tasks: %w", err)
 	}
 	defer rows.Close()
 
-	var tasks []domain.Task
+	var tasks []Task
 	for rows.Next() {
 		task, err := r.scanTask(rows)
 		if err != nil {
@@ -91,7 +90,7 @@ func (r *Repository) List() ([]domain.Task, error) {
 }
 
 // Update updates a task
-func (r *Repository) Update(task *domain.Task) error {
+func (r *Repository) Update(task *Task) error {
 	task.UpdatedAt = time.Now()
 
 	acceptanceCriteria, err := json.Marshal(task.AcceptanceCriteria)
@@ -119,8 +118,8 @@ func (r *Repository) Update(task *domain.Task) error {
 
 func (r *Repository) scanTask(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.Task, error) {
-	var task domain.Task
+}) (*Task, error) {
+	var task Task
 	var acceptanceCriteriaJSON []byte
 
 	err := scanner.Scan(

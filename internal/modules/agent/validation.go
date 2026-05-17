@@ -5,14 +5,13 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-var validRuntimeTypes = map[domain.AgentRuntimeType]bool{
-	domain.AgentRuntimeTypeFake:     true,
-	domain.AgentRuntimeTypeGemini:   true,
-	domain.AgentRuntimeTypeCodexCLI: true,
-	domain.AgentRuntimeTypeExternal: true,
+var validRuntimeTypes = map[RuntimeType]bool{
+	RuntimeTypeFake:     true,
+	RuntimeTypeGemini:   true,
+	RuntimeTypeCodexCLI: true,
+	RuntimeTypeExternal: true,
 }
 
 var profilePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
@@ -30,7 +29,7 @@ func ValidateProfile(profile string, op string) error {
 }
 
 // ValidateRuntimeType checks if the runtime type is valid
-func ValidateRuntimeType(runtimeType domain.AgentRuntimeType, op string) error {
+func ValidateRuntimeType(runtimeType RuntimeType, op string) error {
 	if runtimeType == "" {
 		return apperrors.New(apperrors.CodeValidation, op, "runtime_type is required")
 	}

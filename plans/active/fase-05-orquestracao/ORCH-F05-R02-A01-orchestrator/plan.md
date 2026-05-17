@@ -27,7 +27,7 @@ Sem o OrchestratorService, o sistema exige intervenção manual em cada passo (`
 5. `docs/implementation/roadmap.md` — seção "Fase 5: Orquestração Automatizada"
 6. `docs/canvas/project-canvas.md` — visão e premissas
 7. `internal/bootstrap/services.go` — como os serviços existentes são criados
-8. `internal/core/orchestration/runtime_relay.go` — como o relay de eventos funciona
+8. `internal/core/coordination/runtime_relay.go` — como o relay de eventos funciona
 
 ---
 
@@ -41,10 +41,10 @@ Sem o OrchestratorService, o sistema exige intervenção manual em cada passo (`
 | AgentService | `internal/modules/agent/service.go` | ✅ Create, GetByID, FindOrCreate |
 | AgentSessionService | `internal/modules/agentsession/service.go` | ✅ Create (valida AgentID), Connect, Stop, Fail |
 | PromptService | `internal/modules/prompt/service.go` | ✅ PrepareRunPrompt |
-| PromptOrchestrator | `internal/core/orchestration/prompt_orchestrator.go` | ✅ Cross-module prompt prep |
+| PromptOrchestrator | `internal/core/coordination/prompt_orchestrator.go` | ✅ Cross-module prompt prep |
 | ReviewService | `internal/modules/review/service.go` | ✅ Create, Start, SubmitVerdict |
 | TriggerService | `internal/modules/trigger/service.go` | ✅ EvaluateRun, EvaluateSession |
-| RuntimeEventRelay | `internal/core/orchestration/runtime_relay.go` | ✅ Run(ctx, runtime, config) → status |
+| RuntimeEventRelay | `internal/core/coordination/runtime_relay.go` | ✅ Run(ctx, runtime, config) → status |
 | FakeRuntime | `internal/modules/agent/fake_runtime.go` | ✅ Simulação determinística |
 | GeminiRuntime | `internal/modules/agent/gemini_runtime.go` | ✅ Inference real |
 | Bootstrap | `internal/bootstrap/services.go` | ✅ Factories para todos os serviços acima |

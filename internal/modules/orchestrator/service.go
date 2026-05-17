@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
@@ -27,7 +27,7 @@ type Dependencies struct {
 	ReviewService       ReviewManager
 	TriggerService      TriggerEvaluator
 	WorkUnitLister      WorkUnitLister
-	RuntimeEventRelay   func(db *sql.DB) *orchestration.RuntimeEventRelay
+	RuntimeEventRelay   func(db *sql.DB) *coordination.RuntimeEventRelay
 	NewFakeRuntime      func() Runtime
 	NewGeminiRuntime    func() Runtime
 }
@@ -328,7 +328,7 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task
 
 	// Start event relay
 	relay := s.deps.RuntimeEventRelay(s.deps.DB)
-	finalStatus, relayErr := relay.Run(timeoutCtx, runtime, orchestration.RelayConfig{
+	finalStatus, relayErr := relay.Run(timeoutCtx, runtime, coordination.RelayConfig{
 		SessionID:   sessionCreateResult.Value.ID,
 		RunID:       result.RunID,
 		RuntimeType: options.RuntimeType,
@@ -379,16 +379,15 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task
 	_ = runtime.Stop(stopCtx)
 
 	// Ensure agent session is stopped (best effort cleanup)
-	if _, err := s.deps.AgentSessionService.Stop(ctx, sessionCreateResult.Value.ID, transition.TransitionInput{
+	_, _ = s.deps.AgentSessionService.Stop(ctx, sessionCreateResult.Value.ID, transition.TransitionInput{
 		Runtime:       options.RuntimeType,
 		Justification: "work unit execution completed",
-	}); err != nil {
-		// Log but don't fail - best effort cleanup
-	}
+	})
 
 	// Wait for goroutine to complete to prevent leaks
 	<-routineDone
 
+	// TODO[ADR-0022]: usar run.StatusCompleted quando orchestrator consumir *run.Run
 	result.Success = finalStatus == domain.RunStatusCompleted
 
 	// Note: Review creation for validation gates is deferred to future iteration

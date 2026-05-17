@@ -18,7 +18,6 @@ var requiredModuleFiles = []string{
 // and therefore do not need a queries.go file.
 var modulesWithoutQueries = map[string]bool{
 	"agent": true,
-
 }
 
 func TestModuleRequiredFiles(t *testing.T) {

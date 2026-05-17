@@ -39,7 +39,7 @@ PrepareRunPromptInput → composition → snapshot (deduped) → usage tracking
 
 Allowed:
 - Read and mutate `prompt_fragments`, `prompt_snapshots`, `toolset_snapshots` via `repository.go`.
-- Append events via `core/orchestration` helpers.
+- Append events via `core/transition` helpers.
 - Read other aggregates via their repositories (not services) for composition context.
 
 Forbidden:
@@ -49,16 +49,20 @@ Forbidden:
 - Business logic inside `repository.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/orchestration`
+- `internal/core/coordination`
+- `internal/modules/orchestrator`
 
 ---
 
 ## Error Rules
 
-- All failures must map to `apperrors.Error` with a code and operation.
-- No raw database errors leaked outside the module.
-- `CodeValidation` for missing required categories or unresolved conflicts.
-- `CodeNotFound` for missing runs or sessions referenced in input.
+| Code | When to Use |
+|------|-------------|
+| `CodeValidation` | Missing required categories or unresolved conflicts |
+| `CodeInvalidInput` | Semantically invalid input |
+| `CodeNotFound` | Missing runs or sessions referenced in input |
+| `CodeConflict` | Idempotency / concurrency violation |
+| `CodePersistence` | Database errors |
 
 ---
 
@@ -71,25 +75,19 @@ Cross-module orchestration belongs ONLY to:
 
 ---
 
-## LLM Execution Rules
+## File Decomposition
 
-LLM executors MUST:
+### `repository_snapshot.go`
+Created because `repository.go` exceeded 300 lines. Extracted prompt snapshot and toolset snapshot CRUD operations.
 
-1. Read `README.md` first.
-2. Read `CONTRACTS.md` before editing.
-3. Modify only files related to the task.
-4. Preserve all invariants.
-5. Avoid speculative refactors.
-6. Avoid introducing new abstractions unless required.
-7. Keep implementations deterministic.
-8. Preserve module boundaries.
+### `composer_render.go`
+Created because `composer.go` exceeded 300 lines. Extracted template rendering, system profile building, and formatting helpers.
+
+No further decomposition at this time.
 
 ---
 
-## Forbidden Patterns
+## Related ADRs
 
-- Shared helpers inside the module (move to `core/` if reusable).
-- Hidden side effects.
-- Cross-module mutations via service imports.
-- Business logic inside repositories.
-- Inline SQL strings.
+- ADR-0022: Vertical Slice Architecture
+- ADR-0025: Module Standardization

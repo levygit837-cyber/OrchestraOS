@@ -99,6 +99,7 @@ type RuntimeStatus struct {
 	LastHeartbeat int64
 }
 
+// TODO[ADR-0022]: migrar para *task.Task
 type TaskServiceReader interface {
 	GetByID(ctx context.Context, id string) (*domain.Task, error)
 	Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error)
@@ -110,6 +111,7 @@ type TaskGraphManager interface {
 	Decompose(ctx context.Context, input DecomposeInput) (*DecomposeResult, error)
 }
 
+// TODO[ADR-0022]: migrar para *run.Run quando run module desacoplar de domain.Run
 type RunLifecycleManager interface {
 	Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*domain.Run], error)
 	Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)

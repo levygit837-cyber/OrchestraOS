@@ -35,8 +35,18 @@ State Flow:
 
 ## File Map
 
+### Mandatory Files
 - `doc.go` → package documentation and context briefing
-- `types.go` → Fragment, Composer, Toolset types and constants
+- `contract.go` → ModuleContract + hierarchical rules
+- `models.go` → domain types (PromptSnapshot, ToolsetSnapshot, Fragment)
+- `events.go` → event-type mapping for prompt lifecycle
+- `queries.go` → SQL constants for prompt_fragments, prompt_snapshots, toolset_snapshots
+- `repository.go` → prompt fragment CRUD, no business logic
+- `service.go` → prompt preparation service for runs
+- `validation.go` → input validation
+
+### Optional Files
+- `types.go` → Fragment, Composer, Toolset types and constants (legacy — will merge into models.go)
 - `catalog.go` → fragment catalog loader
 - `catalog/` → markdown fragment files organized by category
 - `composer.go` → fragment selection and validation logic
@@ -44,25 +54,21 @@ State Flow:
 - `composer_test.go` → composer tests
 - `toolset.go` → toolset snapshot logic
 - `toolset_test.go` → toolset tests
-- `queries.go` → SQL constants for prompt_fragments, prompt_snapshots, toolset_snapshots
-- `repository.go` → prompt fragment CRUD
-- `repository_snapshot.go` → prompt snapshot and toolset snapshot CRUD
-- `service.go` → prompt preparation service for runs
+- `repository_snapshot.go` → prompt snapshot and toolset snapshot CRUD (legacy — will merge into repository.go)
 
 ---
 
 ## Allowed Dependencies
 
-- `internal/core/*` (db, orchestration, validation, serialization, apperrors)
-- `internal/domain`
-- `internal/modules/task` (for task reads during prompt composition)
-- `internal/modules/workunit` (for work-unit reads during prompt composition)
-- `internal/modules/run` (for run reads during prompt preparation)
-- `internal/modules/agentsession` (for session reads during prompt preparation)
+- `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
+- `internal/core/serialization`
+- `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
+- DI interfaces only: `TaskReader` (from `task/`), `WorkUnitReader` (from `workunit/`), `RunReader` (from `run/`), `AgentSessionReader` (from `agentsession/`)
 
 Forbidden:
+- `internal/modules/*` (direct imports)
+- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of service logic from other modules.
-- Cross-module mutations outside `core/orchestration`.
 
 ---
 

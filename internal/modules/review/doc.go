@@ -8,7 +8,7 @@
 //   - Emitting domain events for every state change.
 //
 // Entry points:
-//   - ReviewService for orchestration-level operations.
+//   - ReviewService for coordination-level operations.
 //   - Repository for persistence (context-aware).
 //
 // For contracts and boundaries, read CONTRACTS.md.

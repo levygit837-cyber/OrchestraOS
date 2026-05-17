@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -39,9 +39,9 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Service lifecycle",
-		Description:        "Validate service orchestration",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Description:        "Validate service coordination",
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"run completes with validation evidence"},
 	})
 	if err != nil {
@@ -77,7 +77,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
 		Name:        "Service Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("create agent: %v", err)
@@ -127,7 +127,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get run: %v", err)
 	}
-	if run.Status != domain.RunStatusCompleted {
+	if run.Status != runmod.StatusCompleted {
 		t.Fatalf("expected run completed, got %s", run.Status)
 	}
 	wu, err := workunitmod.NewRepository(db).GetByID(wuResult.Value.ID)
@@ -148,7 +148,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("replay run: %v", err)
 	}
-	if state.RunStatuses[runResult.Value.ID] != domain.RunStatusCompleted {
+	if string(state.RunStatuses[runResult.Value.ID]) != string(runmod.StatusCompleted) {
 		t.Fatalf("expected replayed run completed, got %s", state.RunStatuses[runResult.Value.ID])
 	}
 }
@@ -167,8 +167,8 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "Prompt composition",
 		Description: "Build prompt snapshots for a run.",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelLow,
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"PromptSnapshot persisted",
 			"ToolsetSnapshot persisted",
@@ -207,7 +207,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 
-	prepared, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	prepared, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -251,7 +251,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if storedToolset == nil || len(storedToolset.Tools) == 0 {
 		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
 	}
-	referenced, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	referenced, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          runResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
 	})
@@ -313,7 +313,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
 	}
-	reviewerPrepared, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	reviewerPrepared, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
 		RunID:          reviewerRun.Value.ID,
 		AgentSessionID: reviewerSession.Value.ID,
 	})
@@ -368,8 +368,8 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Cascade cancel",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -401,7 +401,7 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get run: %v", err)
 	}
-	if run.Status != domain.RunStatusCancelled {
+	if run.Status != runmod.StatusCancelled {
 		t.Fatalf("expected related run cancelled, got %s", run.Status)
 	}
 	wu, err := workunitmod.NewRepository(db).GetByID(wuResult.Value.ID)
@@ -425,8 +425,8 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Task graph decomposition",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"Criar schema do task graph",
 			"Criar repository do task graph",
@@ -527,8 +527,8 @@ func TestTaskGraphServiceDecomposesPersistsAndVersions(t *testing.T) {
 
 	otherTask, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Other task",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create other task: %v", err)
@@ -557,8 +557,8 @@ func TestEventServiceIdempotencyAndConflict(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Event service idempotency",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -614,8 +614,8 @@ func TestEventServiceConcurrentIdempotencyConflict(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Concurrent event idempotency",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -688,8 +688,8 @@ func TestDomainServicesParallelRunsAndPathConflicts(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Parallel services",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -784,8 +784,8 @@ func TestDomainServicesConcurrentOwnedPathConflict(t *testing.T) {
 
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Concurrent path conflict",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -852,8 +852,8 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Replay starting session",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -900,8 +900,8 @@ func TestAgentSessionAutomaticCheckpointRecoveryAndOrdering(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Automatic checkpoints",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -1019,8 +1019,8 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 
 	taskResult, err := bootstrap.TaskService(db).Create(ctx, taskmod.CreateTaskInput{
 		Title:     "Retry policy",
-		Priority:  domain.PriorityP2,
-		RiskLevel: domain.RiskLevelLow,
+		Priority:  taskmod.PriorityP2,
+		RiskLevel: taskmod.RiskLevelLow,
 	})
 	if err != nil {
 		t.Fatalf("create task: %v", err)
@@ -1071,7 +1071,7 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("retry run: %v", err)
 	}
-	if retryResult.Value.Attempt != 2 || retryResult.Value.Status != domain.RunStatusCreated {
+	if retryResult.Value.Attempt != 2 || retryResult.Value.Status != runmod.StatusCreated {
 		t.Fatalf("expected retry attempt 2 in created status, got %+v", retryResult.Value)
 	}
 	duplicate, err := runService.Retry(ctx, runResult.Value.ID, retryInput)
@@ -1097,7 +1097,7 @@ func TestAgentServiceCreateAndGet(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "Test Agent",
 		Profile:     "code_worker",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("create agent: %v", err)
@@ -1111,7 +1111,7 @@ func TestAgentServiceCreateAndGet(t *testing.T) {
 	if agentResult.Value.Profile != "code_worker" {
 		t.Fatalf("expected profile 'code_worker', got '%s'", agentResult.Value.Profile)
 	}
-	if agentResult.Value.RuntimeType != domain.AgentRuntimeTypeFake {
+	if agentResult.Value.RuntimeType != agent.RuntimeTypeFake {
 		t.Fatalf("expected runtime type 'fake', got '%s'", agentResult.Value.RuntimeType)
 	}
 	if agentResult.Event == nil {
@@ -1160,7 +1160,7 @@ func TestAgentServiceValidation(t *testing.T) {
 	_, err := agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "Test Agent",
 		Profile:     "invalid_profile",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err == nil {
 		t.Fatal("expected error for invalid profile, got nil")
@@ -1186,7 +1186,7 @@ func TestAgentServiceValidation(t *testing.T) {
 	_, err = agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "",
 		Profile:     "code_worker",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err == nil {
 		t.Fatal("expected error for empty name, got nil")
@@ -1204,7 +1204,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	agentService := bootstrap.AgentService(db)
 
 	// Test 1: FindOrCreate with no existing agent should create new
-	agent1, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeFake)
+	agent1, err := agentService.FindOrCreate(ctx, "code_worker", agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create (first call): %v", err)
 	}
@@ -1213,7 +1213,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 2: FindOrCreate with same profile and runtime should return existing
-	agent2, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeFake)
+	agent2, err := agentService.FindOrCreate(ctx, "code_worker", agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create (second call): %v", err)
 	}
@@ -1225,7 +1225,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 3: FindOrCreate with different profile should create new
-	agent3, err := agentService.FindOrCreate(ctx, "docs_writer", domain.AgentRuntimeTypeFake)
+	agent3, err := agentService.FindOrCreate(ctx, "docs_writer", agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create (different profile): %v", err)
 	}
@@ -1237,7 +1237,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 4: FindOrCreate with different runtime should create new
-	agent4, err := agentService.FindOrCreate(ctx, "code_worker", domain.AgentRuntimeTypeGemini)
+	agent4, err := agentService.FindOrCreate(ctx, "code_worker", agent.RuntimeTypeGemini)
 	if err != nil {
 		t.Fatalf("find or create (different runtime): %v", err)
 	}
@@ -1249,7 +1249,7 @@ func TestAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Test 5: FindOrCreate with invalid profile should fail
-	_, err = agentService.FindOrCreate(ctx, "invalid_profile", domain.AgentRuntimeTypeFake)
+	_, err = agentService.FindOrCreate(ctx, "invalid_profile", agent.RuntimeTypeFake)
 	if err == nil {
 		t.Fatal("expected error for invalid profile, got nil")
 	}
@@ -1270,8 +1270,8 @@ func TestAgentSessionServiceAgentIDValidation(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Test Task",
 		Description:        "Test agent ID validation",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"agent ID is validated"},
 	})
 	if err != nil {
@@ -1320,7 +1320,7 @@ func TestAgentSessionServiceAgentIDValidation(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agentmod.CreateAgentInput{
 		Name:        "Validation Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("create agent: %v", err)

@@ -7,7 +7,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
@@ -39,7 +38,7 @@ func TestRunServiceStateMachine(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get run: %v", err)
 		}
-		if run.Status != domain.RunStatusCreated {
+		if run.Status != runmod.StatusCreated {
 			t.Fatalf("expected run to remain created, got %s", run.Status)
 		}
 	})
@@ -78,7 +77,7 @@ func TestRunServiceStateMachine(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get run: %v", err)
 		}
-		if run.Status != domain.RunStatusCompleted {
+		if run.Status != runmod.StatusCompleted {
 			t.Fatalf("expected run completed, got %s", run.Status)
 		}
 
@@ -86,7 +85,7 @@ func TestRunServiceStateMachine(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to replay run state: %v", err)
 		}
-		if state.RunStatuses[runID] != domain.RunStatusCompleted {
+		if string(state.RunStatuses[runID]) != string(runmod.StatusCompleted) {
 			t.Fatalf("expected replay status completed, got %s", state.RunStatuses[runID])
 		}
 	})

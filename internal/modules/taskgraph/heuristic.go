@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	maxGraphWorkUnits  = 5
+	MaxGraphWorkUnits  = 5
 	minGraphWorkUnits  = 2
 	balanceNumerator   = 3
 	balanceDenominator = 2
@@ -38,7 +38,7 @@ type groupedCriteria struct {
 	Weight   int
 }
 
-func buildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
+func BuildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 	criteria, err := parseCriterionPlans(task.AcceptanceCriteria)
 	if err != nil {
 		return nil, err
@@ -108,8 +108,8 @@ func buildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 	inputs := make([]graphWorkUnitInput, 0, len(workUnits))
 	for _, wu := range workUnits {
 		inputs = append(inputs, graphWorkUnitInput{
-			ID:         wu.ID,
-			DependsOn:  wu.DependsOn,
+			ID:        wu.ID,
+			DependsOn: wu.DependsOn,
 		})
 	}
 	if err := validateWorkUnitDependencies(inputs); err != nil {
@@ -223,8 +223,8 @@ func validateCriterionDependencies(criteria []criterionPlan) error {
 
 func balancedCriterionGroups(criteria []criterionPlan) ([]groupedCriteria, error) {
 	maxGroups := len(criteria)
-	if maxGroups > maxGraphWorkUnits {
-		maxGroups = maxGraphWorkUnits
+	if maxGroups > MaxGraphWorkUnits {
+		maxGroups = MaxGraphWorkUnits
 	}
 	for groupCount := maxGroups; groupCount >= minGraphWorkUnits; groupCount-- {
 		groups := assignCriteriaToGroups(criteria, groupCount)
@@ -350,4 +350,13 @@ func validateWorkUnitDependencies(inputs []graphWorkUnitInput) error {
 		}
 	}
 	return nil
+}
+
+// TaskForGraphTest creates a minimal task for testing graph decomposition.
+func TaskForGraphTest(criteria []string) *domain.Task {
+	return &domain.Task{
+		ID:                 uuid.New().String(),
+		Title:              "Task graph test",
+		AcceptanceCriteria: criteria,
+	}
 }

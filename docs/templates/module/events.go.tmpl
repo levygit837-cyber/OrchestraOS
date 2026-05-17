@@ -1,7 +1,9 @@
-package {{PACKAGE}}
+package {{MODULE_NAME}}
 
-// EventTypeForStatus returns the canonical event type for a given status.
-// TODO: update signature when status type is defined.
-func EventTypeForStatus(status string) string {
-	return "{{PACKAGE}}." + status
+// EventTypeForStatus returns the event type string for a given status.
+func EventTypeForStatus(status Status) string {
+	if status == StatusCreated { // TODO: adjust if needed
+		return "{{MODULE_NAME}}.created"
+	}
+	return "{{MODULE_NAME}}." + string(status)
 }

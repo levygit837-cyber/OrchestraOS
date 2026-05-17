@@ -158,11 +158,11 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 
 	t.Run("full integration flow", func(t *testing.T) {
 		// 1. Create task
-		task := &domain.Task{
+		task := &taskmod.Task{
 			ID:        uuid.New().String(),
 			Title:     "Integration Test Task",
-			Status:    domain.TaskStatusCreated,
-			Priority:  domain.PriorityP1,
+			Status:    taskmod.StatusCreated,
+			Priority:  taskmod.PriorityP1,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -184,11 +184,11 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 		}
 
 		// 3. Create run
-		run := &domain.Run{
+		run := &runmod.Run{
 			ID:         uuid.New().String(),
 			TaskID:     task.ID,
 			WorkUnitID: wu.ID,
-			Status:     domain.RunStatusCreated,
+			Status:     runmod.StatusCreated,
 			Attempt:    1,
 		}
 		if err := runRepo.Create(run); err != nil {
@@ -196,7 +196,7 @@ func TestFakeRuntimeWithAgentSession(t *testing.T) {
 		}
 
 		// Update run to running
-		if err := runRepo.UpdateStatus(run.ID, domain.RunStatusRunning, nil, nil); err != nil {
+		if err := runRepo.UpdateStatus(run.ID, runmod.StatusRunning, nil, nil); err != nil {
 			t.Fatalf("Failed to update run status: %v", err)
 		}
 

@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // Repository handles run persistence
@@ -26,7 +25,7 @@ func NewRepository(db db.DBTX) *Repository {
 }
 
 // Create inserts a new run
-func (r *Repository) Create(run *domain.Run) error {
+func (r *Repository) Create(run *Run) error {
 	if run.ID == "" {
 		run.ID = uuid.New().String()
 	}
@@ -68,20 +67,20 @@ func (r *Repository) Create(run *domain.Run) error {
 }
 
 // GetByID retrieves a run by ID
-func (r *Repository) GetByID(id string) (*domain.Run, error) {
+func (r *Repository) GetByID(id string) (*Run, error) {
 	row := r.db.QueryRow(QueryGetByID, id)
 	return r.scanRun(row)
 }
 
 // List retrieves all runs
-func (r *Repository) List() ([]domain.Run, error) {
+func (r *Repository) List() ([]Run, error) {
 	rows, err := r.db.Query(QueryList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list runs: %w", err)
 	}
 	defer rows.Close()
 
-	var runs []domain.Run
+	var runs []Run
 	for rows.Next() {
 		run, err := r.scanRun(rows)
 		if err != nil {
@@ -94,14 +93,14 @@ func (r *Repository) List() ([]domain.Run, error) {
 }
 
 // ListByTask retrieves all runs for a task
-func (r *Repository) ListByTask(taskID string) ([]domain.Run, error) {
+func (r *Repository) ListByTask(taskID string) ([]Run, error) {
 	rows, err := r.db.Query(QueryListByTask, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list runs: %w", err)
 	}
 	defer rows.Close()
 
-	var runs []domain.Run
+	var runs []Run
 	for rows.Next() {
 		run, err := r.scanRun(rows)
 		if err != nil {
@@ -150,8 +149,8 @@ func (r *Repository) UpdateStatus(id string, status Status, result *Result, fail
 
 func (r *Repository) scanRun(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.Run, error) {
-	var run domain.Run
+}) (*Run, error) {
+	var run Run
 	var result *string
 	var startedAt sql.NullTime
 	var createdAt, updatedAt time.Time

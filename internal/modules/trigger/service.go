@@ -22,6 +22,7 @@ import (
 )
 
 // RunReader abstracts run reads to avoid cyclic imports.
+// TODO[ADR-0022]: migrar para *run.Run quando run module desacoplar de domain.Run
 type RunReader interface {
 	GetByID(id string) (*domain.Run, error)
 }
@@ -254,12 +255,12 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 	if session.LastHeartbeatAt == nil {
 		anomaly := domain.AnomalyTypeStall
 		detected = append(detected, &domain.Trigger{
-			TriggerType: domain.TriggerTypeHeartbeatTimeout,
-			Status:      domain.TriggerStatusTriggered,
-			AnomalyType: &anomaly,
+			TriggerType:    domain.TriggerTypeHeartbeatTimeout,
+			Status:         domain.TriggerStatusTriggered,
+			AnomalyType:    &anomaly,
 			AgentSessionID: &sessionID,
-			RunID:       &session.RunID,
-			TaskID:      &session.TaskID,
+			RunID:          &session.RunID,
+			TaskID:         &session.TaskID,
 			ThresholdValue: mustMarshal(map[string]interface{}{
 				"stall_seconds": s.thresholds.StallSeconds,
 			}),
@@ -271,12 +272,12 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 	} else if now.Sub(*session.LastHeartbeatAt) >= time.Duration(s.thresholds.StallSeconds)*time.Second {
 		anomaly := domain.AnomalyTypeStall
 		detected = append(detected, &domain.Trigger{
-			TriggerType: domain.TriggerTypeHeartbeatTimeout,
-			Status:      domain.TriggerStatusTriggered,
-			AnomalyType: &anomaly,
+			TriggerType:    domain.TriggerTypeHeartbeatTimeout,
+			Status:         domain.TriggerStatusTriggered,
+			AnomalyType:    &anomaly,
 			AgentSessionID: &sessionID,
-			RunID:       &session.RunID,
-			TaskID:      &session.TaskID,
+			RunID:          &session.RunID,
+			TaskID:         &session.TaskID,
 			ThresholdValue: mustMarshal(map[string]interface{}{
 				"stall_seconds": s.thresholds.StallSeconds,
 			}),
@@ -422,7 +423,7 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 	trigger.ResolutionAction = resolutionPtr
 
 	payload, err := serialization.MarshalPayload("trigger_service.transition_payload", map[string]interface{}{
-		"trigger_id": trigger.ID,
+		"trigger_id":  trigger.ID,
 		"from_status": string(fromStatus),
 		"to_status":   string(target),
 		"reason":      reason,
@@ -433,13 +434,13 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 	}
 
 	appendResult, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
-		ID:         uuid.New().String(),
-		Type:       EventTypeForStatus(target),
-		Version:    transition.EventVersionV1,
-		TaskID:     ptrValue(trigger.TaskID),
-		RunID:      ptrValue(trigger.RunID),
-		Priority:   domain.EventPriorityNotification,
-		Payload:    payload,
+		ID:       uuid.New().String(),
+		Type:     EventTypeForStatus(target),
+		Version:  transition.EventVersionV1,
+		TaskID:   ptrValue(trigger.TaskID),
+		RunID:    ptrValue(trigger.RunID),
+		Priority: domain.EventPriorityNotification,
+		Payload:  payload,
 	})
 	if err != nil {
 		return nil, err
@@ -472,22 +473,22 @@ func (s *TriggerService) persistDetectedTrigger(ctx context.Context, tx *sql.Tx,
 	}
 
 	payload, err := serialization.MarshalPayload("trigger_service.detected_payload", map[string]interface{}{
-		"trigger_id": trigger.ID,
+		"trigger_id":   trigger.ID,
 		"anomaly_type": ptrValueString(trigger.AnomalyType),
-		"run_id": ptrValue(trigger.RunID),
+		"run_id":       ptrValue(trigger.RunID),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	_, err = transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
-		ID:         uuid.New().String(),
-		Type:       EventTypeForStatus(trigger.Status),
-		Version:    transition.EventVersionV1,
-		TaskID:     ptrValue(trigger.TaskID),
-		RunID:      ptrValue(trigger.RunID),
-		Priority:   domain.EventPriorityNotification,
-		Payload:    payload,
+		ID:       uuid.New().String(),
+		Type:     EventTypeForStatus(trigger.Status),
+		Version:  transition.EventVersionV1,
+		TaskID:   ptrValue(trigger.TaskID),
+		RunID:    ptrValue(trigger.RunID),
+		Priority: domain.EventPriorityNotification,
+		Payload:  payload,
 	})
 	if err != nil {
 		return nil, err

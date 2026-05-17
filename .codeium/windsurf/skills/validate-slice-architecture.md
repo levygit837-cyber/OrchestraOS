@@ -12,7 +12,7 @@ Valida a arquitetura slice (Vertical Slices) do projeto conforme ADR 0022, verif
 
 1. **Isolamento entre módulos**: Módulos em `internal/modules/*` NÃO podem importar outros módulos em `internal/modules/*` (ADR 0022: strict isolation)
 2. **Auto-import proibido**: Módulos não podem importar a si mesmos
-3. **Exceção para orchestration**: Apenas `core/orchestration` pode ter cross-module imports para execução
+3. **Exceção para orchestration**: Apenas `core/coordination` pode ter cross-module imports para execução
 
 ## Como Usar
 

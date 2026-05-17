@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/orchestration"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
@@ -42,9 +42,9 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	// 1. Create task
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "E2E Integration Test Task",
-		Description: "Validate full orchestration flow",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelLow,
+		Description: "Validate full coordination flow",
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"Work unit can be created",
 			"Runtime can execute",
@@ -90,7 +90,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
 		Name:        "E2E Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeFake,
+		RuntimeType: agent.RuntimeTypeFake,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create agent: %v", err)
@@ -114,7 +114,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -148,7 +148,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := orchestration.RelayConfig{
+	relayConfig := coordination.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,
@@ -159,8 +159,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Relay failed: %v", err)
 	}
-	if finalStatus != domain.RunStatusCompleted {
-		t.Fatalf("Expected run status %s, got %s", domain.RunStatusCompleted, finalStatus)
+	if string(finalStatus) != string(runmod.StatusCompleted) {
+		t.Fatalf("Expected run status %s, got %s", runmod.StatusCompleted, finalStatus)
 	}
 
 	// 8. Assertions
@@ -170,8 +170,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final run: %v", err)
 	}
-	if finalRun.Status != domain.RunStatusCompleted {
-		t.Errorf("Expected run status %s, got %s", domain.RunStatusCompleted, finalRun.Status)
+	if finalRun.Status != runmod.StatusCompleted {
+		t.Errorf("Expected run status %s, got %s", runmod.StatusCompleted, finalRun.Status)
 	}
 
 	// Work unit status
@@ -245,8 +245,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if replayState == nil {
 		t.Fatal("Expected replay state to be non-nil")
 	}
-	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || runStatus != domain.RunStatusCompleted {
-		t.Errorf("Expected replay run status %s, got %v", domain.RunStatusCompleted, runStatus)
+	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(runmod.StatusCompleted) {
+		t.Errorf("Expected replay run status %s, got %v", runmod.StatusCompleted, runStatus)
 	}
 
 	t.Logf("E2E flow completed: task=%s run=%s session=%s events=%d", task.ID, run.ID, session.ID, len(events))
@@ -274,9 +274,9 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	// 1. Create task
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:       "E2E Gemini Integration Test",
-		Description: "Validate Gemini runtime through full orchestration flow",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelLow,
+		Description: "Validate Gemini runtime through full coordination flow",
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{
 			"Agent can process a simple request",
 			"Runtime emits completion event",
@@ -321,7 +321,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	agentResult, err := agentService.Create(ctx, agent.CreateAgentInput{
 		Name:        "E2E Gemini Test Agent",
 		Profile:     "default",
-		RuntimeType: domain.AgentRuntimeTypeGemini,
+		RuntimeType: agent.RuntimeTypeGemini,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create agent: %v", err)
@@ -345,7 +345,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := orchestration.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	preparedPrompt, err := coordination.NewPromptOrchestrator(db, promptService).PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
 	})
@@ -380,7 +380,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := orchestration.RelayConfig{
+	relayConfig := coordination.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,
@@ -394,8 +394,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Relay failed: %v", err)
 	}
-	if finalStatus != domain.RunStatusCompleted {
-		t.Fatalf("Expected run status %s, got %s", domain.RunStatusCompleted, finalStatus)
+	if string(finalStatus) != string(runmod.StatusCompleted) {
+		t.Fatalf("Expected run status %s, got %s", runmod.StatusCompleted, finalStatus)
 	}
 
 	// 8. Assertions
@@ -404,8 +404,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final run: %v", err)
 	}
-	if finalRun.Status != domain.RunStatusCompleted {
-		t.Errorf("Expected run status %s, got %s", domain.RunStatusCompleted, finalRun.Status)
+	if finalRun.Status != runmod.StatusCompleted {
+		t.Errorf("Expected run status %s, got %s", runmod.StatusCompleted, finalRun.Status)
 	}
 
 	wuRepo := workunitmod.NewRepository(db)
@@ -475,8 +475,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if replayState == nil {
 		t.Fatal("Expected replay state to be non-nil")
 	}
-	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || runStatus != domain.RunStatusCompleted {
-		t.Errorf("Expected replay run status %s, got %v", domain.RunStatusCompleted, runStatus)
+	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(runmod.StatusCompleted) {
+		t.Errorf("Expected replay run status %s, got %v", runmod.StatusCompleted, runStatus)
 	}
 
 	t.Logf("Gemini E2E flow completed: task=%s run=%s session=%s events=%d", task.ID, run.ID, session.ID, len(events))

@@ -36,7 +36,7 @@ func TestOrchestratorService_RunTask_SequentialExecution(t *testing.T) {
 		ID:          taskID,
 		Title:       "Test Task",
 		Description: "Test task for orchestrator",
-		Priority:    domain.PriorityP2,
+		Priority:    taskmod.PriorityP2,
 	})
 	if err != nil {
 		t.Fatalf("failed to create task: %v", err)
@@ -85,7 +85,7 @@ func TestOrchestratorService_RunTask_SequentialExecution(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get run %s: %v", runID, err)
 		}
-		if run.Status != domain.RunStatusCompleted {
+		if run.Status != runmod.StatusCompleted {
 			t.Errorf("expected run status completed, got %s", run.Status)
 		}
 	}
@@ -95,7 +95,7 @@ func TestOrchestratorService_RunTask_SequentialExecution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get task: %v", err)
 	}
-	if updatedTask.Status != domain.TaskStatusCompleted {
+	if updatedTask.Status != taskmod.StatusCompleted {
 		t.Errorf("expected task status completed, got %s", updatedTask.Status)
 	}
 }
@@ -116,7 +116,7 @@ func TestOrchestratorService_TopologicalSort(t *testing.T) {
 		ID:          taskID,
 		Title:       "Test Task",
 		Description: "Test task for topological sort",
-		Priority:    domain.PriorityP2,
+		Priority:    taskmod.PriorityP2,
 	})
 	if err != nil {
 		t.Fatalf("failed to create task: %v", err)
@@ -179,7 +179,7 @@ func TestOrchestratorService_AgentSessionCheckpoint(t *testing.T) {
 		ID:          taskID,
 		Title:       "Test Task",
 		Description: "Test task for checkpoint verification",
-		Priority:    domain.PriorityP2,
+		Priority:    taskmod.PriorityP2,
 	})
 	if err != nil {
 		t.Fatalf("failed to create task: %v", err)
@@ -241,7 +241,7 @@ func TestOrchestratorService_RunStateTransitions(t *testing.T) {
 		ID:          taskID,
 		Title:       "Test Task",
 		Description: "Test task for state transitions",
-		Priority:    domain.PriorityP2,
+		Priority:    taskmod.PriorityP2,
 	})
 	if err != nil {
 		t.Fatalf("failed to create task: %v", err)
@@ -320,14 +320,14 @@ func TestOrchestratorService_TaskCompletion(t *testing.T) {
 		ID:          taskID,
 		Title:       "Test Task",
 		Description: "Test task for completion verification",
-		Priority:    domain.PriorityP2,
+		Priority:    taskmod.PriorityP2,
 	})
 	if err != nil {
 		t.Fatalf("failed to create task: %v", err)
 	}
 
 	// Verify initial status
-	if task.Value.Status != domain.TaskStatusCreated {
+	if task.Value.Status != taskmod.StatusCreated {
 		t.Errorf("expected initial task status created, got %s", task.Value.Status)
 	}
 
@@ -357,7 +357,7 @@ func TestOrchestratorService_TaskCompletion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get task: %v", err)
 	}
-	if updatedTask.Status != domain.TaskStatusCompleted {
+	if updatedTask.Status != taskmod.StatusCompleted {
 		t.Errorf("expected task status completed, got %s", updatedTask.Status)
 	}
 

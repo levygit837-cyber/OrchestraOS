@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
+	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
 // Store handles event storage and retrieval with validation
@@ -62,7 +62,7 @@ func (s *Store) AppendResult(envelope *domain.EventEnvelope) (*domain.EventEnvel
 	if err := s.validator.Validate(envelopeBytes); err != nil {
 		return nil, false, apperrors.Wrap(apperrors.CodeValidation, "eventstore.validate_envelope", err)
 	}
-	if err := validateOperationalPayload(envelope); err != nil {
+	if err := ValidateOperationalPayload(envelope); err != nil {
 		return nil, false, err
 	}
 
@@ -202,7 +202,7 @@ func (s *Store) ReplayRunState(runID string) (*statemachine.ReplayState, error) 
 	return &state, nil
 }
 
-func validateOperationalPayload(envelope *domain.EventEnvelope) error {
+func ValidateOperationalPayload(envelope *domain.EventEnvelope) error {
 	switch envelope.Type {
 	case "task.graph_created":
 		var payload domain.TaskGraphCreatedPayload

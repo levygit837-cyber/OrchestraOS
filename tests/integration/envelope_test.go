@@ -11,10 +11,10 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/migrations"
-runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
-taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
-taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	_ "github.com/lib/pq"
 )
 
@@ -73,7 +73,7 @@ func TestEventEnvelopeValidation(t *testing.T) {
 			t.Errorf("Failed to get stored envelope: %v", err)
 		}
 		if stored == nil {
-			t.Error("Envelope was not stored")
+			t.Fatal("Envelope was not stored")
 		}
 		if stored.ID == "" || stored.Sequence == 0 || stored.CreatedAt.IsZero() {
 			t.Errorf("Expected store to fill id, sequence, and created_at, got %+v", stored)
@@ -303,13 +303,13 @@ func createTestTaskWithID(t *testing.T, db *sql.DB, id string) string {
 	t.Helper()
 
 	repo := taskmod.NewRepository(db)
-	task := &domain.Task{
+	task := &taskmod.Task{
 		ID:          id,
 		Title:       "Integration Test Task",
 		Description: "Created by integration test",
-		Status:      domain.TaskStatusCreated,
-		Priority:    domain.PriorityP2,
-		RiskLevel:   domain.RiskLevelLow,
+		Status:      taskmod.StatusCreated,
+		Priority:    taskmod.PriorityP2,
+		RiskLevel:   taskmod.RiskLevelLow,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
@@ -373,11 +373,11 @@ func createTestRun(t *testing.T, db *sql.DB, taskID, workUnitID string) string {
 	t.Helper()
 
 	repo := runmod.NewRepository(db)
-	run := &domain.Run{
+	run := &runmod.Run{
 		ID:         uuid.New().String(),
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		Status:     domain.RunStatusCreated,
+		Status:     runmod.StatusCreated,
 		Attempt:    1,
 	}
 	if err := repo.Create(run); err != nil {

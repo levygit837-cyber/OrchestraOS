@@ -15,11 +15,11 @@ import (
 
 // GeminiRuntime implements the Runtime interface using Google AI Studio (Gemini API).
 type GeminiRuntime struct {
-	config    RuntimeConfig
+	Config    RuntimeConfig
 	status    RuntimeStatus
 	eventChan chan *domain.EventEnvelope
 	stopChan  chan struct{}
-	started   bool
+	Started   bool
 
 	client *genai.Client
 	model  string
@@ -45,7 +45,7 @@ func NewGeminiRuntime() *GeminiRuntime {
 
 // Start initializes the Gemini client and begins the inference loop.
 func (g *GeminiRuntime) Start(ctx context.Context, config RuntimeConfig) error {
-	if g.started {
+	if g.Started {
 		return fmt.Errorf("runtime already started")
 	}
 
@@ -71,12 +71,12 @@ func (g *GeminiRuntime) Start(ctx context.Context, config RuntimeConfig) error {
 	}
 
 	g.client = client
-	g.config = config
+	g.Config = config
 	g.status = RuntimeStatus{
 		State:       "starting",
 		CurrentStep: 0,
 	}
-	g.started = true
+	g.Started = true
 	g.history = make([]*genai.Content, 0)
 
 	g.emitEvent("agent.connected", "v1", map[string]interface{}{
@@ -86,7 +86,7 @@ func (g *GeminiRuntime) Start(ctx context.Context, config RuntimeConfig) error {
 	})
 
 	g.status.State = "running"
-	g.emitEvent("agent.started", "v1", map[string]interface{}{
+	g.emitEvent("agent.Started", "v1", map[string]interface{}{
 		"agent_id":            config.AgentID,
 		"run_id":              config.RunID,
 		"work_unit":           config.WorkUnitID,
@@ -104,17 +104,17 @@ func (g *GeminiRuntime) Start(ctx context.Context, config RuntimeConfig) error {
 
 // Stop halts the runtime.
 func (g *GeminiRuntime) Stop(ctx context.Context) error {
-	if !g.started {
+	if !g.Started {
 		return nil
 	}
 
 	close(g.stopChan)
 	g.status.State = "stopped"
-	g.started = false
+	g.Started = false
 
 	g.emitEvent("agent.stopped", "v1", map[string]interface{}{
-		"agent_id": g.config.AgentID,
-		"run_id":   g.config.RunID,
+		"agent_id": g.Config.AgentID,
+		"run_id":   g.Config.RunID,
 		"reason":   "requested",
 	})
 
@@ -197,7 +197,7 @@ func (g *GeminiRuntime) heartbeatLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			if !g.started {
+			if !g.Started {
 				return
 			}
 			g.emitHeartbeat()
@@ -210,8 +210,8 @@ func (g *GeminiRuntime) heartbeatLoop() {
 func (g *GeminiRuntime) emitHeartbeat() {
 	g.status.LastHeartbeat = time.Now().Unix()
 	g.emitEvent("agent.heartbeat", "v1", map[string]interface{}{
-		"agent_id": g.config.AgentID,
-		"run_id":   g.config.RunID,
+		"agent_id": g.Config.AgentID,
+		"run_id":   g.Config.RunID,
 		"count":    g.status.LastHeartbeat,
 	})
 }
@@ -220,23 +220,23 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			g.emitEvent("agent.failed", "v1", map[string]interface{}{
-				"agent_id": g.config.AgentID,
-				"run_id":   g.config.RunID,
+				"agent_id": g.Config.AgentID,
+				"run_id":   g.Config.RunID,
 				"reason":   fmt.Sprintf("runtime panic: %v", r),
 			})
 			g.status.State = "failed"
 		}
 	}()
 
-	maxSteps := g.config.MaxSteps
+	maxSteps := g.Config.MaxSteps
 	if maxSteps <= 0 {
 		maxSteps = 10
 	}
 
 	// Build initial user content from the composed prompt.
-	userContent := genai.NewContentFromText(g.config.Prompt, genai.RoleUser)
+	userContent := genai.NewContentFromText(g.Config.Prompt, genai.RoleUser)
 
-	for g.currentStep < maxSteps && g.started {
+	for g.currentStep < maxSteps && g.Started {
 		select {
 		case <-g.stopChan:
 			return
@@ -250,9 +250,9 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 		contents = append(contents, g.history...)
 		contents = append(contents, userContent)
 
-		tools := g.buildTools()
+		tools := g.BuildTools()
 		config := &genai.GenerateContentConfig{
-			SystemInstruction: genai.NewContentFromText(g.config.SystemPrompt, genai.RoleUser),
+			SystemInstruction: genai.NewContentFromText(g.Config.SystemPrompt, genai.RoleUser),
 			Temperature:       genai.Ptr(float32(0.2)),
 		}
 		if len(tools) > 0 {
@@ -262,8 +262,8 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 		resp, err := g.client.Models.GenerateContent(ctx, g.model, contents, config)
 		if err != nil {
 			g.emitEvent("agent.failed", "v1", map[string]interface{}{
-				"agent_id": g.config.AgentID,
-				"run_id":   g.config.RunID,
+				"agent_id": g.Config.AgentID,
+				"run_id":   g.Config.RunID,
 				"reason":   fmt.Sprintf("gemini api error: %v", err),
 			})
 			g.status.State = "failed"
@@ -272,8 +272,8 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 
 		if resp == nil || len(resp.Candidates) == 0 {
 			g.emitEvent("agent.failed", "v1", map[string]interface{}{
-				"agent_id": g.config.AgentID,
-				"run_id":   g.config.RunID,
+				"agent_id": g.Config.AgentID,
+				"run_id":   g.Config.RunID,
 				"reason":   "empty response from gemini api",
 			})
 			g.status.State = "failed"
@@ -283,8 +283,8 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 		candidate := resp.Candidates[0]
 		if candidate.Content == nil {
 			g.emitEvent("agent.failed", "v1", map[string]interface{}{
-				"agent_id": g.config.AgentID,
-				"run_id":   g.config.RunID,
+				"agent_id": g.Config.AgentID,
+				"run_id":   g.Config.RunID,
 				"reason":   "candidate content is nil",
 			})
 			g.status.State = "failed"
@@ -303,8 +303,8 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 		if len(funcCalls) > 0 {
 			for _, fc := range funcCalls {
 				g.emitEvent("agent.tool_requested", "v1", map[string]interface{}{
-					"agent_id": g.config.AgentID,
-					"run_id":   g.config.RunID,
+					"agent_id": g.Config.AgentID,
+					"run_id":   g.Config.RunID,
 					"tool":     fc.Name,
 					"input":    fc.Args,
 					"reason":   fmt.Sprintf("Gemini model requested tool %s", fc.Name),
@@ -319,8 +319,8 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 					toolResponses = append(toolResponses, toolResp)
 				case <-ctx.Done():
 					g.emitEvent("agent.failed", "v1", map[string]interface{}{
-						"agent_id": g.config.AgentID,
-						"run_id":   g.config.RunID,
+						"agent_id": g.Config.AgentID,
+						"run_id":   g.Config.RunID,
 						"reason":   "timeout waiting for tool response",
 					})
 					g.status.State = "failed"
@@ -392,15 +392,15 @@ func (g *GeminiRuntime) inferenceLoop(ctx context.Context) {
 	g.status.State = "completed"
 }
 
-func (g *GeminiRuntime) buildTools() []*genai.Tool {
-	if len(g.config.Toolset) == 0 {
+func (g *GeminiRuntime) BuildTools() []*genai.Tool {
+	if len(g.Config.Toolset) == 0 {
 		return nil
 	}
 
-	decls := make([]*genai.FunctionDeclaration, 0, len(g.config.Toolset))
-	for _, toolName := range g.config.Toolset {
+	decls := make([]*genai.FunctionDeclaration, 0, len(g.Config.Toolset))
+	for _, toolName := range g.Config.Toolset {
 		decls = append(decls, &genai.FunctionDeclaration{
-			Name:        sanitizeFunctionName(toolName),
+			Name:        SanitizeFunctionName(toolName),
 			Description: fmt.Sprintf("OrchestraOS tool: %s", toolName),
 			Parameters: &genai.Schema{
 				Type: genai.TypeObject,
@@ -423,18 +423,19 @@ func (g *GeminiRuntime) buildTools() []*genai.Tool {
 	}}
 }
 
-func sanitizeFunctionName(name string) string {
+func SanitizeFunctionName(name string) string {
 	// Gemini function names must match ^[a-zA-Z_][a-zA-Z0-9_\-\.]{0,64}$
 	out := make([]byte, 0, len(name))
 	for i, c := range name {
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' {
+		switch {
+		case (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_':
 			out = append(out, byte(c))
-		} else if (c >= '0' && c <= '9') || c == '-' || c == '.' {
+		case (c >= '0' && c <= '9') || c == '-' || c == '.':
 			if i == 0 {
 				out = append(out, '_')
 			}
 			out = append(out, byte(c))
-		} else {
+		default:
 			out = append(out, '_')
 		}
 	}
@@ -454,10 +455,10 @@ func (g *GeminiRuntime) emitEvent(eventType, version string, payload interface{}
 		ID:          uuid.New().String(),
 		Type:        eventType,
 		Version:     version,
-		TaskID:      g.config.TaskID,
-		RunID:       g.config.RunID,
-		WorkUnitID:  g.config.WorkUnitID,
-		AgentID:     g.config.AgentID,
+		TaskID:      g.Config.TaskID,
+		RunID:       g.Config.RunID,
+		WorkUnitID:  g.Config.WorkUnitID,
+		AgentID:     g.Config.AgentID,
 		Sequence:    0,
 		Priority:    domain.EventPriorityNotification,
 		RequiresAck: false,

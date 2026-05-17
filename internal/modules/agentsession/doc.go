@@ -18,7 +18,7 @@
 //
 // # Dependencies
 //   - core/db: transaction helpers
-//   - core/orchestration: TransitionInput, OperationResult
+//   - core/coordination: TransitionInput, OperationResult
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
 //   - domain: AgentSession, AgentSessionStatus, HeartbeatInput, CheckpointInput, etc.
@@ -36,8 +36,9 @@
 //   - NEVER write SQL outside queries.go.
 //
 // For full contracts, invariants, state machine, and boundary rules:
-//   READ: README.md  → purpose, dependencies, file map
-//   READ: CONTRACTS.md → invariants, state machine, boundary rules
+//
+//	READ: README.md  → purpose, dependencies, file map
+//	READ: CONTRACTS.md → invariants, state machine, boundary rules
 //
 // Quick code reference: see ModuleContract in contract.go
 package agentsession

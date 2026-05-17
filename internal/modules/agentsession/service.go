@@ -44,8 +44,6 @@ type CreateAgentSessionInput struct {
 	RecoverableState json.RawMessage
 }
 
-
-
 func NewAgentSessionService(database *sql.DB, newAgentReader func(*sql.Tx) AgentReader) *AgentSessionService {
 	return &AgentSessionService{db: database, newAgentReader: newAgentReader}
 }
@@ -176,11 +174,10 @@ func (s *AgentSessionService) Stop(ctx context.Context, sessionID string, input 
 	if session.Status != domain.AgentSessionStatusStopping {
 		stoppingInput := input
 		stoppingInput.EventID = ""
-		event, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, domain.AgentSessionStatusStopping, stoppingInput)
+		_, dup, err := transitionAgentSessionInTx(ctx, tx, session, session.TaskID, session.WorkUnitID, domain.AgentSessionStatusStopping, stoppingInput)
 		if err != nil {
 			return nil, err
 		}
-		lastEvent = event
 		duplicate = dup
 		session.Status = domain.AgentSessionStatusStopping
 	}

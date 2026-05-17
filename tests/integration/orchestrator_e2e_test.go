@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	orchestratormod "github.com/levygit837-cyber/OrchestraOS/internal/modules/orchestrator"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
@@ -23,8 +23,8 @@ func TestOrchestratorServiceStub_Interface(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Orchestrator Interface Test",
 		Description:        "Validate OrchestratorService exists and is callable",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"orchestrator service is reachable"},
 	})
 	if err != nil {
@@ -75,8 +75,8 @@ func TestRunStart_UsesAgentServiceFindOrCreate(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "Agent FindOrCreate Test",
 		Description:        "Validate that run start uses AgentService.FindOrCreate",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"agent is registered"},
 	})
 	if err != nil {
@@ -107,7 +107,7 @@ func TestRunStart_UsesAgentServiceFindOrCreate(t *testing.T) {
 	}
 
 	// Before creating a run, no agent should exist for this profile + runtime
-	agentsBefore, err := agentService.FindOrCreate(ctx, profile, domain.AgentRuntimeTypeFake)
+	agentsBefore, err := agentService.FindOrCreate(ctx, profile, agent.RuntimeTypeFake)
 	if err != nil {
 		t.Fatalf("find or create agent before: %v", err)
 	}
@@ -126,8 +126,8 @@ func TestRunStart_UsesAgentServiceFindOrCreate(t *testing.T) {
 	if fetched.Profile != profile {
 		t.Fatalf("expected profile %s, got %s", profile, fetched.Profile)
 	}
-	if fetched.RuntimeType != domain.AgentRuntimeTypeFake {
-		t.Fatalf("expected runtime type %s, got %s", domain.AgentRuntimeTypeFake, fetched.RuntimeType)
+	if fetched.RuntimeType != agent.RuntimeTypeFake {
+		t.Fatalf("expected runtime type %s, got %s", agent.RuntimeTypeFake, fetched.RuntimeType)
 	}
 }
 
@@ -146,8 +146,8 @@ func TestOrchestratorE2E_FullFlow(t *testing.T) {
 	taskResult, err := taskService.Create(ctx, taskmod.CreateTaskInput{
 		Title:              "E2E Orchestrated Task",
 		Description:        "Full flow via OrchestratorService",
-		Priority:           domain.PriorityP1,
-		RiskLevel:          domain.RiskLevelLow,
+		Priority:           taskmod.PriorityP1,
+		RiskLevel:          taskmod.RiskLevelLow,
 		AcceptanceCriteria: []string{"WU A implements X", "WU B validates X"},
 	})
 	if err != nil {
@@ -180,7 +180,7 @@ func TestOrchestratorE2E_FullFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get task: %v", err)
 	}
-	if completedTask.Status != domain.TaskStatusCompleted {
+	if completedTask.Status != taskmod.StatusCompleted {
 		t.Fatalf("expected task status completed, got %s", completedTask.Status)
 	}
 
@@ -191,7 +191,7 @@ func TestOrchestratorE2E_FullFlow(t *testing.T) {
 		if err != nil {
 			t.Fatalf("get run %s: %v", runID, err)
 		}
-		if run.Status != domain.RunStatusCompleted {
+		if run.Status != runmod.StatusCompleted {
 			t.Fatalf("expected run %s status completed, got %s", runID, run.Status)
 		}
 	}
