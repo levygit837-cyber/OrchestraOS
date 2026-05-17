@@ -1,19 +1,18 @@
-package taskgraph
+package taskgraph_test
 
 import (
 	"testing"
 
-	"github.com/google/uuid"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 func TestLocalHeuristicDecomposesTwoCriteria(t *testing.T) {
-	task := taskForGraphTest([]string{
+	task := taskgraph.TaskForGraphTest([]string{
 		"Criar schema do task graph",
 		"Criar repository do task graph",
 	})
 
-	plan, err := buildLocalHeuristicGraphPlan(task)
+	plan, err := taskgraph.BuildLocalHeuristicGraphPlan(task)
 	if err != nil {
 		t.Fatalf("expected graph plan: %v", err)
 	}
@@ -31,7 +30,7 @@ func TestLocalHeuristicDecomposesTwoCriteria(t *testing.T) {
 }
 
 func TestLocalHeuristicLimitsWorkUnits(t *testing.T) {
-	task := taskForGraphTest([]string{
+	task := taskgraph.TaskForGraphTest([]string{
 		"Criterio um pronto",
 		"Criterio dois pronto",
 		"Criterio tres pronto",
@@ -40,42 +39,42 @@ func TestLocalHeuristicLimitsWorkUnits(t *testing.T) {
 		"Criterio seis pronto",
 	})
 
-	plan, err := buildLocalHeuristicGraphPlan(task)
+	plan, err := taskgraph.BuildLocalHeuristicGraphPlan(task)
 	if err != nil {
 		t.Fatalf("expected graph plan: %v", err)
 	}
-	if len(plan.WorkUnits) > maxGraphWorkUnits {
-		t.Fatalf("expected at most %d work units, got %d", maxGraphWorkUnits, len(plan.WorkUnits))
+	if len(plan.WorkUnits) > taskgraph.MaxGraphWorkUnits {
+		t.Fatalf("expected at most %d work units, got %d", taskgraph.MaxGraphWorkUnits, len(plan.WorkUnits))
 	}
 }
 
 func TestLocalHeuristicRejectsInsufficientInput(t *testing.T) {
-	if _, err := buildLocalHeuristicGraphPlan(taskForGraphTest(nil)); err == nil {
+	if _, err := taskgraph.BuildLocalHeuristicGraphPlan(taskgraph.TaskForGraphTest(nil)); err == nil {
 		t.Fatal("expected empty acceptance criteria to be rejected")
 	}
-	if _, err := buildLocalHeuristicGraphPlan(taskForGraphTest([]string{"Somente um criterio"})); err == nil {
+	if _, err := taskgraph.BuildLocalHeuristicGraphPlan(taskgraph.TaskForGraphTest([]string{"Somente um criterio"})); err == nil {
 		t.Fatal("expected single acceptance criterion to be rejected")
 	}
 }
 
 func TestLocalHeuristicRejectsUnbalancedWorkUnits(t *testing.T) {
-	task := taskForGraphTest([]string{
+	task := taskgraph.TaskForGraphTest([]string{
 		"Curto",
 		"Este criterio tem muitas palavras para deixar a work unit muito maior que a outra parte do plano",
 	})
 
-	if _, err := buildLocalHeuristicGraphPlan(task); err == nil {
+	if _, err := taskgraph.BuildLocalHeuristicGraphPlan(task); err == nil {
 		t.Fatal("expected unbalanced criteria to be rejected")
 	}
 }
 
 func TestLocalHeuristicCreatesExplicitDependencies(t *testing.T) {
-	task := taskForGraphTest([]string{
+	task := taskgraph.TaskForGraphTest([]string{
 		"Criar schema",
 		"[after: 1] Criar repositorio",
 	})
 
-	plan, err := buildLocalHeuristicGraphPlan(task)
+	plan, err := taskgraph.BuildLocalHeuristicGraphPlan(task)
 	if err != nil {
 		t.Fatalf("expected graph plan: %v", err)
 	}
@@ -88,31 +87,23 @@ func TestLocalHeuristicCreatesExplicitDependencies(t *testing.T) {
 }
 
 func TestLocalHeuristicRejectsUnknownDependency(t *testing.T) {
-	task := taskForGraphTest([]string{
+	task := taskgraph.TaskForGraphTest([]string{
 		"Criar schema",
 		"[after: 3] Criar repositorio",
 	})
 
-	if _, err := buildLocalHeuristicGraphPlan(task); err == nil {
+	if _, err := taskgraph.BuildLocalHeuristicGraphPlan(task); err == nil {
 		t.Fatal("expected unknown dependency to be rejected")
 	}
 }
 
 func TestLocalHeuristicRejectsDependencyCycle(t *testing.T) {
-	task := taskForGraphTest([]string{
+	task := taskgraph.TaskForGraphTest([]string{
 		"[after: 2] Criar schema",
 		"[after: 1] Criar repositorio",
 	})
 
-	if _, err := buildLocalHeuristicGraphPlan(task); err == nil {
+	if _, err := taskgraph.BuildLocalHeuristicGraphPlan(task); err == nil {
 		t.Fatal("expected cycle to be rejected")
-	}
-}
-
-func taskForGraphTest(criteria []string) *domain.Task {
-	return &domain.Task{
-		ID:                 uuid.New().String(),
-		Title:              "Task graph test",
-		AcceptanceCriteria: criteria,
 	}
 }

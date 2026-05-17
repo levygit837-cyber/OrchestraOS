@@ -304,7 +304,7 @@ func (r *RuntimeEventRelay) appendEvent(ctx context.Context, event *domain.Event
 }
 
 func (r *RuntimeEventRelay) maybeAutoCheckpoint(ctx context.Context, config RelayConfig, event *domain.EventEnvelope) error {
-	trigger, ok := checkpointTriggerForRuntimeEvent(event.Type)
+	trigger, ok := CheckpointTriggerForRuntimeEvent(event.Type)
 	if !ok {
 		return nil
 	}
@@ -359,7 +359,7 @@ func decodePayloadMap(event *domain.EventEnvelope) (map[string]interface{}, erro
 	return payload, nil
 }
 
-func checkpointTriggerForRuntimeEvent(eventType string) (domain.CheckpointTrigger, bool) {
+func CheckpointTriggerForRuntimeEvent(eventType string) (domain.CheckpointTrigger, bool) {
 	switch eventType {
 	case "agent.tool_requested":
 		return domain.CheckpointTriggerToolRequest, true

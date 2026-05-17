@@ -35,7 +35,7 @@ func (c *Composer) Compose(ctx TaskContext) (*ComposedPrompt, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := validateSelectedFragments(selected); err != nil {
+	if err := ValidateSelectedFragments(selected); err != nil {
 		return nil, err
 	}
 
@@ -148,7 +148,7 @@ func appliesToProfile(fragment Fragment, profile string) bool {
 	return false
 }
 
-func validateSelectedFragments(fragments []Fragment) error {
+func ValidateSelectedFragments(fragments []Fragment) error {
 	selectedByID := map[string]Fragment{}
 	exclusiveGroups := map[string]string{}
 	categories := map[FragmentCategory]string{}

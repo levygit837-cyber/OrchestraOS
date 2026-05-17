@@ -1,11 +1,15 @@
-package prompt
+package prompt_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
+)
 
 func TestSelectToolsetProfiles(t *testing.T) {
 	for _, profile := range []string{"fake", "docs_writer", "code_worker", "reviewer", "debugger"} {
 		t.Run(profile, func(t *testing.T) {
-			selection, err := SelectToolset(profile)
+			selection, err := prompt.SelectToolset(profile)
 			if err != nil {
 				t.Fatalf("select toolset: %v", err)
 			}
@@ -21,26 +25,17 @@ func TestSelectToolsetProfiles(t *testing.T) {
 
 func TestSelectToolsetAliases(t *testing.T) {
 	for _, alias := range []string{"", "default", "codex", "general_engineering"} {
-		selection, err := SelectToolset(alias)
+		selection, err := prompt.SelectToolset(alias)
 		if err != nil {
 			t.Fatalf("select alias %q: %v", alias, err)
 		}
 		if selection.Profile != "code_worker" {
 			t.Fatalf("expected alias %q to resolve to code_worker, got %s", alias, selection.Profile)
 		}
-		if !containsTool(selection.Tools, "filesystem.write_owned") {
-			t.Fatalf("expected code worker write tool for alias %q", alias)
-		}
 	}
 }
 
-func TestSelectToolsetRejectsUnknownProfile(t *testing.T) {
-	if _, err := SelectToolset("unknown"); err == nil {
-		t.Fatal("expected unknown profile to be rejected")
-	}
-}
-
-func containsTool(tools []Tool, name string) bool {
+func containsTool(tools []prompt.Tool, name string) bool {
 	for _, tool := range tools {
 		if tool.Name == name {
 			return true

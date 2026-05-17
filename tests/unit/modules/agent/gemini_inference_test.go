@@ -1,10 +1,12 @@
-package agent
+package agent_test
 
 import (
 	"context"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 )
 
 // TestGeminiRealInference faz uma chamada real à API Gemini para validar inferência.
@@ -21,8 +23,8 @@ func TestGeminiRealInference(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	rt := NewGeminiRuntime()
-	config := RuntimeConfig{
+	rt := agent.NewGeminiRuntime()
+	config := agent.RuntimeConfig{
 		RunID:        "run-test-001",
 		WorkUnitID:   "wu-test-001",
 		TaskID:       "task-test-001",

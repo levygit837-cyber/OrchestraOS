@@ -1,8 +1,9 @@
-package coordination
+package coordination_test
 
 import (
 	"testing"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
@@ -15,7 +16,7 @@ func TestCheckpointTriggerForRuntimeEventIncludesDirectToolExecution(t *testing.
 	}
 
 	for eventType, want := range tests {
-		got, ok := checkpointTriggerForRuntimeEvent(eventType)
+		got, ok := coordination.CheckpointTriggerForRuntimeEvent(eventType)
 		if !ok {
 			t.Fatalf("expected %s to trigger checkpoint", eventType)
 		}
@@ -24,7 +25,7 @@ func TestCheckpointTriggerForRuntimeEventIncludesDirectToolExecution(t *testing.
 		}
 	}
 
-	if _, ok := checkpointTriggerForRuntimeEvent("tool.failed"); ok {
+	if _, ok := coordination.CheckpointTriggerForRuntimeEvent("tool.failed"); ok {
 		t.Fatal("tool.failed should be handled as failure state, not automatic checkpoint")
 	}
 }
