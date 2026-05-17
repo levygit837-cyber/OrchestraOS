@@ -5,11 +5,10 @@ import (
 	"database/sql"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // RequireByID retrieves a trigger by ID within a transaction, returning a not-found error if absent.
-func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*domain.Trigger, error) {
+func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*Trigger, error) {
 	_ = ctx
 	t, err := NewRepository(tx).GetByID(id)
 	if err != nil {

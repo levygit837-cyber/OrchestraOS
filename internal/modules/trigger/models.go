@@ -1,39 +1,69 @@
 package trigger
 
-import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
-
-type Status = domain.TriggerStatus
-type Type = domain.TriggerType
-type Anomaly = domain.AnomalyType
-type Resolution = domain.ResolutionAction
-
-const (
-	StatusActive    = domain.TriggerStatusActive
-	StatusTriggered = domain.TriggerStatusTriggered
-	StatusResolved  = domain.TriggerStatusResolved
-	StatusDismissed = domain.TriggerStatusDismissed
+import (
+	"encoding/json"
+	"time"
 )
 
-const (
-	TypeThreshold        = domain.TriggerTypeThreshold
-	TypeAnomaly          = domain.TriggerTypeAnomaly
-	TypeHeartbeatTimeout = domain.TriggerTypeHeartbeatTimeout
-	TypePolicy           = domain.TriggerTypePolicy
-)
+type Status string
 
 const (
-	AnomalyStall         = domain.AnomalyTypeStall
-	AnomalyLoop          = domain.AnomalyTypeLoop
-	AnomalyDrift         = domain.AnomalyTypeDrift
-	AnomalyPathViolation = domain.AnomalyTypePathViolation
-	AnomalyTokenExceeded = domain.AnomalyTypeTokenExceeded
-	AnomalyStepsExceeded = domain.AnomalyTypeStepsExceeded
-	AnomalyTimeExceeded  = domain.AnomalyTypeTimeExceeded
+	StatusActive    Status = "active"
+	StatusTriggered Status = "triggered"
+	StatusResolved  Status = "resolved"
+	StatusDismissed Status = "dismissed"
 )
 
+type Type string
+
 const (
-	ResolutionPause    = domain.ResolutionActionPause
-	ResolutionCancel   = domain.ResolutionActionCancel
-	ResolutionNotify   = domain.ResolutionActionNotify
-	ResolutionEscalate = domain.ResolutionActionEscalate
+	TypeThreshold        Type = "threshold"
+	TypeAnomaly          Type = "anomaly"
+	TypeHeartbeatTimeout Type = "heartbeat_timeout"
+	TypePolicy           Type = "policy"
 )
+
+type AnomalyType string
+
+const (
+	AnomalyStall         AnomalyType = "stall"
+	AnomalyLoop          AnomalyType = "loop"
+	AnomalyDrift         AnomalyType = "drift"
+	AnomalyPathViolation AnomalyType = "path_violation"
+	AnomalyTokenExceeded AnomalyType = "token_exceeded"
+	AnomalyStepsExceeded AnomalyType = "steps_exceeded"
+	AnomalyTimeExceeded  AnomalyType = "time_exceeded"
+)
+
+type ResolutionAction string
+
+const (
+	ResolutionPause    ResolutionAction = "pause"
+	ResolutionCancel   ResolutionAction = "cancel"
+	ResolutionNotify   ResolutionAction = "notify"
+	ResolutionEscalate ResolutionAction = "escalate"
+)
+
+type ThresholdConfig struct {
+	StallSeconds    int `json:"stall_seconds"`
+	LoopRepetitions int `json:"loop_repetitions"`
+	TokenMax        int `json:"token_max"`
+	StepsMax        int `json:"steps_max"`
+	TimeMaxSeconds  int `json:"time_max_seconds"`
+}
+
+type Trigger struct {
+	ID               string            `json:"id"`
+	RunID            *string           `json:"run_id,omitempty"`
+	TaskID           *string           `json:"task_id,omitempty"`
+	AgentSessionID   *string           `json:"agent_session_id,omitempty"`
+	TriggerType      Type              `json:"trigger_type"`
+	Status           Status            `json:"status"`
+	AnomalyType      *AnomalyType      `json:"anomaly_type,omitempty"`
+	ThresholdValue   json.RawMessage   `json:"threshold_value,omitempty"`
+	CurrentValue     json.RawMessage   `json:"current_value,omitempty"`
+	TriggeredAt      *time.Time        `json:"triggered_at,omitempty"`
+	ResolvedAt       *time.Time        `json:"resolved_at,omitempty"`
+	ResolutionAction *ResolutionAction `json:"resolution_action,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+}

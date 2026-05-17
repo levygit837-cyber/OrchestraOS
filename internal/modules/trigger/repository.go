@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 // Repository handles trigger persistence
@@ -27,7 +26,7 @@ func NewRepository(db db.DBTX) *Repository {
 }
 
 // Create inserts a new trigger
-func (r *Repository) Create(trigger *domain.Trigger) error {
+func (r *Repository) Create(trigger *Trigger) error {
 	if trigger.ID == "" {
 		trigger.ID = uuid.New().String()
 	}
@@ -59,20 +58,20 @@ func (r *Repository) Create(trigger *domain.Trigger) error {
 }
 
 // GetByID retrieves a trigger by ID
-func (r *Repository) GetByID(id string) (*domain.Trigger, error) {
+func (r *Repository) GetByID(id string) (*Trigger, error) {
 	row := r.db.QueryRow(QueryGetByID, id)
 	return r.scanTrigger(row)
 }
 
 // ListActive retrieves all active or triggered triggers
-func (r *Repository) ListActive(ctx context.Context) ([]*domain.Trigger, error) {
+func (r *Repository) ListActive(ctx context.Context) ([]*Trigger, error) {
 	rows, err := r.db.QueryContext(ctx, QueryListActive)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list active triggers: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var triggers []*domain.Trigger
+	var triggers []*Trigger
 	for rows.Next() {
 		trigger, err := r.scanTrigger(rows)
 		if err != nil {
@@ -84,14 +83,14 @@ func (r *Repository) ListActive(ctx context.Context) ([]*domain.Trigger, error) 
 }
 
 // ListByRun retrieves all triggers for a run
-func (r *Repository) ListByRun(ctx context.Context, runID string) ([]*domain.Trigger, error) {
+func (r *Repository) ListByRun(ctx context.Context, runID string) ([]*Trigger, error) {
 	rows, err := r.db.QueryContext(ctx, QueryListByRun, runID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list triggers by run: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var triggers []*domain.Trigger
+	var triggers []*Trigger
 	for rows.Next() {
 		trigger, err := r.scanTrigger(rows)
 		if err != nil {
@@ -104,7 +103,7 @@ func (r *Repository) ListByRun(ctx context.Context, runID string) ([]*domain.Tri
 
 // ExistsActiveSimilar checks if an active/triggered trigger already exists with the same
 // trigger type, run/session and anomaly type.
-func (r *Repository) ExistsActiveSimilar(triggerType domain.TriggerType, runID, agentSessionID, anomalyType *string) (bool, error) {
+func (r *Repository) ExistsActiveSimilar(triggerType Type, runID, agentSessionID, anomalyType *string) (bool, error) {
 	var runVal, sessionVal, anomalyVal string
 	if runID != nil {
 		runVal = *runID
@@ -124,7 +123,7 @@ func (r *Repository) ExistsActiveSimilar(triggerType domain.TriggerType, runID, 
 }
 
 // UpdateStatus updates trigger status and related timestamps
-func (r *Repository) UpdateStatus(id string, status domain.TriggerStatus, triggeredAt, resolvedAt *time.Time, resolutionAction *domain.ResolutionAction) error {
+func (r *Repository) UpdateStatus(id string, status Status, triggeredAt, resolvedAt *time.Time, resolutionAction *ResolutionAction) error {
 	_, err := r.db.Exec(
 		QueryUpdateStatus,
 		id,
@@ -141,8 +140,8 @@ func (r *Repository) UpdateStatus(id string, status domain.TriggerStatus, trigge
 
 func (r *Repository) scanTrigger(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.Trigger, error) {
-	var trigger domain.Trigger
+}) (*Trigger, error) {
+	var trigger Trigger
 	var runID, taskID, agentSessionID *string
 	var anomalyType *string
 	var triggeredAt, resolvedAt sql.NullTime
@@ -174,7 +173,7 @@ func (r *Repository) scanTrigger(scanner interface {
 	trigger.TaskID = taskID
 	trigger.AgentSessionID = agentSessionID
 	if anomalyType != nil {
-		a := domain.AnomalyType(*anomalyType)
+		a := AnomalyType(*anomalyType)
 		trigger.AnomalyType = &a
 	}
 	if triggeredAt.Valid {
@@ -184,7 +183,7 @@ func (r *Repository) scanTrigger(scanner interface {
 		trigger.ResolvedAt = &resolvedAt.Time
 	}
 	if resolutionAction != nil {
-		ra := domain.ResolutionAction(*resolutionAction)
+		ra := ResolutionAction(*resolutionAction)
 		trigger.ResolutionAction = &ra
 	}
 

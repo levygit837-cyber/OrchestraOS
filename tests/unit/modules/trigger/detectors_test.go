@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 )
 
@@ -18,7 +17,7 @@ func TestStallDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected stall detection")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != domain.AnomalyTypeStall {
+		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyStall {
 			t.Fatalf("expected anomaly stall, got %v", tr.AnomalyType)
 		}
 	})
@@ -43,7 +42,7 @@ func TestLoopDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected loop detection")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != domain.AnomalyTypeLoop {
+		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyLoop {
 			t.Fatalf("expected anomaly loop, got %v", tr.AnomalyType)
 		}
 	})
@@ -81,7 +80,7 @@ func TestDriftDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected drift detection")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != domain.AnomalyTypeDrift {
+		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyDrift {
 			t.Fatalf("expected anomaly drift, got %v", tr.AnomalyType)
 		}
 	})
@@ -126,7 +125,7 @@ func TestPathViolationDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected path violation")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != domain.AnomalyTypePathViolation {
+		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyPathViolation {
 			t.Fatalf("expected anomaly path_violation, got %v", tr.AnomalyType)
 		}
 	})

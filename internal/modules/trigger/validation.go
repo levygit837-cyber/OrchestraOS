@@ -5,7 +5,6 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 func validateCreateTriggerInput(input CreateTriggerInput) error {
@@ -26,7 +25,7 @@ func validateCreateTriggerInput(input CreateTriggerInput) error {
 		return apperrors.New(apperrors.CodeInvalidInput, op, "invalid trigger_type")
 	}
 	if input.Status == "" {
-		input.Status = domain.TriggerStatusActive
+		input.Status = StatusActive
 	}
 	if !isValidTriggerStatus(input.Status) {
 		return apperrors.New(apperrors.CodeInvalidInput, op, "invalid status")
@@ -50,36 +49,36 @@ func validateCreateTriggerInput(input CreateTriggerInput) error {
 	return nil
 }
 
-func isValidTriggerType(t domain.TriggerType) bool {
+func isValidTriggerType(t Type) bool {
 	switch t {
-	case domain.TriggerTypeThreshold, domain.TriggerTypeAnomaly, domain.TriggerTypeHeartbeatTimeout, domain.TriggerTypePolicy:
+	case TypeThreshold, TypeAnomaly, TypeHeartbeatTimeout, TypePolicy:
 		return true
 	}
 	return false
 }
 
-func isValidTriggerStatus(s domain.TriggerStatus) bool {
+func isValidTriggerStatus(s Status) bool {
 	switch s {
-	case domain.TriggerStatusActive, domain.TriggerStatusTriggered, domain.TriggerStatusResolved, domain.TriggerStatusDismissed:
+	case StatusActive, StatusTriggered, StatusResolved, StatusDismissed:
 		return true
 	}
 	return false
 }
 
-func isValidAnomalyType(a domain.AnomalyType) bool {
+func isValidAnomalyType(a AnomalyType) bool {
 	switch a {
-	case domain.AnomalyTypeStall, domain.AnomalyTypeLoop, domain.AnomalyTypeDrift,
-		domain.AnomalyTypePathViolation, domain.AnomalyTypeTokenExceeded,
-		domain.AnomalyTypeStepsExceeded, domain.AnomalyTypeTimeExceeded:
+	case AnomalyStall, AnomalyLoop, AnomalyDrift,
+		AnomalyPathViolation, AnomalyTokenExceeded,
+		AnomalyStepsExceeded, AnomalyTimeExceeded:
 		return true
 	}
 	return false
 }
 
-func isValidResolutionAction(r domain.ResolutionAction) bool {
+func isValidResolutionAction(r ResolutionAction) bool {
 	switch r {
-	case domain.ResolutionActionPause, domain.ResolutionActionCancel,
-		domain.ResolutionActionNotify, domain.ResolutionActionEscalate:
+	case ResolutionPause, ResolutionCancel,
+		ResolutionNotify, ResolutionEscalate:
 		return true
 	}
 	return false

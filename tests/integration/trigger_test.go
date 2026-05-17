@@ -7,7 +7,6 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
@@ -24,8 +23,8 @@ func TestTriggerServiceCreateAndList(t *testing.T) {
 
 	t.Run("create trigger persists and emits event", func(t *testing.T) {
 		result, err := triggerService.Create(ctx, triggermod.CreateTriggerInput{
-			TriggerType: domain.TriggerTypeThreshold,
-			Status:      domain.TriggerStatusActive,
+			TriggerType: triggermod.TypeThreshold,
+			Status:      triggermod.StatusActive,
 		})
 		if err != nil {
 			t.Fatalf("create trigger: %v", err)
@@ -33,7 +32,7 @@ func TestTriggerServiceCreateAndList(t *testing.T) {
 		if result.Value.ID == "" {
 			t.Fatal("expected trigger ID to be generated")
 		}
-		if result.Value.Status != domain.TriggerStatusActive {
+		if result.Value.Status != triggermod.StatusActive {
 			t.Fatalf("expected status active, got %s", result.Value.Status)
 		}
 		if result.Event == nil || result.Event.Type != "trigger.created" {
@@ -50,7 +49,7 @@ func TestTriggerServiceCreateAndList(t *testing.T) {
 			t.Fatal("expected at least one active trigger")
 		}
 		for _, tr := range active {
-			if tr.Status == domain.TriggerStatusResolved || tr.Status == domain.TriggerStatusDismissed {
+			if tr.Status == triggermod.StatusResolved || tr.Status == triggermod.StatusDismissed {
 				t.Fatalf("expected no resolved/dismissed triggers in ListActive, got %s", tr.Status)
 			}
 		}
@@ -65,8 +64,8 @@ func TestTriggerServiceResolveAndDismiss(t *testing.T) {
 	triggerService := bootstrap.TriggerService(db)
 
 	result, err := triggerService.Create(ctx, triggermod.CreateTriggerInput{
-		TriggerType: domain.TriggerTypeAnomaly,
-		Status:      domain.TriggerStatusActive,
+		TriggerType: triggermod.TypeAnomaly,
+		Status:      triggermod.StatusActive,
 	})
 	if err != nil {
 		t.Fatalf("create trigger: %v", err)
@@ -74,11 +73,11 @@ func TestTriggerServiceResolveAndDismiss(t *testing.T) {
 	triggerID := result.Value.ID
 
 	t.Run("resolve trigger", func(t *testing.T) {
-		resolved, err := triggerService.Resolve(ctx, triggerID, domain.ResolutionActionNotify, "test resolution")
+		resolved, err := triggerService.Resolve(ctx, triggerID, triggermod.ResolutionNotify, "test resolution")
 		if err != nil {
 			t.Fatalf("resolve trigger: %v", err)
 		}
-		if resolved.Value.Status != domain.TriggerStatusResolved {
+		if resolved.Value.Status != triggermod.StatusResolved {
 			t.Fatalf("expected resolved, got %s", resolved.Value.Status)
 		}
 		if resolved.Event == nil || resolved.Event.Type != "trigger.resolved" {
@@ -87,7 +86,7 @@ func TestTriggerServiceResolveAndDismiss(t *testing.T) {
 	})
 
 	t.Run("cannot resolve already resolved trigger", func(t *testing.T) {
-		_, err := triggerService.Resolve(ctx, triggerID, domain.ResolutionActionNotify, "double resolution")
+		_, err := triggerService.Resolve(ctx, triggerID, triggermod.ResolutionNotify, "double resolution")
 		if err == nil {
 			t.Fatal("expected error resolving already resolved trigger")
 		}
@@ -95,8 +94,8 @@ func TestTriggerServiceResolveAndDismiss(t *testing.T) {
 
 	t.Run("dismiss trigger", func(t *testing.T) {
 		created, err := triggerService.Create(ctx, triggermod.CreateTriggerInput{
-			TriggerType: domain.TriggerTypePolicy,
-			Status:      domain.TriggerStatusActive,
+			TriggerType: triggermod.TypePolicy,
+			Status:      triggermod.StatusActive,
 		})
 		if err != nil {
 			t.Fatalf("create trigger for dismiss: %v", err)
@@ -105,7 +104,7 @@ func TestTriggerServiceResolveAndDismiss(t *testing.T) {
 		if err != nil {
 			t.Fatalf("dismiss trigger: %v", err)
 		}
-		if dismissed.Value.Status != domain.TriggerStatusDismissed {
+		if dismissed.Value.Status != triggermod.StatusDismissed {
 			t.Fatalf("expected dismissed, got %s", dismissed.Value.Status)
 		}
 	})
@@ -124,7 +123,7 @@ func TestTriggerServiceEvaluateRun(t *testing.T) {
 	// Override clock and thresholds for determinism
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 	triggerService.SetClock(func() time.Time { return now })
-	triggerService.SetThresholds(domain.ThresholdConfig{
+	triggerService.SetThresholds(triggermod.ThresholdConfig{
 		StallSeconds:    60,
 		LoopRepetitions: 3,
 		TokenMax:        100,
@@ -174,7 +173,7 @@ func TestTriggerServiceEvaluateRun(t *testing.T) {
 	// Should detect time exceeded at minimum
 	foundTime := false
 	for _, tr := range detected {
-		if tr.AnomalyType != nil && *tr.AnomalyType == domain.AnomalyTypeTimeExceeded {
+		if tr.AnomalyType != nil && *tr.AnomalyType == triggermod.AnomalyTimeExceeded {
 			foundTime = true
 		}
 	}
@@ -205,7 +204,7 @@ func TestTriggerServiceEvaluateSession(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 	triggerService.SetClock(func() time.Time { return now })
-	triggerService.SetThresholds(domain.ThresholdConfig{
+	triggerService.SetThresholds(triggermod.ThresholdConfig{
 		StallSeconds: 60,
 	})
 
@@ -252,7 +251,7 @@ func TestTriggerServiceEvaluateSession(t *testing.T) {
 	// Should detect heartbeat timeout because no heartbeat was sent
 	foundTimeout := false
 	for _, tr := range detected {
-		if tr.TriggerType == domain.TriggerTypeHeartbeatTimeout {
+		if tr.TriggerType == triggermod.TypeHeartbeatTimeout {
 			foundTimeout = true
 		}
 	}

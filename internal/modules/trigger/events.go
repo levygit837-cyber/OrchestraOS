@@ -1,16 +1,14 @@
 package trigger
 
-import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
-
-func EventTypeForStatus(status domain.TriggerStatus) string {
+func EventTypeForStatus(status Status) string {
 	switch status {
-	case domain.TriggerStatusActive:
+	case StatusActive:
 		return "trigger.created"
-	case domain.TriggerStatusTriggered:
+	case StatusTriggered:
 		return "trigger.triggered"
-	case domain.TriggerStatusResolved:
+	case StatusResolved:
 		return "trigger.resolved"
-	case domain.TriggerStatusDismissed:
+	case StatusDismissed:
 		return "trigger.dismissed"
 	default:
 		return "trigger.unknown"
