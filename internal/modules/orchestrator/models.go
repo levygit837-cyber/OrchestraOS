@@ -7,6 +7,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
@@ -140,7 +141,7 @@ type ReviewManager interface {
 }
 
 type TriggerEvaluator interface {
-	EvaluateRun(ctx context.Context, runID string) ([]*domain.Trigger, error)
+	EvaluateRun(ctx context.Context, runID string) ([]*triggermod.Trigger, error)
 }
 
 // TODO[ADR-0022]: migrar para []workunit.WorkUnit
