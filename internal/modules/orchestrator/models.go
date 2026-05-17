@@ -5,11 +5,11 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
-	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 )
 
 type RunTaskOptions struct {
