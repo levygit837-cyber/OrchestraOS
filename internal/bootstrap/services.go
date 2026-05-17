@@ -23,11 +23,7 @@ import (
 
 // TaskService creates a TaskService with standard dependencies.
 func TaskService(db *sql.DB) *taskmod.TaskService {
-	return taskmod.NewTaskService(db,
-		func(ctx context.Context, tx *sql.Tx, taskID string, input transition.TransitionInput) error {
-			return coordination.CancelTaskDependents(ctx, tx, taskID, input)
-		},
-	)
+	return taskmod.NewTaskService(db, coordination.CancelTaskDependents)
 }
 
 // taskToDomain converts a local task.Task to domain.Task for cross-module compatibility.

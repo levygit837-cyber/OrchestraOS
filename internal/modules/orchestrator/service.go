@@ -379,12 +379,10 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task
 	_ = runtime.Stop(stopCtx)
 
 	// Ensure agent session is stopped (best effort cleanup)
-	if _, err := s.deps.AgentSessionService.Stop(ctx, sessionCreateResult.Value.ID, transition.TransitionInput{
+	_, _ = s.deps.AgentSessionService.Stop(ctx, sessionCreateResult.Value.ID, transition.TransitionInput{
 		Runtime:       options.RuntimeType,
 		Justification: "work unit execution completed",
-	}); err != nil {
-		// Log but don't fail - best effort cleanup
-	}
+	})
 
 	// Wait for goroutine to complete to prevent leaks
 	<-routineDone

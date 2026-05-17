@@ -222,7 +222,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 			t.Fatalf("Failed to get run: %v", err)
 		}
 		if storedRun == nil {
-			t.Error("Run was not stored")
+			t.Fatal("Run was not stored")
 		}
 		if storedRun.Status != runmod.StatusCompleted {
 			t.Errorf("Expected status completed, got %s", storedRun.Status)

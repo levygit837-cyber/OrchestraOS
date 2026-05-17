@@ -427,14 +427,15 @@ func SanitizeFunctionName(name string) string {
 	// Gemini function names must match ^[a-zA-Z_][a-zA-Z0-9_\-\.]{0,64}$
 	out := make([]byte, 0, len(name))
 	for i, c := range name {
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' {
+		switch {
+		case (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_':
 			out = append(out, byte(c))
-		} else if (c >= '0' && c <= '9') || c == '-' || c == '.' {
+		case (c >= '0' && c <= '9') || c == '-' || c == '.':
 			if i == 0 {
 				out = append(out, '_')
 			}
 			out = append(out, byte(c))
-		} else {
+		default:
 			out = append(out, '_')
 		}
 	}

@@ -73,7 +73,7 @@ func TestEventEnvelopeValidation(t *testing.T) {
 			t.Errorf("Failed to get stored envelope: %v", err)
 		}
 		if stored == nil {
-			t.Error("Envelope was not stored")
+			t.Fatal("Envelope was not stored")
 		}
 		if stored.ID == "" || stored.Sequence == 0 || stored.CreatedAt.IsZero() {
 			t.Errorf("Expected store to fill id, sequence, and created_at, got %+v", stored)
