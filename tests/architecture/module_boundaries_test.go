@@ -24,12 +24,13 @@ import (
 // Current allowed imports:
 //
 //	run -> task: run.TaskReader returns *task.Task
+//	run -> agentsession: run.SessionService interface returns *agentsession.AgentSession (ADR-0028 relay migration)
 //	workunit -> task: workunit.TaskReader returns *task.Task
 //	orchestrator -> review: orchestrator.ReviewManager returns *review.Review (ADR-0022 migration)
 //	prompt -> run/task/workunit/agentsession: PrepareAndPersistInput uses *run.Run, *task.Task, *workunit.WorkUnit, *agentsession.AgentSession
 //	orchestrator -> prompt: PreparedPrompt uses *prompt.PromptSnapshot and *prompt.ToolsetSnapshot
 var allowedModuleImports = map[string]map[string]bool{
-	"run":          {"task": true, "workunit": true},
+	"run":          {"task": true, "workunit": true, "agentsession": true},
 	"workunit":     {"task": true, "taskgraph": true},
 	"taskgraph":    {"task": true, "workunit": true},
 	"agentsession": {"agent": true},

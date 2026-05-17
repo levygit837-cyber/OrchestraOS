@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
@@ -30,7 +29,7 @@ type Dependencies struct {
 	ReviewService       ReviewManager
 	TriggerService      TriggerEvaluator
 	WorkUnitLister      WorkUnitLister
-	RuntimeEventRelay   func(db *sql.DB) *coordination.RuntimeEventRelay
+	RuntimeEventRelay   func(db *sql.DB) *runmod.RuntimeEventRelay
 	NewFakeRuntime      func() Runtime
 	NewGeminiRuntime    func() Runtime
 }
@@ -329,7 +328,7 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 
 	// Start event relay
 	relay := s.deps.RuntimeEventRelay(s.deps.DB)
-	finalStatus, relayErr := relay.Run(timeoutCtx, runtime, coordination.RelayConfig{
+	finalStatus, relayErr := relay.Run(timeoutCtx, runtime, runmod.RelayConfig{
 		SessionID:   sessionCreateResult.Value.ID,
 		RunID:       result.RunID,
 		RuntimeType: options.RuntimeType,

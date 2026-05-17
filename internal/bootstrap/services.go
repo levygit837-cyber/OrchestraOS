@@ -100,7 +100,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 		func(tx *sql.Tx) runmod.WorkUnitReader {
 			return workunitmod.NewRepository(tx)
 		},
-		coordination.TransitionRunWithWorkUnit,
+		runmod.TransitionRunWithWorkUnit,
 	)
 }
 
@@ -215,8 +215,8 @@ func TriggerService(db *sql.DB) *triggermod.TriggerService {
 }
 
 // RuntimeEventRelay creates a RuntimeEventRelay wired to domain services.
-func RuntimeEventRelay(db *sql.DB) *coordination.RuntimeEventRelay {
-	return coordination.NewRuntimeEventRelay(
+func RuntimeEventRelay(db *sql.DB) *runmod.RuntimeEventRelay {
+	return runmod.NewRuntimeEventRelay(
 		db,
 		AgentSessionService(db),
 		RunService(db),

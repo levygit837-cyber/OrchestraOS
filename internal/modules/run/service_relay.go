@@ -1,4 +1,4 @@
-package coordination
+package run
 
 import (
 	"context"
@@ -14,7 +14,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
 // EventSource abstracts a runtime that produces events.
@@ -22,8 +21,8 @@ type EventSource interface {
 	ReceiveEvent(ctx context.Context) (*domain.EventEnvelope, error)
 }
 
-// SessionService abstracts agent-session operations needed by the relay.
-type SessionService interface {
+// RelaySessionService abstracts agent-session operations needed by the relay.
+type RelaySessionService interface {
 	Heartbeat(ctx context.Context, sessionID string, input domain.HeartbeatInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
 	CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
 	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
@@ -32,20 +31,20 @@ type SessionService interface {
 	AutomaticCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*transition.OperationResult[*agentsessionmod.AgentSession], *domain.CheckpointSuggestion, error)
 }
 
-// RunService abstracts run operations needed by the relay.
-type RunService interface {
-	Validate(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
-	Complete(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
-	Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
-	Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
+// RelayRunService abstracts run operations needed by the relay.
+type RelayRunService interface {
+	Validate(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error)
+	Complete(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error)
+	Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error)
+	Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*Run], error)
 }
 
 // RuntimeEventRelay consumes events from a runtime and routes them to the
 // appropriate domain services. It blocks until the runtime completes or fails.
 type RuntimeEventRelay struct {
 	db             *sql.DB
-	sessionService SessionService
-	runService     RunService
+	sessionService RelaySessionService
+	runService     RelayRunService
 }
 
 // RelayConfig holds the identifiers needed to route runtime events.
@@ -60,8 +59,8 @@ type RelayConfig struct {
 // NewRuntimeEventRelay creates a relay wired to the given domain services.
 func NewRuntimeEventRelay(
 	db *sql.DB,
-	sessionService SessionService,
-	runService RunService,
+	sessionService RelaySessionService,
+	runService RelayRunService,
 ) *RuntimeEventRelay {
 	return &RuntimeEventRelay{
 		db:             db,
@@ -72,17 +71,17 @@ func NewRuntimeEventRelay(
 
 // Run blocks, consuming runtime events until the runtime completes, fails, or
 // the context is cancelled. It returns the final run status and any error.
-func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config RelayConfig) (runmod.Status, error) {
+func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config RelayConfig) (Status, error) {
 	for {
 		event, err := runtime.ReceiveEvent(ctx)
 		if err != nil {
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(ctx.Err(), context.Canceled) {
 				lastErr := r.handleTimeout(ctx, config)
-				return runmod.StatusFailed, lastErr
+				return StatusFailed, lastErr
 			}
 			lastErr := fmt.Errorf("runtime event receive error: %w", err)
 			_ = r.handleRuntimeError(ctx, config, lastErr)
-			return runmod.StatusFailed, lastErr
+			return StatusFailed, lastErr
 		}
 
 		if config.OnEvent != nil {
@@ -102,7 +101,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 			if processErr != nil {
 				_ = r.handleRuntimeError(ctx, config, processErr)
 			}
-			return runmod.StatusFailed, processErr
+			return StatusFailed, processErr
 		case "agent.tool_requested":
 			processErr = r.handleToolRequested(ctx, config, event)
 		default:
@@ -111,14 +110,14 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 
 		if processErr != nil {
 			_ = r.handleRuntimeError(ctx, config, processErr)
-			return runmod.StatusFailed, processErr
+			return StatusFailed, processErr
 		}
 
 		// Auto-checkpoint is evaluated for all event types; only matching
 		// triggers (tool_request, tool_executed, completed) produce a checkpoint.
 		if err := r.maybeAutoCheckpoint(ctx, config, event); err != nil {
 			_ = r.handleRuntimeError(ctx, config, err)
-			return runmod.StatusFailed, err
+			return StatusFailed, err
 		}
 
 		if event.Type == "agent.completed" {
@@ -133,7 +132,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 	}); err != nil {
 		var appErr *apperrors.Error
 		if !errors.As(err, &appErr) || appErr.Code != apperrors.CodeInvalidTransition {
-			return runmod.StatusFailed, fmt.Errorf("failed to stop session after completion: %w", err)
+			return StatusFailed, fmt.Errorf("failed to stop session after completion: %w", err)
 		}
 	}
 
@@ -143,7 +142,7 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 	}); err != nil {
 		var appErr *apperrors.Error
 		if !errors.As(err, &appErr) || appErr.Code != apperrors.CodeInvalidTransition {
-			return runmod.StatusFailed, fmt.Errorf("failed to validate run after completion: %w", err)
+			return StatusFailed, fmt.Errorf("failed to validate run after completion: %w", err)
 		}
 	}
 
@@ -157,10 +156,10 @@ func (r *RuntimeEventRelay) Run(ctx context.Context, runtime EventSource, config
 	}); err != nil {
 		lastErr := fmt.Errorf("failed to complete run: %w", err)
 		_ = r.handleRuntimeError(ctx, config, lastErr)
-		return runmod.StatusFailed, lastErr
+		return StatusFailed, lastErr
 	}
 
-	return runmod.StatusCompleted, nil
+	return StatusCompleted, nil
 }
 
 func (r *RuntimeEventRelay) handleHeartbeat(ctx context.Context, config RelayConfig, event *domain.EventEnvelope) error {
@@ -361,6 +360,8 @@ func decodePayloadMap(event *domain.EventEnvelope) (map[string]interface{}, erro
 	return payload, nil
 }
 
+// CheckpointTriggerForRuntimeEvent maps a runtime event type to the checkpoint
+// trigger that should be used for automatic checkpointing.
 func CheckpointTriggerForRuntimeEvent(eventType string) (domain.CheckpointTrigger, bool) {
 	switch eventType {
 	case "agent.tool_requested":

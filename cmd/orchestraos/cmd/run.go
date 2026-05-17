@@ -139,7 +139,7 @@ var runStartCmd = &cobra.Command{
 			}
 
 			relay := bootstrap.RuntimeEventRelay(getDB())
-			relayConfig := coordination.RelayConfig{
+			relayConfig := runmod.RelayConfig{
 				SessionID:   session.ID,
 				RunID:       run.ID,
 				RuntimeType: runtimeType,

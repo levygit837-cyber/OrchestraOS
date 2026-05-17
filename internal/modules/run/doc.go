@@ -11,14 +11,17 @@
 //   - TaskReader: DI interface to avoid cyclic imports from task/
 //   - WorkUnitReader: DI interface to avoid cyclic imports from workunit/
 //   - ResultForStatus: exported helper that maps a terminal status to a RunResult
+//   - RuntimeEventRelay: consumes runtime events and routes to domain services
+//   - TransitionRunWithWorkUnit: synchronizes run transition with associated work unit
 //
 // # Dependencies
 //   - core/db: transaction helpers
 //   - core/eventstore: event storage
-//   - core/coordination: TransitionInput, OperationResult, state transitions
+//   - core/transition: TransitionInput, OperationResult, state transitions
 //   - core/statemachine: status transition rules
 //   - core/validation: input validation
 //   - domain: EventEnvelope, EventPriority (generic types only)
+//   - agentsession: DI interface return types (SessionService)
 //
 // # Related Packages
 //   - task/: runs belong to tasks

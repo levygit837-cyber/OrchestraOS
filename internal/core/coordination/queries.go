@@ -1,16 +1,6 @@
 package coordination
 
 const (
-	QueryRunUpdateStatus = `
-		UPDATE runs
-		SET status = $2,
-		    started_at = COALESCE(started_at, $3),
-		    finished_at = COALESCE($4, finished_at),
-		    result = COALESCE($5, result),
-		    failure_reason = COALESCE($6, failure_reason),
-		    updated_at = $7
-		WHERE id = $1`
-
 	QueryWorkUnitUpdateStatus = `
 		UPDATE work_units SET status = $2, updated_at = $3 WHERE id = $1`
 

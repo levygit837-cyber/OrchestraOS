@@ -44,7 +44,7 @@ func AgentSessionTimeout(ctx context.Context, tx *sql.Tx, session *agentsessionm
 		if _, _, err := transition.AppendTransition(ctx, tx, "", "run.paused", run.TaskID, run.ID, run.WorkUnitID, session.AgentID, transition.TransitionPayload(run.Status, runmod.StatusPaused, input)); err != nil {
 			return nil, false, err
 		}
-		if err := UpdateRunProjection(ctx, tx, run.ID, runmod.StatusPaused, nil, nil); err != nil {
+		if err := runmod.UpdateRunProjection(ctx, tx, run.ID, runmod.StatusPaused, nil, nil); err != nil {
 			return nil, false, err
 		}
 	}
