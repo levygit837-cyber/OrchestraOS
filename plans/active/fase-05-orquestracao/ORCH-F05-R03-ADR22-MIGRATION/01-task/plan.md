@@ -5,7 +5,6 @@
 > **Worktree esperada:** `../orchestraos-a01-task`
 > Se não estiver isolado, execute:
 > ```bash
-> cd /home/levybonito/Documentos/OrchestraOS && ./scripts/bootstrap-agent-worktree.sh A01 task
 > ```
 
 ---

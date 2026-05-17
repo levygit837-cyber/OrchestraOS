@@ -4,7 +4,7 @@
 
 Este épico contém **planos individuais, um por módulo**, para migrar todos os tipos de entidade de `internal/domain/types.go` para seus respectivos módulos verticais em `internal/modules/*`.
 
-Cada plano é autônomo, com seu próprio agente, branch e worktree, seguindo o padrão Ralph Loop (plan.md + checklist.md).
+Cada plano é autônomo com seu próprio agente e branch, seguindo o padrão Ralph Loop (plan.md + checklist.md).
 
 ---
 

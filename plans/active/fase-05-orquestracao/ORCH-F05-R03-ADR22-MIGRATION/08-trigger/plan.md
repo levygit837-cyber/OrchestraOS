@@ -5,7 +5,6 @@
 > **Worktree esperada:** `../orchestraos-a08-trigger`
 > Se não estiver isolado, execute:
 > ```bash
-> cd /home/levybonito/Documentos/OrchestraOS && ./scripts/bootstrap-agent-worktree.sh A08 trigger
 > ```
 
 ---

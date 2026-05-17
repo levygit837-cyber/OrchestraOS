@@ -5,7 +5,6 @@
 > **Worktree esperada:** `../orchestraos-a09-review`
 > Se não estiver isolado, execute:
 > ```bash
-> cd /home/levybonito/Documentos/OrchestraOS && ./scripts/bootstrap-agent-worktree.sh A09 review
 > ```
 
 ---
