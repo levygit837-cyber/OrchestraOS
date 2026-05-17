@@ -208,7 +208,7 @@ type OrchestratorToolset struct {
 
 - `docs/analysis/orchestrator-agent-gap-analysis.md`
 - `docs/adr/0002-orchestrator-control-plane.md`
-- `docs/adr/0020-orchestrator-service.md`
+- `docs/adr/0020-orchestration-services.md`
 - `docs/architecture/orchestration.md`
 - `docs/architecture/communication-protocol.md`
 - `docs/architecture/intelligent-orchestrator-agent.md`

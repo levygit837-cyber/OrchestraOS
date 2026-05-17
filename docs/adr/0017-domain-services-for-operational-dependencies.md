@@ -10,6 +10,4 @@ Os principios de "servicos como fronteira de comando" continuam validos, mas a i
 
 Para a definicao atual da arquitetura de modulos, consulte:
 
-- [ADR 0022: LLM-Optimized Module Architecture](/docs/adr/0022-llm-optimized-module-architecture.md)
-- [ADR 0024: Deprecation of ADR 0017](/docs/adr/0024-deprecation-of-adr-0017.md)
-- [ADR 0025: Module Standardization](/docs/adr/0025-module-standardization.md)
+- [ADR 0022: Arquitetura de Módulos Verticais](/docs/adr/0022-vertical-module-architecture.md)
