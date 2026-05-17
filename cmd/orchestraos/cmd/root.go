@@ -12,8 +12,6 @@ import (
 var (
 	// Global database connection (initialized on first use)
 	database *sql.DB
-	// Global config populated by flags
-	dbConfig db.Config
 
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd *cobra.Command
