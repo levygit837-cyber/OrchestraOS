@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
@@ -20,11 +19,11 @@ func TestGeminiPlanner_RealInference(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	task := &domain.Task{
+	task := &taskmod.Task{
 		Title:       "Criar API de autenticação com JWT e refresh tokens",
 		Description: "Implementar um serviço de autenticação completo usando JWT para access tokens e refresh tokens. Deve incluir endpoints de login, registro, refresh e logout. Usar Go com framework padrão net/http.",
-		Priority:    domain.PriorityP1,
-		RiskLevel:   domain.RiskLevelMedium,
+		Priority:    taskmod.PriorityP1,
+		RiskLevel:   taskmod.RiskLevelMedium,
 		AcceptanceCriteria: []string{
 			"Endpoint POST /auth/login retorna access_token e refresh_token válidos",
 			"Endpoint POST /auth/register cria usuário com senha hashada (bcrypt)",

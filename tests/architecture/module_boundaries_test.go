@@ -28,9 +28,10 @@ import (
 //	orchestrator -> review: orchestrator.ReviewManager returns *review.Review (ADR-0022 migration)
 var allowedModuleImports = map[string]map[string]bool{
 	"run":          {"task": true, "workunit": true},
-	"workunit":     {"task": true},
+	"workunit":     {"task": true, "taskgraph": true},
+	"taskgraph":    {"task": true, "workunit": true},
 	"agentsession": {"agent": true},
-	"orchestrator": {"review": true},
+	"orchestrator": {"review": true, "taskgraph": true, "workunit": true},
 }
 
 // leafModules must not import any other module under internal/modules/.

@@ -20,25 +20,24 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 )
 
 const localHeuristicPlanner = "local_heuristic_v1"
 
 // TaskReader abstracts task reads to avoid importing the task module.
 type TaskReader interface {
-	GetByID(id string) (*domain.Task, error)
+	GetByID(id string) (*task.Task, error)
 }
 
 // WorkUnitCreator abstracts work-unit writes to avoid importing the workunit module.
-// TODO[ADR-0022]: migrar para *workunit.WorkUnit
 type WorkUnitCreator interface {
-	Create(wu *domain.WorkUnit) error
+	Create(wu *PlanWorkUnit) error
 }
 
 // WorkUnitLister abstracts work-unit reads to avoid importing the workunit module.
-// TODO[ADR-0022]: migrar para []workunit.WorkUnit
 type WorkUnitLister interface {
-	ListByTaskGraph(graphID string) ([]domain.WorkUnit, error)
+	ListByTaskGraph(graphID string) ([]PlanWorkUnit, error)
 }
 
 type TaskGraphService struct {
@@ -57,8 +56,8 @@ type DecomposeTaskGraphInput struct {
 }
 
 type TaskGraphDecomposeResult struct {
-	Graph     *domain.TaskGraph
-	WorkUnits []domain.WorkUnit
+	Graph     *TaskGraph
+	WorkUnits []PlanWorkUnit
 	Event     *domain.EventEnvelope
 	Duplicate bool
 }
@@ -155,11 +154,11 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 		}
 	}
 
-	graph := &domain.TaskGraph{
+	graph := &TaskGraph{
 		ID:              plan.GraphID,
 		TaskID:          task.ID,
 		Version:         version,
-		Status:          domain.TaskGraphStatusActive,
+		Status:          StatusActive,
 		PlannerStrategy: strategyUsed,
 		Rationale:       rationale,
 		CreatedBy:       input.CreatedBy,
@@ -214,7 +213,6 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 			"title":                  wu.Title,
 			"objective":              wu.Objective,
 			"assigned_agent_profile": wu.AssignedAgentProfile,
-			"status":                 wu.Status,
 			"owned_paths":            wu.OwnedPaths,
 			"read_paths":             wu.ReadPaths,
 			"acceptance_criteria":    wu.AcceptanceCriteria,
@@ -249,7 +247,7 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 }
 
 // buildPlan selects and executes the appropriate planner, with automatic fallback to heuristic on failure.
-func (s *TaskGraphService) buildPlan(ctx context.Context, task *domain.Task, strategy string) (*GraphPlan, string, string) {
+func (s *TaskGraphService) buildPlan(ctx context.Context, task *task.Task, strategy string) (*GraphPlan, string, string) {
 	if strategy == localHeuristicPlanner {
 		plan, err := BuildLocalHeuristicGraphPlan(task)
 		if err != nil {
@@ -293,16 +291,15 @@ func (s *TaskGraphService) buildPlan(ctx context.Context, task *domain.Task, str
 }
 
 // buildFallbackPlan creates a minimal valid plan when everything else fails.
-func (s *TaskGraphService) buildFallbackPlan(task *domain.Task, reason string) (*GraphPlan, string, string) {
+func (s *TaskGraphService) buildFallbackPlan(task *task.Task, reason string) (*GraphPlan, string, string) {
 	graphID := uuid.New().String()
-	wu := domain.WorkUnit{
+	wu := PlanWorkUnit{
 		ID:                   uuid.New().String(),
 		TaskID:               task.ID,
 		TaskGraphID:          graphID,
 		Title:                task.Title,
 		Objective:            task.Description,
 		AssignedAgentProfile: "default",
-		Status:               domain.WorkUnitStatusCreated,
 		OwnedPaths:           []string{},
 		ReadPaths:            []string{},
 		AcceptanceCriteria:   task.AcceptanceCriteria,
@@ -311,7 +308,7 @@ func (s *TaskGraphService) buildFallbackPlan(task *domain.Task, reason string) (
 	}
 	return &GraphPlan{
 		GraphID:   graphID,
-		WorkUnits: []domain.WorkUnit{wu},
+		WorkUnits: []PlanWorkUnit{wu},
 		Nodes: []domain.TaskGraphNodeInfo{{
 			ID:                 wu.ID,
 			Title:              wu.Title,
@@ -327,7 +324,7 @@ func (s *TaskGraphService) buildFallbackPlan(task *domain.Task, reason string) (
 	}, localHeuristicPlanner, fmt.Sprintf("Emergency fallback plan: %s", reason)
 }
 
-func (s *TaskGraphService) ListByTask(ctx context.Context, taskID string) ([]domain.TaskGraph, error) {
+func (s *TaskGraphService) ListByTask(ctx context.Context, taskID string) ([]TaskGraph, error) {
 	_ = ctx
 	if err := validation.RequiredUUID(taskID, "task_id", "task_graph_service.list_by_task"); err != nil {
 		return nil, err

@@ -17,6 +17,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 )
 
 func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUnitInput) ([]*transition.OperationResult[*WorkUnit], error) {
@@ -59,7 +60,7 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	}
 
 	graphRepo := s.newTaskGraphManager(tx)
-	var graph *domain.TaskGraph
+	var graph *taskgraphmod.TaskGraph
 	if taskGraphID == "" {
 		graph, err = s.ensureActiveManualTaskGraph(ctx, tx, task)
 		if err != nil {
@@ -156,7 +157,7 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	return results, nil
 }
 
-func (s *WorkUnitService) ensureActiveManualTaskGraph(ctx context.Context, tx *sql.Tx, task *task.Task) (*domain.TaskGraph, error) {
+func (s *WorkUnitService) ensureActiveManualTaskGraph(ctx context.Context, tx *sql.Tx, task *task.Task) (*taskgraphmod.TaskGraph, error) {
 	if err := dbcore.AcquireAdvisoryTxLock(ctx, tx, "task_graph:"+task.ID, "work_unit_service.task_graph_lock"); err != nil {
 		return nil, err
 	}
@@ -176,11 +177,11 @@ func (s *WorkUnitService) ensureActiveManualTaskGraph(ctx context.Context, tx *s
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.next_task_graph_version", err)
 	}
 	now := time.Now().UTC()
-	graph := &domain.TaskGraph{
+	graph := &taskgraphmod.TaskGraph{
 		ID:              uuid.New().String(),
 		TaskID:          task.ID,
 		Version:         version,
-		Status:          domain.TaskGraphStatusActive,
+		Status:          taskgraphmod.StatusActive,
 		PlannerStrategy: "manual",
 		Rationale:       "Manual graph for work units created outside task decomposition.",
 		CreatedBy:       "workunit_service",
@@ -195,7 +196,7 @@ func (s *WorkUnitService) ensureActiveManualTaskGraph(ctx context.Context, tx *s
 	return graph, nil
 }
 
-func isManualTaskGraph(graph *domain.TaskGraph) bool {
+func isManualTaskGraph(graph *taskgraphmod.TaskGraph) bool {
 	if graph == nil {
 		return false
 	}

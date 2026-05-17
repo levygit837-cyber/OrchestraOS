@@ -6,6 +6,8 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 type RunTaskOptions struct {
@@ -37,8 +39,8 @@ type DecomposeInput struct {
 }
 
 type DecomposeResult struct {
-	Graph     *domain.TaskGraph
-	WorkUnits []domain.WorkUnit
+	Graph     *taskgraphmod.TaskGraph
+	WorkUnits []workunitmod.WorkUnit
 }
 
 type CreateRunInput struct {
@@ -108,7 +110,7 @@ type TaskServiceReader interface {
 }
 
 type TaskGraphManager interface {
-	GetActiveByTask(taskID string) (*domain.TaskGraph, error)
+	GetActiveByTask(taskID string) (*taskgraphmod.TaskGraph, error)
 	Decompose(ctx context.Context, input DecomposeInput) (*DecomposeResult, error)
 }
 
