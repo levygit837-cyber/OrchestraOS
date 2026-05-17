@@ -12,7 +12,6 @@ node_modules/
 .venv/
 venv/
 __pycache__/
-.go/
 .tools/
 
 # Build outputs
@@ -30,3 +29,20 @@ yarn-debug.log*
 
 # Codedb snapshots
 codedb.snapshot
+
+# IDE / Editor
+.vscode/
+.idea/
+.cursor/
+.claude/
+
+# Agent / AI tool artifacts
+.codeium/
+.codex/
+.playwright-mcp/
+.windsurf/
+.gmb/
+
+# Design screenshots / temporary assets
+canvas-v3-*.png
+canvas-v4-*.png
