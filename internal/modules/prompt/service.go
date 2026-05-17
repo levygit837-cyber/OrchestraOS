@@ -17,6 +17,10 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 type PromptService struct {
@@ -33,11 +37,10 @@ type PrepareRunPromptInput struct {
 }
 
 type PrepareAndPersistInput struct {
-	Run *domain.Run
-	// TODO[ADR-0022]: migrar para *workunit.WorkUnit
-	WorkUnit               *domain.WorkUnit
-	Task                   *domain.Task
-	Session                *domain.AgentSession
+	Run                    *run.Run
+	WorkUnit               *workunit.WorkUnit
+	Task                   *task.Task
+	Session                *agentsession.AgentSession
 	PromptSnapshotID       string
 	ToolsetSnapshotID      string
 	PromptSnapshotEventID  string
@@ -45,8 +48,8 @@ type PrepareAndPersistInput struct {
 }
 
 type PreparedRunPrompt struct {
-	PromptSnapshot  *domain.PromptSnapshot
-	ToolsetSnapshot *domain.ToolsetSnapshot
+	PromptSnapshot  *PromptSnapshot
+	ToolsetSnapshot *ToolsetSnapshot
 	SystemPrompt    string
 	TaskPrompt      string
 	CombinedPrompt  string
@@ -92,11 +95,30 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 
 	repo := NewRepository(tx)
 	for _, fragment := range composed.Fragments {
-		domainFragment, err := promptFragmentToDomain(fragment)
+		appliesWhen, err := json.Marshal(fragment.AppliesWhen)
 		if err != nil {
-			return nil, err
+			return nil, apperrors.Wrap(apperrors.CodeValidation, "prompt_service.fragment_applies_when", err)
 		}
-		if err := repo.CreateOrVerifyFragment(domainFragment); err != nil {
+		localFragment := &PromptFragment{
+			ID:               fragment.ID,
+			Version:          fragment.Version,
+			Category:         string(fragment.Category),
+			Kind:             string(fragment.Kind),
+			Title:            fragment.Title,
+			Priority:         fragment.Priority,
+			ExclusiveGroup:   fragment.ExclusiveGroup,
+			BodyHash:         fragment.BodyHash,
+			MetadataHash:     fragment.MetadataHash,
+			Body:             fragment.Body,
+			AppliesWhen:      appliesWhen,
+			Requires:         fragment.Requires,
+			ConflictsWith:    fragment.ConflictsWith,
+			Allows:           fragment.Allows,
+			Denies:           fragment.Denies,
+			ApprovalRequired: fragment.ApprovalRequired,
+			AutonomyLevel:    fragment.AutonomyLevel,
+		}
+		if err := repo.CreateOrVerifyFragment(localFragment); err != nil {
 			return nil, apperrors.Wrap(apperrors.CodeConflict, "prompt_service.persist_fragment", err)
 		}
 	}
@@ -105,7 +127,20 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodeValidation, op, err)
 	}
-	promptSnapshot := &domain.PromptSnapshot{
+	fragmentRefs := make([]PromptFragmentRef, 0, len(composed.FragmentRefs))
+	for _, ref := range composed.FragmentRefs {
+		fragmentRefs = append(fragmentRefs, PromptFragmentRef{
+			ID:           ref.ID,
+			Version:      ref.Version,
+			Category:     string(ref.Category),
+			Kind:         string(ref.Kind),
+			Order:        ref.Order,
+			BodyHash:     ref.BodyHash,
+			MetadataHash: ref.MetadataHash,
+			Title:        ref.Title,
+		})
+	}
+	promptSnapshot := &PromptSnapshot{
 		ID:                 valueOrNewUUID(input.PromptSnapshotID),
 		RunID:              run.ID,
 		WorkUnitID:         wu.ID,
@@ -118,7 +153,7 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 		CombinedPromptHash: composed.CombinedPromptHash,
 		CompositionHash:    composed.CompositionHash,
 		CategorySignature:  composed.CategorySignature,
-		FragmentRefs:       promptFragmentRefsToDomain(composed.FragmentRefs),
+		FragmentRefs:       fragmentRefs,
 		AssemblyOrder:      composed.AssemblyOrder,
 		VariablesApplied:   variablesApplied,
 		CreatedAt:          time.Now().UTC(),
@@ -127,11 +162,20 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "prompt_service.create_prompt_snapshot", err)
 	}
-	toolsetSnapshot := &domain.ToolsetSnapshot{
+	tools := make([]ToolsetTool, 0, len(toolset.Tools))
+	for _, t := range toolset.Tools {
+		tools = append(tools, ToolsetTool{
+			Name:   t.Name,
+			Scope:  t.Scope,
+			Risk:   string(t.Risk),
+			Reason: t.Reason,
+		})
+	}
+	toolsetSnapshot := &ToolsetSnapshot{
 		ID:             valueOrNewUUID(input.ToolsetSnapshotID),
 		RunID:          run.ID,
 		AgentSessionID: session.ID,
-		Tools:          toolsetToolsToDomain(toolset.Tools),
+		Tools:          tools,
 		CreatedReason:  toolset.CreatedReason,
 		CreatedAt:      time.Now().UTC(),
 	}
@@ -208,62 +252,6 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 		PromptHash:      composed.CombinedPromptHash,
 		Toolset:         ToolNames(toolset.Tools),
 	}, nil
-}
-
-func promptFragmentToDomain(fragment Fragment) (*domain.PromptFragment, error) {
-	appliesWhen, err := json.Marshal(fragment.AppliesWhen)
-	if err != nil {
-		return nil, apperrors.Wrap(apperrors.CodeValidation, "prompt_service.fragment_applies_when", err)
-	}
-	return &domain.PromptFragment{
-		ID:               fragment.ID,
-		Version:          fragment.Version,
-		Category:         string(fragment.Category),
-		Kind:             string(fragment.Kind),
-		Title:            fragment.Title,
-		Priority:         fragment.Priority,
-		ExclusiveGroup:   fragment.ExclusiveGroup,
-		BodyHash:         fragment.BodyHash,
-		MetadataHash:     fragment.MetadataHash,
-		Body:             fragment.Body,
-		AppliesWhen:      appliesWhen,
-		Requires:         fragment.Requires,
-		ConflictsWith:    fragment.ConflictsWith,
-		Allows:           fragment.Allows,
-		Denies:           fragment.Denies,
-		ApprovalRequired: fragment.ApprovalRequired,
-		AutonomyLevel:    fragment.AutonomyLevel,
-	}, nil
-}
-
-func promptFragmentRefsToDomain(refs []FragmentRef) []domain.PromptFragmentRef {
-	out := make([]domain.PromptFragmentRef, 0, len(refs))
-	for _, ref := range refs {
-		out = append(out, domain.PromptFragmentRef{
-			ID:           ref.ID,
-			Version:      ref.Version,
-			Category:     string(ref.Category),
-			Kind:         string(ref.Kind),
-			Order:        ref.Order,
-			BodyHash:     ref.BodyHash,
-			MetadataHash: ref.MetadataHash,
-			Title:        ref.Title,
-		})
-	}
-	return out
-}
-
-func toolsetToolsToDomain(tools []Tool) []domain.ToolsetTool {
-	out := make([]domain.ToolsetTool, 0, len(tools))
-	for _, tool := range tools {
-		out = append(out, domain.ToolsetTool{
-			Name:   tool.Name,
-			Scope:  tool.Scope,
-			Risk:   string(tool.Risk),
-			Reason: tool.Reason,
-		})
-	}
-	return out
 }
 
 func valueOrNewUUID(value string) string {

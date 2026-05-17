@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 type Repository struct {
@@ -23,7 +22,7 @@ func NewRepository(db db.DBTX) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) CreateOrVerifyFragment(fragment *domain.PromptFragment) error {
+func (r *Repository) CreateOrVerifyFragment(fragment *PromptFragment) error {
 	existing, err := r.GetFragment(fragment.ID, fragment.Version)
 	if err != nil {
 		return err
@@ -93,15 +92,15 @@ func (r *Repository) CreateOrVerifyFragment(fragment *domain.PromptFragment) err
 	return nil
 }
 
-func (r *Repository) GetFragment(id, version string) (*domain.PromptFragment, error) {
+func (r *Repository) GetFragment(id, version string) (*PromptFragment, error) {
 	row := r.db.QueryRow(QueryFragmentGetByIDVersion, id, version)
 	return r.scanPromptFragment(row)
 }
 
 func (r *Repository) scanPromptFragment(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.PromptFragment, error) {
-	var fragment domain.PromptFragment
+}) (*PromptFragment, error) {
+	var fragment PromptFragment
 	var appliesWhen, requires, conflictsWith, allows, denies, approvalRequired []byte
 
 	err := scanner.Scan(

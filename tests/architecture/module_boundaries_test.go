@@ -26,12 +26,15 @@ import (
 //	run -> task: run.TaskReader returns *task.Task
 //	workunit -> task: workunit.TaskReader returns *task.Task
 //	orchestrator -> review: orchestrator.ReviewManager returns *review.Review (ADR-0022 migration)
+//	prompt -> run/task/workunit/agentsession: PrepareAndPersistInput uses *run.Run, *task.Task, *workunit.WorkUnit, *agentsession.AgentSession
+//	orchestrator -> prompt: PreparedPrompt uses *prompt.PromptSnapshot and *prompt.ToolsetSnapshot
 var allowedModuleImports = map[string]map[string]bool{
 	"run":          {"task": true, "workunit": true},
 	"workunit":     {"task": true, "taskgraph": true},
 	"taskgraph":    {"task": true, "workunit": true},
 	"agentsession": {"agent": true},
-	"orchestrator": {"review": true, "taskgraph": true, "workunit": true, "trigger": true},
+	"prompt":       {"run": true, "task": true, "workunit": true, "agentsession": true},
+	"orchestrator": {"review": true, "taskgraph": true, "workunit": true, "trigger": true, "prompt": true},
 	"trigger":      {"agentsession": true, "run": true, "workunit": true},
 }
 

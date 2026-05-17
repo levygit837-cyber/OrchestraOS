@@ -12,15 +12,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-func (r *Repository) CreatePromptSnapshot(snapshot *domain.PromptSnapshot) error {
+func (r *Repository) CreatePromptSnapshot(snapshot *PromptSnapshot) error {
 	_, err := r.CreateOrReferencePromptSnapshot(snapshot)
 	return err
 }
 
-func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *domain.PromptSnapshot) (bool, error) {
+func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *PromptSnapshot) (bool, error) {
 	if snapshot.ID == "" {
 		snapshot.ID = uuid.New().String()
 	}
@@ -36,7 +35,7 @@ func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *domain.PromptSnap
 
 	fragmentRefs := snapshot.FragmentRefs
 	if fragmentRefs == nil {
-		fragmentRefs = []domain.PromptFragmentRef{}
+		fragmentRefs = []PromptFragmentRef{}
 	}
 	fragmentRefsJSON, err := json.Marshal(fragmentRefs)
 	if err != nil {
@@ -80,17 +79,17 @@ func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *domain.PromptSnap
 	return snapshot.ID != requestedID || snapshot.CountUsed > 1, nil
 }
 
-func (r *Repository) GetPromptSnapshot(id string) (*domain.PromptSnapshot, error) {
+func (r *Repository) GetPromptSnapshot(id string) (*PromptSnapshot, error) {
 	row := r.db.QueryRow(QuerySnapshotGetByID, id)
 	return r.scanPromptSnapshot(row)
 }
 
-func (r *Repository) LatestPromptSnapshotByRun(runID string) (*domain.PromptSnapshot, error) {
+func (r *Repository) LatestPromptSnapshotByRun(runID string) (*PromptSnapshot, error) {
 	row := r.db.QueryRow(QuerySnapshotLatestByRun, runID)
 	return r.scanPromptSnapshot(row)
 }
 
-func (r *Repository) CreateToolsetSnapshot(snapshot *domain.ToolsetSnapshot) error {
+func (r *Repository) CreateToolsetSnapshot(snapshot *ToolsetSnapshot) error {
 	if snapshot.ID == "" {
 		snapshot.ID = uuid.New().String()
 	}
@@ -99,7 +98,7 @@ func (r *Repository) CreateToolsetSnapshot(snapshot *domain.ToolsetSnapshot) err
 	}
 	tools := snapshot.Tools
 	if tools == nil {
-		tools = []domain.ToolsetTool{}
+		tools = []ToolsetTool{}
 	}
 	toolsJSON, err := json.Marshal(tools)
 	if err != nil {
@@ -120,20 +119,20 @@ func (r *Repository) CreateToolsetSnapshot(snapshot *domain.ToolsetSnapshot) err
 	return nil
 }
 
-func (r *Repository) GetToolsetSnapshot(id string) (*domain.ToolsetSnapshot, error) {
+func (r *Repository) GetToolsetSnapshot(id string) (*ToolsetSnapshot, error) {
 	row := r.db.QueryRow(QueryToolsetGetByID, id)
 	return r.scanToolsetSnapshot(row)
 }
 
-func (r *Repository) LatestToolsetSnapshotByAgentSession(agentSessionID string) (*domain.ToolsetSnapshot, error) {
+func (r *Repository) LatestToolsetSnapshotByAgentSession(agentSessionID string) (*ToolsetSnapshot, error) {
 	row := r.db.QueryRow(QueryToolsetLatestByAgentSession, agentSessionID)
 	return r.scanToolsetSnapshot(row)
 }
 
 func (r *Repository) scanPromptSnapshot(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.PromptSnapshot, error) {
-	var snapshot domain.PromptSnapshot
+}) (*PromptSnapshot, error) {
+	var snapshot PromptSnapshot
 	var fragmentRefs, assemblyOrder, variablesApplied []byte
 	err := scanner.Scan(
 		&snapshot.ID,
@@ -174,8 +173,8 @@ func (r *Repository) scanPromptSnapshot(scanner interface {
 
 func (r *Repository) scanToolsetSnapshot(scanner interface {
 	Scan(dest ...interface{}) error
-}) (*domain.ToolsetSnapshot, error) {
-	var snapshot domain.ToolsetSnapshot
+}) (*ToolsetSnapshot, error) {
+	var snapshot ToolsetSnapshot
 	var tools []byte
 	err := scanner.Scan(
 		&snapshot.ID,

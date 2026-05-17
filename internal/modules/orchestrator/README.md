@@ -66,6 +66,7 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 - `internal/modules/taskgraph`: DI interface return type `*taskgraph.TaskGraph` in TaskGraphManager (ADR-0026)
 - `internal/modules/workunit`: DI interface return type `[]workunit.WorkUnit` in WorkUnitLister (ADR-0026)
 - `internal/modules/trigger`: DI interface return type `[]*trigger.Trigger` in TriggerEvaluator (ADR-0026)
+- `internal/modules/prompt`: DI interface return type `*prompt.PromptSnapshot` and `*prompt.ToolsetSnapshot` in PreparedPrompt (ADR-0026)
 - `internal/modules/*` services (via DI interfaces, never direct repository imports)
 
 Forbidden:
