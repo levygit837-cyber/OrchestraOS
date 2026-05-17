@@ -249,7 +249,7 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 // buildPlan selects and executes the appropriate planner, with automatic fallback to heuristic on failure.
 func (s *TaskGraphService) buildPlan(ctx context.Context, task *domain.Task, strategy string) (*GraphPlan, string, string) {
 	if strategy == localHeuristicPlanner {
-		plan, err := buildLocalHeuristicGraphPlan(task)
+		plan, err := BuildLocalHeuristicGraphPlan(task)
 		if err != nil {
 			// Heuristic should rarely fail, but if it does we still return a minimal plan
 			return s.buildFallbackPlan(task, fmt.Sprintf("heuristic failed: %v", err))
@@ -260,20 +260,20 @@ func (s *TaskGraphService) buildPlan(ctx context.Context, task *domain.Task, str
 	if strategy == llmGeminiPlanner {
 		planner, err := NewGeminiPlanner()
 		if err != nil {
-			plan, _ := buildLocalHeuristicGraphPlan(task)
+			plan, _ := BuildLocalHeuristicGraphPlan(task)
 			rationale := fmt.Sprintf("LLM planner initialization failed (%v), fallback to %s", err, localHeuristicPlanner)
 			return plan, localHeuristicPlanner, rationale
 		}
 
 		plan, err := planner.Plan(ctx, task)
 		if err != nil {
-			plan, _ := buildLocalHeuristicGraphPlan(task)
+			plan, _ := BuildLocalHeuristicGraphPlan(task)
 			rationale := fmt.Sprintf("LLM planner failed (%v), fallback to %s", err, localHeuristicPlanner)
 			return plan, localHeuristicPlanner, rationale
 		}
 
 		if err := ValidateGraphPlan(plan); err != nil {
-			plan, _ := buildLocalHeuristicGraphPlan(task)
+			plan, _ := BuildLocalHeuristicGraphPlan(task)
 			rationale := fmt.Sprintf("LLM plan validation failed (%v), fallback to %s", err, localHeuristicPlanner)
 			return plan, localHeuristicPlanner, rationale
 		}
@@ -282,7 +282,7 @@ func (s *TaskGraphService) buildPlan(ctx context.Context, task *domain.Task, str
 	}
 
 	// Unknown strategy: fallback to heuristic
-	plan, err := buildLocalHeuristicGraphPlan(task)
+	plan, err := BuildLocalHeuristicGraphPlan(task)
 	if err != nil {
 		return s.buildFallbackPlan(task, fmt.Sprintf("unknown strategy %q and heuristic failed: %v", strategy, err))
 	}

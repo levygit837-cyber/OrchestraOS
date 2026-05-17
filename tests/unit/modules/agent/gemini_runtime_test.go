@@ -1,4 +1,4 @@
-package agent
+package agent_test
 
 import (
 	"context"
@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 )
 
 func TestNewGeminiRuntime(t *testing.T) {
-	rt := NewGeminiRuntime()
+	rt := agent.NewGeminiRuntime()
 	if rt == nil {
 		t.Fatal("expected non-nil runtime")
 	}
-	if rt.started {
+	if rt.Started {
 		t.Error("expected runtime to not be started")
 	}
 	status := rt.Status()
@@ -28,11 +29,11 @@ func TestGeminiRuntime_Start_RequiresAPIKey(t *testing.T) {
 	os.Unsetenv("GEMINI_API_KEY")
 	os.Unsetenv("GOOGLE_API_KEY")
 
-	rt := NewGeminiRuntime()
+	rt := agent.NewGeminiRuntime()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err := rt.Start(ctx, RuntimeConfig{
+	err := rt.Start(ctx, agent.RuntimeConfig{
 		RunID:      "run-test-001",
 		WorkUnitID: "wu-test-001",
 		TaskID:     "task-test-001",
@@ -60,21 +61,23 @@ func TestSanitizeFunctionName(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		got := sanitizeFunctionName(tc.input)
+		got := agent.SanitizeFunctionName(tc.input)
 		if got != tc.expected {
-			t.Errorf("sanitizeFunctionName(%q) = %q, want %q", tc.input, got, tc.expected)
+			t.Errorf("SanitizeFunctionName(%q) = %q, want %q", tc.input, got, tc.expected)
 		}
 	}
 }
 
 func TestGeminiRuntime_buildTools(t *testing.T) {
-	rt := NewGeminiRuntime()
-	rt.config.Toolset = []string{
-		"filesystem.read",
-		"tests.run_local",
+	rt := agent.NewGeminiRuntime()
+	rt.Config = agent.RuntimeConfig{
+		Toolset: []string{
+			"filesystem.read",
+			"tests.run_local",
+		},
 	}
 
-	tools := rt.buildTools()
+	tools := rt.BuildTools()
 	if len(tools) != 1 {
 		t.Fatalf("expected 1 tool group, got %d", len(tools))
 	}
@@ -97,17 +100,17 @@ func TestGeminiRuntime_buildTools(t *testing.T) {
 }
 
 func TestGeminiRuntime_buildTools_Empty(t *testing.T) {
-	rt := NewGeminiRuntime()
-	rt.config.Toolset = []string{}
+	rt := agent.NewGeminiRuntime()
+	rt.Config = agent.RuntimeConfig{Toolset: []string{}}
 
-	tools := rt.buildTools()
+	tools := rt.BuildTools()
 	if len(tools) != 0 {
 		t.Errorf("expected 0 tools, got %d", len(tools))
 	}
 }
 
 func TestGeminiRuntime_ReceiveEvent_BeforeStart(t *testing.T) {
-	rt := NewGeminiRuntime()
+	rt := agent.NewGeminiRuntime()
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
@@ -118,7 +121,7 @@ func TestGeminiRuntime_ReceiveEvent_BeforeStart(t *testing.T) {
 }
 
 func TestGeminiRuntime_SendEvent_WithoutStart(t *testing.T) {
-	rt := NewGeminiRuntime()
+	rt := agent.NewGeminiRuntime()
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 

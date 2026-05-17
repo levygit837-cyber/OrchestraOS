@@ -1,9 +1,10 @@
-package eventstore
+package eventstore_test
 
 import (
 	"encoding/json"
 	"testing"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
@@ -29,19 +30,19 @@ func TestValidateOperationalTaskGraphCreatedPayloadRequiresMatchingTask(t *testi
 		Edges: []domain.TaskGraphEdgeInfo{},
 	}
 
-	if err := validateOperationalPayload(taskGraphEnvelope(t, taskID, payload)); err != nil {
+	if err := eventstore.ValidateOperationalPayload(taskGraphEnvelope(t, taskID, payload)); err != nil {
 		t.Fatalf("expected matching task_id to be valid, got %v", err)
 	}
 
 	missingTask := payload
 	missingTask.TaskID = ""
-	if err := validateOperationalPayload(taskGraphEnvelope(t, taskID, missingTask)); err == nil {
+	if err := eventstore.ValidateOperationalPayload(taskGraphEnvelope(t, taskID, missingTask)); err == nil {
 		t.Fatal("expected missing payload task_id to be rejected")
 	}
 
 	wrongTask := payload
 	wrongTask.TaskID = "task-2"
-	if err := validateOperationalPayload(taskGraphEnvelope(t, taskID, wrongTask)); err == nil {
+	if err := eventstore.ValidateOperationalPayload(taskGraphEnvelope(t, taskID, wrongTask)); err == nil {
 		t.Fatal("expected mismatched payload task_id to be rejected")
 	}
 }

@@ -89,7 +89,7 @@ func BuildPlannerPrompt(input PlannerPromptInput) (string, error) {
 		return "", apperrors.New(apperrors.CodeInvalidInput, "planner_prompt.build", "task is required")
 	}
 	if input.MaxWorkUnits <= 0 {
-		input.MaxWorkUnits = maxGraphWorkUnits
+		input.MaxWorkUnits = MaxGraphWorkUnits
 	}
 
 	var buf bytes.Buffer
@@ -101,7 +101,7 @@ func BuildPlannerPrompt(input PlannerPromptInput) (string, error) {
 
 // PlannerPrompt returns a simple string prompt for the given task (convenience function).
 func PlannerPrompt(task *domain.Task) (string, error) {
-	return BuildPlannerPrompt(PlannerPromptInput{Task: task, MaxWorkUnits: maxGraphWorkUnits})
+	return BuildPlannerPrompt(PlannerPromptInput{Task: task, MaxWorkUnits: MaxGraphWorkUnits})
 }
 
 // ValidatePlannerProfile checks if the given agent profile is valid for planner output.
