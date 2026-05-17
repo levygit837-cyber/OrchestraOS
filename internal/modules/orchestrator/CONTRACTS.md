@@ -54,7 +54,6 @@ RunTask called
 ## Boundary Rules
 
 Allowed:
-- Import `internal/core/coordination` (only module with this permission).
 - Call injected service interfaces from all other modules.
 - Emit events via `core/transition` helpers.
 
@@ -64,7 +63,7 @@ Forbidden:
 - Business logic beyond task orchestration and coordination.
 
 High-level task execution workflow is the sole responsibility of this module.
-Low-level cross-module transaction coordination belongs to `core/coordination/`.
+Low-level cross-module transaction coordination belongs to the module that owns the aggregate root of the process (ADR-0028).
 
 ---
 

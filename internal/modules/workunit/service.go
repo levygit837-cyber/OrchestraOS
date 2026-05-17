@@ -96,7 +96,7 @@ func (s *WorkUnitService) Assign(ctx context.Context, workUnitID, agentProfile s
 		return nil, err
 	}
 	if !duplicate {
-		res, err := tx.ExecContext(ctx, `UPDATE work_units SET assigned_agent_profile = $2, updated_at = $3 WHERE id = $1`, wu.ID, agentProfile, time.Now().UTC())
+		res, err := tx.ExecContext(ctx, QueryUpdateAssignment, wu.ID, agentProfile, time.Now().UTC())
 		if err != nil {
 			return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.update_assignment", err)
 		}

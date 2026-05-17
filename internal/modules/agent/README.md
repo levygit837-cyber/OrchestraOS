@@ -72,7 +72,6 @@ Allowed from `internal/modules/*`:
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports
-- `internal/core/coordination` (reserved for orchestrator module)
 - Business logic beyond runtime execution, planning, and agent management.
 
 ---

@@ -68,9 +68,8 @@ Allowed from `internal/modules/*`:
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports
-- `internal/core/coordination` (reserved for orchestrator module)
 - Direct imports of `run.Service` or `workunit.Service`
-- Cross-module mutations outside `core/coordination`
+- Cross-module mutations outside `orchestrator/` module
 - Inline SQL outside `queries.go`
 
 ---

@@ -63,7 +63,6 @@ Forbidden:
 - Business logic inside `repository.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/coordination`
 - `internal/modules/orchestrator`
 
 ---

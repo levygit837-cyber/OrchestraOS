@@ -97,7 +97,7 @@ func (r *Repository) UpdateStatus(id string, status Status) error {
 func (r *Repository) UpdateHeartbeat(id string) error {
 	now := time.Now()
 	_, err := r.db.Exec(
-		`UPDATE agent_sessions SET last_heartbeat_at = $2, updated_at = $3 WHERE id = $1`,
+		QueryUpdateHeartbeat,
 		id,
 		now,
 		now,
@@ -112,7 +112,7 @@ func (r *Repository) UpdateHeartbeat(id string) error {
 func (r *Repository) UpdateHeartbeatWithEvent(id, lastSeenEventID string) error {
 	now := time.Now().UTC()
 	_, err := r.db.Exec(
-		`UPDATE agent_sessions SET last_heartbeat_at = $2, last_seen_event_id = COALESCE($3, last_seen_event_id), updated_at = $4 WHERE id = $1`,
+		QueryUpdateHeartbeatWithEvent,
 		id,
 		now,
 		nullString(lastSeenEventID),
@@ -128,7 +128,7 @@ func (r *Repository) UpdateHeartbeatWithEvent(id, lastSeenEventID string) error 
 func (r *Repository) UpdateCheckpoint(id string) error {
 	now := time.Now()
 	_, err := r.db.Exec(
-		`UPDATE agent_sessions SET last_checkpoint_at = $2, updated_at = $3 WHERE id = $1`,
+		QueryUpdateCheckpoint,
 		id,
 		now,
 		now,
@@ -143,7 +143,7 @@ func (r *Repository) UpdateCheckpoint(id string) error {
 func (r *Repository) UpdateCheckpointWithEvent(id, lastSeenEventID string) error {
 	now := time.Now().UTC()
 	_, err := r.db.Exec(
-		`UPDATE agent_sessions SET last_checkpoint_at = $2, last_seen_event_id = COALESCE($3, last_seen_event_id), updated_at = $4 WHERE id = $1`,
+		QueryUpdateCheckpointWithEvent,
 		id,
 		now,
 		nullString(lastSeenEventID),
@@ -159,7 +159,7 @@ func (r *Repository) UpdateCheckpointWithEvent(id, lastSeenEventID string) error
 func (r *Repository) UpdateRecoverableState(id string, state json.RawMessage) error {
 	now := time.Now().UTC()
 	_, err := r.db.Exec(
-		`UPDATE agent_sessions SET recoverable_state = $2, updated_at = $3 WHERE id = $1`,
+		QueryUpdateRecoverableState,
 		id,
 		nullableRawJSON(state),
 		now,
