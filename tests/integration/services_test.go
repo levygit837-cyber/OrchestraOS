@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
+	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -127,7 +127,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get run: %v", err)
 	}
-	if run.Status != domain.RunStatusCompleted {
+	if run.Status != runmod.StatusCompleted {
 		t.Fatalf("expected run completed, got %s", run.Status)
 	}
 	wu, err := workunitmod.NewRepository(db).GetByID(wuResult.Value.ID)
@@ -148,7 +148,7 @@ func TestDomainServicesFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("replay run: %v", err)
 	}
-	if state.RunStatuses[runResult.Value.ID] != domain.RunStatusCompleted {
+	if string(state.RunStatuses[runResult.Value.ID]) != string(runmod.StatusCompleted) {
 		t.Fatalf("expected replayed run completed, got %s", state.RunStatuses[runResult.Value.ID])
 	}
 }
@@ -401,7 +401,7 @@ func TestDomainServicesRejectUnsafeTransitionsAndCascadeCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get run: %v", err)
 	}
-	if run.Status != domain.RunStatusCancelled {
+	if run.Status != runmod.StatusCancelled {
 		t.Fatalf("expected related run cancelled, got %s", run.Status)
 	}
 	wu, err := workunitmod.NewRepository(db).GetByID(wuResult.Value.ID)
@@ -1071,7 +1071,7 @@ func TestRunRetryRequiresPolicyAndIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("retry run: %v", err)
 	}
-	if retryResult.Value.Attempt != 2 || retryResult.Value.Status != domain.RunStatusCreated {
+	if retryResult.Value.Attempt != 2 || retryResult.Value.Status != runmod.StatusCreated {
 		t.Fatalf("expected retry attempt 2 in created status, got %+v", retryResult.Value)
 	}
 	duplicate, err := runService.Retry(ctx, runResult.Value.ID, retryInput)

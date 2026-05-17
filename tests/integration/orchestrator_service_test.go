@@ -85,7 +85,7 @@ func TestOrchestratorService_RunTask_SequentialExecution(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get run %s: %v", runID, err)
 		}
-		if run.Status != domain.RunStatusCompleted {
+		if run.Status != runmod.StatusCompleted {
 			t.Errorf("expected run status completed, got %s", run.Status)
 		}
 	}

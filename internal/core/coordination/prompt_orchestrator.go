@@ -81,7 +81,8 @@ func (o *PromptOrchestrator) PrepareRunPrompt(ctx context.Context, input promptm
 	}
 
 	return o.promptService.PrepareAndPersistPrompt(ctx, tx, promptmod.PrepareAndPersistInput{
-		Run:      run,
+		// TODO[ADR-0022]: remover quando prompt.PrepareAndPersistInput.Run usar *run.Run
+		Run:      runToDomain(run),
 		WorkUnit: wu,
 		// TODO: remove when prompt.PrepareAndPersistInput.Task uses *task.Task directly.
 		Task: &domain.Task{

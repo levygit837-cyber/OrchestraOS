@@ -11,10 +11,10 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/migrations"
-runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
-taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
-taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
+	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	_ "github.com/lib/pq"
 )
 
@@ -373,11 +373,11 @@ func createTestRun(t *testing.T, db *sql.DB, taskID, workUnitID string) string {
 	t.Helper()
 
 	repo := runmod.NewRepository(db)
-	run := &domain.Run{
+	run := &runmod.Run{
 		ID:         uuid.New().String(),
 		TaskID:     taskID,
 		WorkUnitID: workUnitID,
-		Status:     domain.RunStatusCreated,
+		Status:     runmod.StatusCreated,
 		Attempt:    1,
 	}
 	if err := repo.Create(run); err != nil {

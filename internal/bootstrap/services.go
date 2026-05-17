@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
@@ -96,6 +96,45 @@ func (a *agentReaderAdapter) GetByID(ctx context.Context, id string) (*domain.Ag
 	return agentToDomain(agent), nil
 }
 
+// runToDomain converts a local run.Run to domain.Run for cross-module compatibility.
+// TODO[ADR-0022]: remover quando coordination.TransitionRunWithWorkUnit, orchestrator.RunLifecycleManager
+// e trigger.RunReader usarem *run.Run diretamente.
+func runToDomain(r *runmod.Run) *domain.Run {
+	if r == nil {
+		return nil
+	}
+	var result *domain.RunResult
+	if r.Result != nil {
+		rr := domain.RunResult(*r.Result)
+		result = &rr
+	}
+	return &domain.Run{
+		ID:            r.ID,
+		TaskID:        r.TaskID,
+		WorkUnitID:    r.WorkUnitID,
+		Status:        domain.RunStatus(r.Status),
+		Attempt:       r.Attempt,
+		StartedAt:     r.StartedAt,
+		FinishedAt:    r.FinishedAt,
+		Result:        result,
+		FailureReason: r.FailureReason,
+	}
+}
+
+// runReaderAdapter wraps run.Repository to return domain.Run for cross-module compatibility.
+// TODO[ADR-0022]: remover quando trigger.RunReader usar *run.Run diretamente.
+type runReaderAdapter struct {
+	repo *runmod.Repository
+}
+
+func (a *runReaderAdapter) GetByID(id string) (*domain.Run, error) {
+	r, err := a.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return runToDomain(r), nil
+}
+
 // agentManagerAdapter wraps agent.AgentService to implement orchestrator.AgentManager with domain.Agent.
 // TODO: remove when orchestrator.AgentManager uses agent.RuntimeType and *agent.Agent directly.
 type agentManagerAdapter struct {
@@ -113,10 +152,11 @@ func (a *agentManagerAdapter) FindOrCreate(ctx context.Context, profile string, 
 // RunService creates a RunService with standard repository factories.
 func RunService(db *sql.DB) *runmod.RunService {
 	return runmod.NewRunService(db,
-		func(tx *sql.Tx) runmod.TaskReader { return &taskReaderAdapter{repo: taskmod.NewRepository(tx)} },
+		func(tx *sql.Tx) runmod.TaskReader { return taskmod.NewRepository(tx) },
 		func(tx *sql.Tx) runmod.WorkUnitReader { return workunitmod.NewRepository(tx) },
-		func(ctx context.Context, tx *sql.Tx, run *domain.Run, target domain.RunStatus, input transition.TransitionInput) error {
-			return coordination.TransitionRunWithWorkUnit(ctx, tx, run, target, input)
+		func(ctx context.Context, tx *sql.Tx, run *runmod.Run, target runmod.Status, input transition.TransitionInput) error {
+			// TODO[ADR-0022]: remover adapter quando coordination.TransitionRunWithWorkUnit usar *run.Run
+			return coordination.TransitionRunWithWorkUnit(ctx, tx, runToDomain(run), domain.RunStatus(target), input)
 		},
 	)
 }
@@ -132,7 +172,9 @@ func WorkUnitService(db *sql.DB) *workunitmod.WorkUnitService {
 // AgentSessionService creates an AgentSessionService with standard dependencies.
 func AgentSessionService(db *sql.DB) *agentsessionmod.AgentSessionService {
 	return agentsessionmod.NewAgentSessionService(db,
-		func(tx *sql.Tx) agentsessionmod.AgentReader { return &agentReaderAdapter{repo: agentmod.NewRepository(tx)} },
+		func(tx *sql.Tx) agentsessionmod.AgentReader {
+			return &agentReaderAdapter{repo: agentmod.NewRepository(tx)}
+		},
 	)
 }
 
@@ -185,7 +227,9 @@ func ValidateGraphPlan(plan *taskgraphmod.GraphPlan) error {
 // TriggerService creates a TriggerService with standard repository factories.
 func TriggerService(db *sql.DB) *triggermod.TriggerService {
 	return triggermod.NewTriggerService(db,
-		func(executor dbcore.DBTX) triggermod.RunReader { return runmod.NewRepository(executor) },
+		func(executor dbcore.DBTX) triggermod.RunReader {
+			return &runReaderAdapter{repo: runmod.NewRepository(executor)}
+		},
 		func(executor dbcore.DBTX) triggermod.AgentSessionReader {
 			return agentsessionmod.NewRepository(executor)
 		},
@@ -291,10 +335,26 @@ func (a *taskGraphAdapter) Decompose(ctx context.Context, input orchestratormod.
 type runAdapter struct{ svc *runmod.RunService }
 
 func (a *runAdapter) Create(ctx context.Context, input orchestratormod.CreateRunInput) (*transition.OperationResult[*domain.Run], error) {
-	return a.svc.Create(ctx, runmod.CreateRunInput{TaskID: input.TaskID, WorkUnitID: input.WorkUnitID})
+	res, err := a.svc.Create(ctx, runmod.CreateRunInput{TaskID: input.TaskID, WorkUnitID: input.WorkUnitID})
+	if err != nil {
+		return nil, err
+	}
+	return &transition.OperationResult[*domain.Run]{
+		Value:     runToDomain(res.Value),
+		Event:     res.Event,
+		Duplicate: res.Duplicate,
+	}, nil
 }
 func (a *runAdapter) Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
-	return a.svc.Start(ctx, runID, input)
+	res, err := a.svc.Start(ctx, runID, input)
+	if err != nil {
+		return nil, err
+	}
+	return &transition.OperationResult[*domain.Run]{
+		Value:     runToDomain(res.Value),
+		Event:     res.Event,
+		Duplicate: res.Duplicate,
+	}, nil
 }
 
 type sessionAdapter struct {

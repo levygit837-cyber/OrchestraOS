@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	orchestratormod "github.com/levygit837-cyber/OrchestraOS/internal/modules/orchestrator"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
@@ -192,7 +191,7 @@ func TestOrchestratorE2E_FullFlow(t *testing.T) {
 		if err != nil {
 			t.Fatalf("get run %s: %v", runID, err)
 		}
-		if run.Status != domain.RunStatusCompleted {
+		if run.Status != runmod.StatusCompleted {
 			t.Fatalf("expected run %s status completed, got %s", runID, run.Status)
 		}
 	}

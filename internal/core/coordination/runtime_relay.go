@@ -1,4 +1,4 @@
-	package coordination
+package coordination
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 )
 
 // EventSource abstracts a runtime that produces events.
@@ -31,11 +32,12 @@ type SessionService interface {
 }
 
 // RunService abstracts run operations needed by the relay.
+// TODO[ADR-0022]: interface usa *run.Run para compatibilidade com run module.
 type RunService interface {
-	Validate(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
-	Complete(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
-	Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
-	Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+	Validate(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
+	Complete(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
+	Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
+	Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
 }
 
 // RuntimeEventRelay consumes events from a runtime and routes them to the
@@ -332,8 +334,8 @@ func (r *RuntimeEventRelay) maybeAutoCheckpoint(ctx context.Context, config Rela
 		ledger = value
 	}
 	_, _, err = r.sessionService.AutomaticCheckpoint(ctx, config.SessionID, domain.AutoCheckpointInput{
-		EventID: uuid.NewSHA1(uuid.NameSpaceURL, []byte("orchestraos:auto_checkpoint:"+config.SessionID+":"+event.ID+":"+string(trigger))).String(),
-		Trigger: trigger,
+		EventID:        uuid.NewSHA1(uuid.NameSpaceURL, []byte("orchestraos:auto_checkpoint:"+config.SessionID+":"+event.ID+":"+string(trigger))).String(),
+		Trigger:        trigger,
 		CurrentGoal:    currentGoal,
 		MinimalSummary: summary,
 		Ledger:         ledger,

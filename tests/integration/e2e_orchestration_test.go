@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/coordination"
+	"github.com/levygit837-cyber/OrchestraOS/internal/core/eventstore"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
@@ -159,8 +159,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Relay failed: %v", err)
 	}
-	if finalStatus != domain.RunStatusCompleted {
-		t.Fatalf("Expected run status %s, got %s", domain.RunStatusCompleted, finalStatus)
+	if string(finalStatus) != string(runmod.StatusCompleted) {
+		t.Fatalf("Expected run status %s, got %s", runmod.StatusCompleted, finalStatus)
 	}
 
 	// 8. Assertions
@@ -170,8 +170,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final run: %v", err)
 	}
-	if finalRun.Status != domain.RunStatusCompleted {
-		t.Errorf("Expected run status %s, got %s", domain.RunStatusCompleted, finalRun.Status)
+	if finalRun.Status != runmod.StatusCompleted {
+		t.Errorf("Expected run status %s, got %s", runmod.StatusCompleted, finalRun.Status)
 	}
 
 	// Work unit status
@@ -245,8 +245,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if replayState == nil {
 		t.Fatal("Expected replay state to be non-nil")
 	}
-	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || runStatus != domain.RunStatusCompleted {
-		t.Errorf("Expected replay run status %s, got %v", domain.RunStatusCompleted, runStatus)
+	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(runmod.StatusCompleted) {
+		t.Errorf("Expected replay run status %s, got %v", runmod.StatusCompleted, runStatus)
 	}
 
 	t.Logf("E2E flow completed: task=%s run=%s session=%s events=%d", task.ID, run.ID, session.ID, len(events))
@@ -394,8 +394,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Relay failed: %v", err)
 	}
-	if finalStatus != domain.RunStatusCompleted {
-		t.Fatalf("Expected run status %s, got %s", domain.RunStatusCompleted, finalStatus)
+	if string(finalStatus) != string(runmod.StatusCompleted) {
+		t.Fatalf("Expected run status %s, got %s", runmod.StatusCompleted, finalStatus)
 	}
 
 	// 8. Assertions
@@ -404,8 +404,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final run: %v", err)
 	}
-	if finalRun.Status != domain.RunStatusCompleted {
-		t.Errorf("Expected run status %s, got %s", domain.RunStatusCompleted, finalRun.Status)
+	if finalRun.Status != runmod.StatusCompleted {
+		t.Errorf("Expected run status %s, got %s", runmod.StatusCompleted, finalRun.Status)
 	}
 
 	wuRepo := workunitmod.NewRepository(db)
@@ -475,8 +475,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if replayState == nil {
 		t.Fatal("Expected replay state to be non-nil")
 	}
-	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || runStatus != domain.RunStatusCompleted {
-		t.Errorf("Expected replay run status %s, got %v", domain.RunStatusCompleted, runStatus)
+	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(runmod.StatusCompleted) {
+		t.Errorf("Expected replay run status %s, got %v", runmod.StatusCompleted, runStatus)
 	}
 
 	t.Logf("Gemini E2E flow completed: task=%s run=%s session=%s events=%d", task.ID, run.ID, session.ID, len(events))

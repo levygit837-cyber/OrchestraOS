@@ -110,6 +110,7 @@ type TaskGraphManager interface {
 	Decompose(ctx context.Context, input DecomposeInput) (*DecomposeResult, error)
 }
 
+// TODO[ADR-0022]: migrar para *run.Run quando run module desacoplar de domain.Run
 type RunLifecycleManager interface {
 	Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*domain.Run], error)
 	Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
