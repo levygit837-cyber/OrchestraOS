@@ -167,3 +167,21 @@ Neste caso, `ValidateRunForSessionCreation` pode ser privada (`validateRunForSes
 1. Commit com `./scripts/safe-commit.sh "refactor(agentsession): move timeout coordination from core per ADR-0028"`
 2. Push da feature branch
 3. Reportar ao usuário: "AgentSession timeout migration completa. Build verde."
+
+---
+
+## Resultado da Execução
+
+**Data:** 2026-05-17  
+**Branch:** `feat/adr28-a03-task-cascade`  
+**PR:** #32
+
+**Divergência do plano original:**
+- O arquivo `coordination/agentsession_orchestrator.go` continha **código morto**: `ValidateRunForSessionCreation` e `AgentSessionTimeout` não eram chamados por nenhum outro pacote no projeto.
+- A funcionalidade de timeout já havia sido reimplementada de forma melhor distribuída:
+  - `agentsession/service.go:Timeout()` — salva recoverable state e transiciona session para Disconnected
+  - `run/service_relay.go:handleTimeout()` — coordena session timeout + run timeout
+  - `run/service.go:Timeout()` — transiciona run para Failed
+- Portanto, **nenhum `service_timeout.go` foi criado**; o arquivo `agentsession_orchestrator.go` foi simplesmente removido.
+- Não houve necessidade de resolver import cycle agentsession → run, pois o código era órfão.
+- Todos os checks passaram (build, test, vet, architecture, contracts, lint).
