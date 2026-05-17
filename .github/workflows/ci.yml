@@ -109,3 +109,69 @@ jobs:
         with:
           version: v1.64.6
           args: --timeout=5m
+
+  golden-rule:
+    name: Golden Rule — Module Import Boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify modules never import each other (except allowed DI types)
+        run: |
+          echo "=== GOLDEN RULE: Modules in internal/modules/* MUST NOT import each other ==="
+          echo "Allowed exceptions: DI interface return types only (ADR-0026)"
+          echo ""
+          go test ./tests/architecture/... -run TestModuleBoundaries -v -count=1
+
+      - name: Verify only orchestrator/bootstrap/cmd may import modules
+        run: |
+          echo "=== GOLDEN RULE: Only orchestrator, bootstrap and cmd may import modules ==="
+          go test ./tests/architecture/... -run TestOnlyCoordinationImportsModules -v -count=1
+
+      - name: Verify transition package is leaf
+        run: |
+          echo "=== GOLDEN RULE: internal/core/transition must not import modules ==="
+          go test ./tests/architecture/... -run TestTransitionPackageIsLeaf -v -count=1
+
+      - name: Verify modules do not import removed coordination package
+        run: |
+          echo "=== GOLDEN RULE: Modules must not import removed coordination package ==="
+          go test ./tests/architecture/... -run TestModulesDoNotImportCoordination -v -count=1
+
+  anomaly-detection:
+    name: Anomaly Detection — Anti-Patterns
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Detect forbidden filenames
+        run: |
+          echo "=== ANOMALY: Detecting forbidden filenames (helpers.go, utils.go, etc.) ==="
+          go test ./tests/architecture/... -run TestForbiddenFilenames -v -count=1
+
+      - name: Detect code anomalies (panic, fmt.Println, inline SQL, ignored errors)
+        run: |
+          echo "=== ANOMALY: Detecting code anomalies ==="
+          go test ./tests/architecture/... -run TestCodeAnomalies -v -count=1
+
+      - name: Verify domain package purity
+        run: |
+          echo "=== ANOMALY: Detecting entity structs left in internal/domain ==="
+          go test ./tests/architecture/... -run TestDomainPurity -v -count=1
+
+      - name: Verify coordination package is fully removed
+        run: |
+          echo "=== ANOMALY: Detecting references to removed coordination package ==="
+          go test ./tests/architecture/... -run TestCoordinationRemoved -v -count=1

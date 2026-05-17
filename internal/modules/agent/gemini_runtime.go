@@ -153,7 +153,7 @@ func (g *GeminiRuntime) SendEvent(ctx context.Context, event *domain.EventEnvelo
 			Tool   string `json:"tool"`
 			Reason string `json:"reason"`
 		}
-		_ = json.Unmarshal(event.Payload, &payload)
+		_ = json.Unmarshal(event.Payload, &payload) // ignore: payload has safe defaults if unmarshal fails
 		if payload.Tool == "" {
 			payload.Tool = "unknown"
 		}

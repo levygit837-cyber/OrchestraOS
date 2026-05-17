@@ -66,7 +66,6 @@ Forbidden:
 - Inline SQL outside `queries.go`.
 
 Cross-module orchestration belongs ONLY to:
-- `internal/core/coordination`
 - `internal/modules/orchestrator`
 
 ---
