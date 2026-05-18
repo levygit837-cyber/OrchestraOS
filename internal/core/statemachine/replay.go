@@ -9,10 +9,10 @@ import (
 )
 
 type ReplayState struct {
-	TaskStatus         domain.TaskStatus
-	WorkUnitStatuses   map[string]domain.WorkUnitStatus
-	RunStatuses        map[string]domain.RunStatus
-	AgentSessionStatus map[string]domain.AgentSessionStatus
+	TaskStatus         string
+	WorkUnitStatuses   map[string]string
+	RunStatuses        map[string]string
+	AgentSessionStatus map[string]string
 	LastCheckpoint     *domain.EventEnvelope
 }
 
@@ -27,16 +27,16 @@ func ProjectStrict(events []domain.EventEnvelope) (ReplayState, error) {
 
 func project(events []domain.EventEnvelope, strict bool) (ReplayState, error) {
 	state := ReplayState{
-		WorkUnitStatuses:   map[string]domain.WorkUnitStatus{},
-		RunStatuses:        map[string]domain.RunStatus{},
-		AgentSessionStatus: map[string]domain.AgentSessionStatus{},
+		WorkUnitStatuses:   map[string]string{},
+		RunStatuses:        map[string]string{},
+		AgentSessionStatus: map[string]string{},
 	}
 
 	for i := range events {
 		event := events[i]
 		if status, ok := reduceTask(event); ok {
 			if strict {
-				if err := validateReplayTransition(AggregateTask, string(state.TaskStatus), string(status), event); err != nil {
+				if err := validateReplayTransition(AggregateTask, state.TaskStatus, status, event); err != nil {
 					return state, err
 				}
 			}
@@ -45,7 +45,7 @@ func project(events []domain.EventEnvelope, strict bool) (ReplayState, error) {
 		if event.WorkUnitID != "" {
 			if status, ok := reduceWorkUnit(event); ok {
 				if strict {
-					if err := validateReplayTransition(AggregateWorkUnit, string(state.WorkUnitStatuses[event.WorkUnitID]), string(status), event); err != nil {
+					if err := validateReplayTransition(AggregateWorkUnit, state.WorkUnitStatuses[event.WorkUnitID], status, event); err != nil {
 						return state, err
 					}
 				}
@@ -55,7 +55,7 @@ func project(events []domain.EventEnvelope, strict bool) (ReplayState, error) {
 		if event.RunID != "" {
 			if status, ok := reduceRun(event); ok {
 				if strict {
-					if err := validateReplayTransition(AggregateRun, string(state.RunStatuses[event.RunID]), string(status), event); err != nil {
+					if err := validateReplayTransition(AggregateRun, state.RunStatuses[event.RunID], status, event); err != nil {
 						return state, err
 					}
 				}
@@ -65,7 +65,7 @@ func project(events []domain.EventEnvelope, strict bool) (ReplayState, error) {
 		if event.AgentID != "" && event.RunID != "" {
 			if status, ok := reduceAgentSession(event); ok {
 				if strict {
-					if err := validateReplayTransition(AggregateAgentSession, string(state.AgentSessionStatus[event.AgentID]), string(status), event); err != nil {
+					if err := validateReplayTransition(AggregateAgentSession, state.AgentSessionStatus[event.AgentID], status, event); err != nil {
 						return state, err
 					}
 				}
@@ -125,111 +125,111 @@ func justificationFromEvent(event domain.EventEnvelope) string {
 	return payload.Justification
 }
 
-func reduceTask(event domain.EventEnvelope) (domain.TaskStatus, bool) {
+func reduceTask(event domain.EventEnvelope) (string, bool) {
 	switch event.Type {
 	case "task.created":
-		return domain.TaskStatusCreated, true
+		return "created", true
 	case "task.triaged":
-		return domain.TaskStatusTriaged, true
+		return "triaged", true
 	case "task.planned":
-		return domain.TaskStatusPlanned, true
+		return "planned", true
 	case "task.scheduled":
-		return domain.TaskStatusScheduled, true
+		return "scheduled", true
 	case "task.sandbox_preparing":
-		return domain.TaskStatusSandboxPreparing, true
+		return "sandbox_preparing", true
 	case "task.started":
-		return domain.TaskStatusRunning, true
+		return "running", true
 	case "task.waiting_approval":
-		return domain.TaskStatusWaitingApproval, true
+		return "waiting_approval", true
 	case "task.paused":
-		return domain.TaskStatusPaused, true
+		return "paused", true
 	case "task.validating":
-		return domain.TaskStatusValidating, true
+		return "validating", true
 	case "task.completed":
-		return domain.TaskStatusCompleted, true
+		return "completed", true
 	case "task.failed":
-		return domain.TaskStatusFailed, true
+		return "failed", true
 	case "task.cancelled":
-		return domain.TaskStatusCancelled, true
+		return "cancelled", true
 	default:
 		return "", false
 	}
 }
 
-func reduceWorkUnit(event domain.EventEnvelope) (domain.WorkUnitStatus, bool) {
+func reduceWorkUnit(event domain.EventEnvelope) (string, bool) {
 	switch event.Type {
 	case "work_unit.created":
-		return domain.WorkUnitStatusCreated, true
+		return "created", true
 	case "work_unit.planned":
-		return domain.WorkUnitStatusPlanned, true
+		return "planned", true
 	case "work_unit.scheduled":
-		return domain.WorkUnitStatusScheduled, true
+		return "scheduled", true
 	case "work_unit.blocked":
-		return domain.WorkUnitStatusBlocked, true
+		return "blocked", true
 	case "work_unit.started":
-		return domain.WorkUnitStatusRunning, true
+		return "running", true
 	case "work_unit.waiting_approval":
-		return domain.WorkUnitStatusWaitingApproval, true
+		return "waiting_approval", true
 	case "work_unit.paused":
-		return domain.WorkUnitStatusPaused, true
+		return "paused", true
 	case "work_unit.validating":
-		return domain.WorkUnitStatusValidating, true
+		return "validating", true
 	case "work_unit.completed":
-		return domain.WorkUnitStatusCompleted, true
+		return "completed", true
 	case "work_unit.failed":
-		return domain.WorkUnitStatusFailed, true
+		return "failed", true
 	case "work_unit.cancelled":
-		return domain.WorkUnitStatusCancelled, true
+		return "cancelled", true
 	default:
 		return "", false
 	}
 }
 
-func reduceRun(event domain.EventEnvelope) (domain.RunStatus, bool) {
+func reduceRun(event domain.EventEnvelope) (string, bool) {
 	switch event.Type {
 	case "run.created":
-		return domain.RunStatusCreated, true
+		return "created", true
 	case "run.started":
-		return domain.RunStatusRunning, true
+		return "running", true
 	case "run.waiting_approval":
-		return domain.RunStatusWaitingApproval, true
+		return "waiting_approval", true
 	case "run.paused":
-		return domain.RunStatusPaused, true
+		return "paused", true
 	case "run.resumed":
-		return domain.RunStatusRunning, true
+		return "running", true
 	case "run.validating":
-		return domain.RunStatusValidating, true
+		return "validating", true
 	case "run.completed":
-		return domain.RunStatusCompleted, true
+		return "completed", true
 	case "run.failed":
-		return domain.RunStatusFailed, true
+		return "failed", true
 	case "run.cancelled":
-		return domain.RunStatusCancelled, true
+		return "cancelled", true
 	default:
 		return "", false
 	}
 }
 
-func reduceAgentSession(event domain.EventEnvelope) (domain.AgentSessionStatus, bool) {
+func reduceAgentSession(event domain.EventEnvelope) (string, bool) {
 	switch {
 	case event.Type == "agent.session_starting":
-		return domain.AgentSessionStatusStarting, true
+		return "starting", true
 	case event.Type == "agent.session_running":
-		return domain.AgentSessionStatusRunning, true
+		return "running", true
 	case event.Type == "agent.session_waiting_approval":
-		return domain.AgentSessionStatusWaitingApproval, true
+		return "waiting_approval", true
 	case event.Type == "agent.session_paused":
-		return domain.AgentSessionStatusPaused, true
+		return "paused", true
 	case event.Type == "agent.session_disconnected":
-		return domain.AgentSessionStatusDisconnected, true
+		return "disconnected", true
 	case event.Type == "agent.session_stopping":
-		return domain.AgentSessionStatusStopping, true
+		return "stopping", true
 	case event.Type == "agent.session_stopped":
-		return domain.AgentSessionStatusStopped, true
+		return "stopped", true
 	case event.Type == "agent.session_failed":
-		return domain.AgentSessionStatusFailed, true
+		return "failed", true
 	case event.Type == "agent.connected" || event.Type == "agent.started":
-		return domain.AgentSessionStatusRunning, true
+		return "running", true
 	case strings.HasPrefix(event.Type, "agent."):
 		return "", false
 	default:

@@ -1,25 +1,28 @@
-// Package domain defines shared domain types and enums.
+// Package domain defines shared infrastructure types for events and checkpoints.
 //
 // # Responsibility
-// Holds the canonical structs and constants used by multiple modules.
+// Holds types genuinely shared by multiple modules: event envelope, event priority,
+// checkpoint/heartbeat types, and generic event payloads.
 // This package has ZERO dependencies on other internal packages to avoid
 // import cycles.
 //
 // # Key Types
-//   - Task, TaskStatus, Priority, RiskLevel
-//   - WorkUnit, WorkUnitStatus
-//   - Run, RunStatus, RunResult
-//   - AgentSession, AgentSessionStatus
-//   - TaskGraph, TaskGraphStatus
-//   - EventEnvelope, EventPayload
-//   - PromptSnapshot, ToolsetSnapshot
+//   - EventEnvelope, EventPriority
 //   - CheckpointTrigger, HeartbeatInput, CheckpointInput, AutoCheckpointInput,
 //     CheckpointSuggestion: shared checkpoint/heartbeat types used by agentsession
 //     and transition packages
+//   - Generic event payloads: TaskGraphCreatedPayload, AgentLedgerUpdatedPayload,
+//     AgentCheckpointReachedPayload, ArtifactCreatedPayload, ValidationCompletedPayload,
+//     PromptSnapshotCreatedPayload, ToolsetSnapshotCreatedPayload
+//
+// # What does NOT belong here
+// Entity structs (Task, WorkUnit, Run, Agent, AgentSession, etc.) and their
+// status enums live in their respective vertical modules under internal/modules/.
+// See ADR-0022 Section 4 (Pilar 1).
 //
 // # Dependencies
 //   - None (this is the innermost layer)
 //
 // # Related Packages
-//   - All other internal packages: import domain for types
+//   - All other internal packages: import domain for EventEnvelope and checkpoint types
 package domain

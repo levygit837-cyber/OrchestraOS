@@ -97,7 +97,7 @@ var agentSessionStatusCmd = &cobra.Command{
 		status, _ := cmd.Flags().GetString("status")
 
 		service := bootstrap.AgentSessionService(getDB())
-		if err := updateAgentSessionStatus(context.Background(), service, args[0], domain.AgentSessionStatus(status)); err != nil {
+		if err := updateAgentSessionStatus(context.Background(), service, args[0], agentsessionmod.Status(status)); err != nil {
 			return fmt.Errorf("failed to update status: %w", err)
 		}
 
@@ -166,21 +166,21 @@ func init() {
 	agentSessionCmd.AddCommand(agentSessionCheckpointCmd)
 }
 
-func updateAgentSessionStatus(ctx context.Context, service *agentsessionmod.AgentSessionService, sessionID string, status domain.AgentSessionStatus) error {
+func updateAgentSessionStatus(ctx context.Context, service *agentsessionmod.AgentSessionService, sessionID string, status agentsessionmod.Status) error {
 	switch status {
-	case domain.AgentSessionStatusRunning:
+	case agentsessionmod.StatusRunning:
 		_, err := service.Resume(ctx, sessionID, transition.TransitionInput{})
 		return err
-	case domain.AgentSessionStatusDisconnected:
+	case agentsessionmod.StatusDisconnected:
 		_, err := service.Disconnect(ctx, sessionID, transition.TransitionInput{Justification: "manual status update"})
 		return err
-	case domain.AgentSessionStatusStopped:
+	case agentsessionmod.StatusStopped:
 		_, err := service.Stop(ctx, sessionID, transition.TransitionInput{Justification: "manual status update"})
 		return err
-	case domain.AgentSessionStatusFailed:
+	case agentsessionmod.StatusFailed:
 		_, err := service.Fail(ctx, sessionID, transition.TransitionInput{FailureReason: "manual status update"})
 		return err
-	case domain.AgentSessionStatusPaused, domain.AgentSessionStatusWaitingApproval, domain.AgentSessionStatusStopping:
+	case agentsessionmod.StatusPaused, agentsessionmod.StatusWaitingApproval, agentsessionmod.StatusStopping:
 		return fmt.Errorf("manual status %q is not exposed as a service command yet", status)
 	default:
 		return fmt.Errorf("unknown agent session status %q", status)
