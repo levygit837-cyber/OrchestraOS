@@ -61,11 +61,6 @@ type CreateAgentSessionInput struct {
 	WorkUnitID string
 }
 
-type PreparePromptInput struct {
-	RunID          string
-	AgentSessionID string
-}
-
 type PreparedPrompt struct {
 	SystemPrompt    string
 	TaskPrompt      string
@@ -134,8 +129,8 @@ type SessionManager interface {
 	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
 }
 
-type PromptPreparer interface {
-	PrepareRunPrompt(ctx context.Context, input PreparePromptInput) (*PreparedPrompt, error)
+type PromptPersistence interface {
+	PersistComposedPrompt(ctx context.Context, composed *promptmod.ComposedPrompt, metadata promptmod.PersistMetadata) (*promptmod.PreparedRunPrompt, error)
 }
 
 type ReviewManager interface {

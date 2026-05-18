@@ -13,7 +13,7 @@
 //   - Decomposes tasks into work units via TaskGraphService
 //   - Executes work units sequentially respecting DAG dependencies
 //   - Manages agent lifecycle via AgentService and AgentSessionService
-//   - Prepares prompts via PromptOrchestrator
+//   - Prepares prompts via PromptService
 //   - Executes runtimes (Fake, Gemini) with event relay
 //   - Creates reviews for validation gates
 //   - Evaluates triggers for anomaly detection

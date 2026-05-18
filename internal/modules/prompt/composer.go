@@ -114,6 +114,7 @@ func (c *Composer) Compose(ctx TaskContext) (*ComposedPrompt, error) {
 		FragmentRefs:       refs,
 		AssemblyOrder:      order,
 		VariablesApplied:   variables,
+		Toolset:            ctx.Toolset,
 	}, nil
 }
 

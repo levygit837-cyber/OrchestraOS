@@ -42,7 +42,7 @@ State Flow:
 - `events.go` → event-type mapping for prompt lifecycle actions
 - `queries.go` → SQL constants for prompt_fragments, prompt_snapshots, toolset_snapshots
 - `repository.go` → prompt fragment, snapshot, and toolset snapshot CRUD
-- `service.go` → prompt preparation service for runs
+- `service.go` → prompt persistence service (snapshot and toolset storage)
 - `validation.go` → input validation for fragments, snapshots, and toolsets
 
 ### Optional Files
@@ -61,14 +61,12 @@ State Flow:
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
-- `internal/modules/agentsession` — types imported for DI interfaces only
-- `internal/modules/workunit` — types imported for DI interfaces only
-- `internal/modules/run` — types imported for DI interfaces only
-- `internal/modules/task` — types imported for DI interfaces only
+- **NO cross-module imports.** This module is pure: it composes prompts from a `TaskContext` and persists snapshots. It does not fetch data from other modules.
 
 Forbidden:
-- `internal/modules/*` services, repositories, or business logic imports
+- `internal/modules/*` imports of any kind (even for DI interface types).
 - Direct imports of service logic from other modules.
+- Cross-module orchestration (belongs to `internal/modules/orchestrator/`).
 
 ---
 

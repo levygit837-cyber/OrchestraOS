@@ -40,7 +40,7 @@ PrepareRunPromptInput → composition → snapshot (deduped) → usage tracking
 Allowed:
 - Read and mutate `prompt_fragments`, `prompt_snapshots`, `toolset_snapshots` via `repository.go`.
 - Append events via `core/transition` helpers.
-- Read other aggregates via their repositories (not services) for composition context.
+- Compose prompts from a `TaskContext` (pure function, no external data fetching).
 
 Forbidden:
 - Direct mutation of `tasks`, `work_units`, `runs`, or `agent_sessions` tables.
@@ -48,8 +48,10 @@ Forbidden:
 - Inline SQL outside `queries.go`.
 - Business logic inside `repository.go`.
 
-Cross-module orchestration belongs ONLY to:
+Cross-module data gathering and orchestration belongs ONLY to:
 - `internal/modules/orchestrator`
+
+This module receives all necessary data via `TaskContext` and `PersistMetadata`; it never fetches from other modules.
 
 ---
 

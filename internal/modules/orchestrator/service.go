@@ -12,6 +12,7 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
@@ -25,7 +26,7 @@ type Dependencies struct {
 	RunService          RunLifecycleManager
 	AgentService        AgentManager
 	AgentSessionService SessionManager
-	PromptOrchestrator  PromptPreparer
+	PromptService       PromptPersistence
 	ReviewService       ReviewManager
 	TriggerService      TriggerEvaluator
 	WorkUnitLister      WorkUnitLister
@@ -265,19 +266,63 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 		return result, nil
 	}
 
-	// Prepare prompt
-	preparedPrompt, err := s.deps.PromptOrchestrator.PrepareRunPrompt(ctx, PreparePromptInput{
-		RunID:          result.RunID,
-		AgentSessionID: sessionCreateResult.Value.ID,
-	})
+	// Compose prompt
+	toolset, err := promptmod.SelectToolset(wu.AssignedAgentProfile)
 	if err != nil {
 		if err := s.emitOrchestratorEvent(ctx, EventWorkUnitFailed, task.ID, wu.ID, result.RunID, map[string]interface{}{
-			"reason": "failed to prepare prompt",
+			"reason": "failed to select toolset",
 			"error":  err.Error(),
 		}); err != nil {
 			return result, err
 		}
-		result.Error = fmt.Sprintf("failed to prepare prompt: %v", err)
+		result.Error = fmt.Sprintf("failed to select toolset: %v", err)
+		return result, nil
+	}
+	taskContext := promptmod.TaskContext{
+		TaskID:             task.ID,
+		TaskTitle:          task.Title,
+		TaskDescription:    task.Description,
+		RunID:              result.RunID,
+		WorkUnitID:         wu.ID,
+		TaskGraphID:        wu.TaskGraphID,
+		WorkUnitTitle:      wu.Title,
+		WorkUnitObjective:  wu.Objective,
+		AgentProfile:       wu.AssignedAgentProfile,
+		OwnedPaths:         wu.OwnedPaths,
+		ReadPaths:          wu.ReadPaths,
+		DependsOn:          wu.DependsOn,
+		AcceptanceCriteria: wu.AcceptanceCriteria,
+		ValidationPlan:     wu.ValidationPlan,
+		Toolset:            toolset,
+	}
+	composed, err := promptmod.Compose(taskContext)
+	if err != nil {
+		if err := s.emitOrchestratorEvent(ctx, EventWorkUnitFailed, task.ID, wu.ID, result.RunID, map[string]interface{}{
+			"reason": "failed to compose prompt",
+			"error":  err.Error(),
+		}); err != nil {
+			return result, err
+		}
+		result.Error = fmt.Sprintf("failed to compose prompt: %v", err)
+		return result, nil
+	}
+
+	// Persist prompt
+	preparedPrompt, err := s.deps.PromptService.PersistComposedPrompt(ctx, composed, promptmod.PersistMetadata{
+		RunID:          result.RunID,
+		WorkUnitID:     wu.ID,
+		TaskID:         task.ID,
+		AgentSessionID: sessionCreateResult.Value.ID,
+		AgentID:        agent.ID,
+	})
+	if err != nil {
+		if err := s.emitOrchestratorEvent(ctx, EventWorkUnitFailed, task.ID, wu.ID, result.RunID, map[string]interface{}{
+			"reason": "failed to persist prompt",
+			"error":  err.Error(),
+		}); err != nil {
+			return result, err
+		}
+		result.Error = fmt.Sprintf("failed to persist prompt: %v", err)
 		return result, nil
 	}
 

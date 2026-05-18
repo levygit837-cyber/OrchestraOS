@@ -17,30 +17,18 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 type PromptService struct {
 	db *sql.DB
 }
 
-type PrepareRunPromptInput struct {
+type PersistMetadata struct {
 	RunID                  string
+	WorkUnitID             string
+	TaskID                 string
 	AgentSessionID         string
-	PromptSnapshotID       string
-	ToolsetSnapshotID      string
-	PromptSnapshotEventID  string
-	ToolsetSnapshotEventID string
-}
-
-type PrepareAndPersistInput struct {
-	Run                    *run.Run
-	WorkUnit               *workunit.WorkUnit
-	Task                   *task.Task
-	Session                *agentsession.AgentSession
+	AgentID                string
 	PromptSnapshotID       string
 	ToolsetSnapshotID      string
 	PromptSnapshotEventID  string
@@ -61,37 +49,14 @@ func NewPromptService(database *sql.DB) *PromptService {
 	return &PromptService{db: database}
 }
 
-func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx, input PrepareAndPersistInput) (*PreparedRunPrompt, error) {
-	const op = "prompt_service.prepare_and_persist"
-	run := input.Run
-	wu := input.WorkUnit
-	task := input.Task
-	session := input.Session
+func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *ComposedPrompt, metadata PersistMetadata) (*PreparedRunPrompt, error) {
+	const op = "prompt_service.persist_composed"
 
-	toolset, err := SelectToolset(wu.AssignedAgentProfile)
+	tx, err := dbcore.BeginTx(ctx, s.db, "prompt_service.persist_composed")
 	if err != nil {
-		return nil, apperrors.Wrap(apperrors.CodeInvalidInput, op, err)
+		return nil, err
 	}
-	composed, err := Compose(TaskContext{
-		TaskID:             task.ID,
-		TaskTitle:          task.Title,
-		TaskDescription:    task.Description,
-		RunID:              run.ID,
-		WorkUnitID:         wu.ID,
-		TaskGraphID:        wu.TaskGraphID,
-		WorkUnitTitle:      wu.Title,
-		WorkUnitObjective:  wu.Objective,
-		AgentProfile:       wu.AssignedAgentProfile,
-		OwnedPaths:         wu.OwnedPaths,
-		ReadPaths:          wu.ReadPaths,
-		DependsOn:          wu.DependsOn,
-		AcceptanceCriteria: wu.AcceptanceCriteria,
-		ValidationPlan:     wu.ValidationPlan,
-		Toolset:            toolset,
-	})
-	if err != nil {
-		return nil, apperrors.Wrap(apperrors.CodeValidation, op, err)
-	}
+	defer dbcore.RollbackTx(tx)
 
 	repo := NewRepository(tx)
 	for _, fragment := range composed.Fragments {
@@ -141,10 +106,10 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 		})
 	}
 	promptSnapshot := &PromptSnapshot{
-		ID:                 valueOrNewUUID(input.PromptSnapshotID),
-		RunID:              run.ID,
-		WorkUnitID:         wu.ID,
-		AgentSessionID:     session.ID,
+		ID:                 valueOrNewUUID(metadata.PromptSnapshotID),
+		RunID:              metadata.RunID,
+		WorkUnitID:         metadata.WorkUnitID,
+		AgentSessionID:     metadata.AgentSessionID,
 		SystemPrompt:       composed.SystemPrompt,
 		TaskPrompt:         composed.TaskPrompt,
 		CombinedPrompt:     composed.CombinedPrompt,
@@ -162,6 +127,8 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "prompt_service.create_prompt_snapshot", err)
 	}
+
+	toolset := composed.Toolset
 	tools := make([]ToolsetTool, 0, len(toolset.Tools))
 	for _, t := range toolset.Tools {
 		tools = append(tools, ToolsetTool{
@@ -172,9 +139,9 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 		})
 	}
 	toolsetSnapshot := &ToolsetSnapshot{
-		ID:             valueOrNewUUID(input.ToolsetSnapshotID),
-		RunID:          run.ID,
-		AgentSessionID: session.ID,
+		ID:             valueOrNewUUID(metadata.ToolsetSnapshotID),
+		RunID:          metadata.RunID,
+		AgentSessionID: metadata.AgentSessionID,
 		Tools:          tools,
 		CreatedReason:  toolset.CreatedReason,
 		CreatedAt:      time.Now().UTC(),
@@ -186,9 +153,9 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 	promptPayload, err := serialization.MarshalPayload("prompt_service.prompt_snapshot_payload", map[string]interface{}{
 		"prompt_snapshot_id": promptSnapshot.ID,
 		"hash":               promptSnapshot.CombinedPromptHash,
-		"run_id":             run.ID,
-		"work_unit_id":       wu.ID,
-		"agent_session_id":   session.ID,
+		"run_id":             metadata.RunID,
+		"work_unit_id":       metadata.WorkUnitID,
+		"agent_session_id":   metadata.AgentSessionID,
 		"system_prompt_hash": promptSnapshot.SystemPromptHash,
 		"task_prompt_hash":   promptSnapshot.TaskPromptHash,
 		"composition_hash":   promptSnapshot.CompositionHash,
@@ -201,13 +168,13 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 		return nil, err
 	}
 	if _, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
-		ID:          input.PromptSnapshotEventID,
+		ID:          metadata.PromptSnapshotEventID,
 		Type:        "prompt.snapshot_created",
 		Version:     transition.EventVersionV1,
-		TaskID:      task.ID,
-		RunID:       run.ID,
-		WorkUnitID:  wu.ID,
-		AgentID:     session.AgentID,
+		TaskID:      metadata.TaskID,
+		RunID:       metadata.RunID,
+		WorkUnitID:  metadata.WorkUnitID,
+		AgentID:     metadata.AgentID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
 		Payload:     promptPayload,
@@ -217,21 +184,21 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 
 	toolsetPayload, err := serialization.MarshalPayload("prompt_service.toolset_snapshot_payload", map[string]interface{}{
 		"toolset_snapshot_id": toolsetSnapshot.ID,
-		"agent_session_id":    session.ID,
-		"run_id":              run.ID,
+		"agent_session_id":    metadata.AgentSessionID,
+		"run_id":              metadata.RunID,
 		"tool_count":          len(toolsetSnapshot.Tools),
 	})
 	if err != nil {
 		return nil, err
 	}
 	if _, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
-		ID:          input.ToolsetSnapshotEventID,
+		ID:          metadata.ToolsetSnapshotEventID,
 		Type:        "toolset.snapshot_created",
 		Version:     transition.EventVersionV1,
-		TaskID:      task.ID,
-		RunID:       run.ID,
-		WorkUnitID:  wu.ID,
-		AgentID:     session.AgentID,
+		TaskID:      metadata.TaskID,
+		RunID:       metadata.RunID,
+		WorkUnitID:  metadata.WorkUnitID,
+		AgentID:     metadata.AgentID,
 		Priority:    domain.EventPriorityCheckpoint,
 		RequiresAck: false,
 		Payload:     toolsetPayload,

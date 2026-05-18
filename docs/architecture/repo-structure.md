@@ -15,7 +15,7 @@ internal/
     db/
     event/
     eventstore/
-    orchestration/
+    transition/
     serialization/
     statemachine/
     transition/
@@ -68,7 +68,7 @@ Componentes compartilhados usados por todos os módulos verticais. Não contém 
 - `db/`: Helpers de transação (BeginTx, CommitTx, RollbackTx, EnsureRowsAffected)
 - `event/`: EventService wrapper do Event Store
 - `eventstore/`: Store de eventos com validação schema, append e replay
-- `orchestration/`: Helpers cross-domain (TransitionInput, OperationResult, RuntimeEventRelay)
+- `transition/`: Helpers cross-domain (TransitionInput, OperationResult, AppendTransition, AppendServiceEvent)
 - `serialization/`: Marshalling genérico de payloads
 - `statemachine/`: Regras de transição de estado e replay
 - `transition/`: Payload builders para transições
@@ -94,7 +94,7 @@ Migrations do banco de dados usando goose.
 - `trigger/`: Detecção de anomalias (stalls, loops)
 - `workunit/`: Work units, dependências, ownership, paths
 
-**Regra de Ouro (ADR 0022):** Módulos verticais NUNCA importam outros módulos diretamente. Comunicação cross-module ocorre via `internal/core/coordination/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
+**Regra de Ouro (ADR 0022):** Módulos verticais NUNCA importam outros módulos diretamente. Comunicação cross-module ocorre via `internal/modules/orchestrator/` (camada de orquestração canônica) ou interfaces DI com adapters em `internal/bootstrap/services.go`.
 
 ### contracts/
 Contratos JSON versionados como artefatos independentes.
@@ -117,7 +117,7 @@ Fonte de verdade para arquitetura, canvas, ADRs, contratos narrativos e operaç�
 
 ## Regras
 
-- **Isolamento de Módulos:** Módulos verticais não se importam diretamente. Comunicação via core/coordination ou DI.
+- **Isolamento de Módulos:** Módulos verticais não se importam diretamente. Comunicação via orchestrator/ ou DI.
 - **O dominio (internal/domain/) não deve depender de banco, WebSocket, GitHub, Docker ou CLI.**
 - JSON Schemas são contratos de borda; tipos Go são o modelo interno.
 - Schemas devem rejeitar campos desconhecidos por padrão.

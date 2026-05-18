@@ -257,4 +257,5 @@ type ComposedPrompt struct {
 	FragmentRefs       []FragmentRef          `json:"fragment_refs"`
 	AssemblyOrder      []string               `json:"assembly_order"`
 	VariablesApplied   map[string]interface{} `json:"variables_applied"`
+	Toolset            ToolsetSelection       `json:"toolset"`
 }

@@ -206,12 +206,40 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 
-	prepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	taskContext := prompt.TaskContext{
+		TaskID:             taskResult.Value.ID,
+		TaskTitle:          taskResult.Value.Title,
+		TaskDescription:    taskResult.Value.Description,
+		RunID:              runResult.Value.ID,
+		WorkUnitID:         wuResult.Value.ID,
+		TaskGraphID:        wuResult.Value.TaskGraphID,
+		WorkUnitTitle:      wuResult.Value.Title,
+		WorkUnitObjective:  wuResult.Value.Objective,
+		AgentProfile:       wuResult.Value.AssignedAgentProfile,
+		OwnedPaths:         wuResult.Value.OwnedPaths,
+		ReadPaths:          wuResult.Value.ReadPaths,
+		DependsOn:          wuResult.Value.DependsOn,
+		AcceptanceCriteria: wuResult.Value.AcceptanceCriteria,
+		ValidationPlan:     wuResult.Value.ValidationPlan,
+	}
+	toolset, err := prompt.SelectToolset(wuResult.Value.AssignedAgentProfile)
+	if err != nil {
+		t.Fatalf("select toolset: %v", err)
+	}
+	taskContext.Toolset = toolset
+	composed, err := prompt.Compose(taskContext)
+	if err != nil {
+		t.Fatalf("compose prompt: %v", err)
+	}
+	prepared, err := promptService.PersistComposedPrompt(ctx, composed, prompt.PersistMetadata{
 		RunID:          runResult.Value.ID,
+		WorkUnitID:     wuResult.Value.ID,
+		TaskID:         taskResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
+		AgentID:        "agent-prompt-test",
 	})
 	if err != nil {
-		t.Fatalf("prepare prompt: %v", err)
+		t.Fatalf("persist prompt: %v", err)
 	}
 	if prepared.PromptSnapshot.ID == "" || prepared.ToolsetSnapshot.ID == "" {
 		t.Fatalf("expected prompt and toolset snapshots, got %+v", prepared)
@@ -250,12 +278,15 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if storedToolset == nil || len(storedToolset.Tools) == 0 {
 		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
 	}
-	referenced, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	referenced, err := promptService.PersistComposedPrompt(ctx, composed, prompt.PersistMetadata{
 		RunID:          runResult.Value.ID,
+		WorkUnitID:     wuResult.Value.ID,
+		TaskID:         taskResult.Value.ID,
 		AgentSessionID: sessionResult.Value.ID,
+		AgentID:        "agent-prompt-test",
 	})
 	if err != nil {
-		t.Fatalf("prepare repeated prompt: %v", err)
+		t.Fatalf("persist repeated prompt: %v", err)
 	}
 	if referenced.PromptSnapshot.ID != prepared.PromptSnapshot.ID {
 		t.Fatalf("expected duplicate composition to reuse prompt snapshot %s, got %s", prepared.PromptSnapshot.ID, referenced.PromptSnapshot.ID)
@@ -312,12 +343,40 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
 	}
-	reviewerPrepared, err := promptService.PrepareRunPrompt(ctx, prompt.PrepareRunPromptInput{
+	reviewerTaskContext := prompt.TaskContext{
+		TaskID:             taskResult.Value.ID,
+		TaskTitle:          taskResult.Value.Title,
+		TaskDescription:    taskResult.Value.Description,
+		RunID:              reviewerRun.Value.ID,
+		WorkUnitID:         reviewerWU.Value.ID,
+		TaskGraphID:        reviewerWU.Value.TaskGraphID,
+		WorkUnitTitle:      reviewerWU.Value.Title,
+		WorkUnitObjective:  reviewerWU.Value.Objective,
+		AgentProfile:       reviewerWU.Value.AssignedAgentProfile,
+		OwnedPaths:         reviewerWU.Value.OwnedPaths,
+		ReadPaths:          reviewerWU.Value.ReadPaths,
+		DependsOn:          reviewerWU.Value.DependsOn,
+		AcceptanceCriteria: reviewerWU.Value.AcceptanceCriteria,
+		ValidationPlan:     reviewerWU.Value.ValidationPlan,
+	}
+	reviewerToolset, err := prompt.SelectToolset(reviewerWU.Value.AssignedAgentProfile)
+	if err != nil {
+		t.Fatalf("select reviewer toolset: %v", err)
+	}
+	reviewerTaskContext.Toolset = reviewerToolset
+	reviewerComposed, err := prompt.Compose(reviewerTaskContext)
+	if err != nil {
+		t.Fatalf("compose reviewer prompt: %v", err)
+	}
+	reviewerPrepared, err := promptService.PersistComposedPrompt(ctx, reviewerComposed, prompt.PersistMetadata{
 		RunID:          reviewerRun.Value.ID,
+		WorkUnitID:     reviewerWU.Value.ID,
+		TaskID:         taskResult.Value.ID,
 		AgentSessionID: reviewerSession.Value.ID,
+		AgentID:        "agent-prompt-reviewer",
 	})
 	if err != nil {
-		t.Fatalf("prepare reviewer prompt: %v", err)
+		t.Fatalf("persist reviewer prompt: %v", err)
 	}
 	if reviewerPrepared.PromptSnapshot.ID == prepared.PromptSnapshot.ID {
 		t.Fatal("expected different WorkUnit/profile composition to create a prompt snapshot variant")
