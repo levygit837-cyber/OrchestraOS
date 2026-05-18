@@ -20,7 +20,7 @@
 //
 // What it does NOT do:
 //   - Decide which task to execute or when (future director/ module)
-//   - Perform low-level transaction coordination (belongs to orchestrator module)
+//   - Perform low-level transaction coordination (belongs to owner modules via DI interfaces)
 //
 // This service follows the architectural guidance from ADR 0020 (Orchestrator Service)
 // and ADR 0023 (Hybrid Intelligent Orchestrator).

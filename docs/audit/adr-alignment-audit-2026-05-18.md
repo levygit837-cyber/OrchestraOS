@@ -147,6 +147,36 @@ func (s *PromptService) PrepareAndPersistPrompt(ctx context.Context, tx *sql.Tx,
 
 ---
 
+### ⚠️ DEF-4: Prompt Service Violates Cross-Module Import Rules (ACCEPTED — DOCUMENTED)
+
+**Severity:** Medium (documented as accepted risk for now)  
+**File:** `internal/modules/prompt/service.go`  
+**Issue:** `PrepareAndPersistPrompt` imports concrete types from `internal/modules/run`, `workunit`, `task`, and `agentsession` for the `PrepareAndPersistInput` struct:
+
+```go
+import (
+    "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
+    "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
+    "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+    "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
+)
+```
+
+This violates the module contract rule: *"NEVER import internal/modules/* for services, repositories, or business logic."* (ADR-0022). The allowed exception is importing types **only for DI interface return types** (ADR-0026).
+
+**Why Accepted for Now:**
+- `PrepareAndPersistPrompt` is an orchestration helper that needs all four entities to compose a prompt.
+- Refactoring to pure interfaces would require 4 new DI interfaces and significant boilerplate.
+- The prompt module does not call service methods from these modules — it only reads fields from passed-in structs.
+
+**Fix Strategy:**
+1. Replace struct imports with caller-provided interface or flattened DTO.
+2. Create `PrepareAndPersistInput` using only primitive types + IDs, or a `PromptContext` interface.
+
+**Recommendation:** Track as technical debt. Refactor when the prompt module gains additional cross-module callers.
+
+---
+
 ## Additional Notes
 
 ### Missing Milestone Definitions

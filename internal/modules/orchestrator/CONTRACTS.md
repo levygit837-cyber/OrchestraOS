@@ -96,5 +96,4 @@ No service decomposition at this time. `service.go` is the single file for orche
 
 ## Related ADRs
 
-- ADR-0022: Vertical Slice Architecture
-- ADR-0025: Module Standardization
+- ADR-0022: Vertical Slice Architecture (inclui padronização de módulos)

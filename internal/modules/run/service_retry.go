@@ -61,8 +61,8 @@ func (s *RunService) Retry(ctx context.Context, runID string, input transition.T
 		}
 		return existing, nil
 	}
-	if !transition.IsFinalStatus(string(previous.Status)) {
-		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "only terminal runs can be retried")
+	if previous.Status != StatusFailed && previous.Status != StatusCancelled {
+		return nil, apperrors.New(apperrors.CodeInvalidTransition, op, "only failed or cancelled runs can be retried")
 	}
 	if previous.Attempt >= policy.MaxAttempts {
 		return nil, apperrors.New(apperrors.CodePolicy, op, "retry limit reached")

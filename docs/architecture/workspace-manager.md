@@ -170,7 +170,7 @@ O Snapshot Engine gerencia dois tipos de snapshot:
 - Armazena o estado completo de cada arquivo modificado.
 - Usado para rollback, retomada e inspeção de histórico.
 - **Descartado** quando o workspace é finalizado ou descartado.
-- NÃO é commit Git — é armazenado como diffs em um diretório de cache do WSM.
+- NÃO é commit Git — é armazenado como objetos Git (tree + blob) em refs privadas do WSM (`refs/wsm/{agent-id}/snapshots/transient-{seq}`), garbage coletados após descarte.
 
 ```go
 type TransientSnapshot struct {
