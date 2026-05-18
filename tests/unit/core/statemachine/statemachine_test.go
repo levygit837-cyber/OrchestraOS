@@ -12,46 +12,46 @@ import (
 func TestRunTransitions(t *testing.T) {
 	tests := []struct {
 		name    string
-		from    domain.RunStatus
-		to      domain.RunStatus
+		from    string
+		to      string
 		ctx     statemachine.TransitionContext
 		wantErr bool
 	}{
 		{
 			name: "created to running",
-			from: domain.RunStatusCreated,
-			to:   domain.RunStatusRunning,
+			from: "created",
+			to:   "running",
 		},
 		{
 			name:    "running cannot complete without validating",
-			from:    domain.RunStatusRunning,
-			to:      domain.RunStatusCompleted,
+			from:    "running",
+			to:      "completed",
 			ctx:     statemachine.TransitionContext{Justification: "runtime finished"},
 			wantErr: true,
 		},
 		{
 			name: "validating completes with evidence",
-			from: domain.RunStatusValidating,
-			to:   domain.RunStatusCompleted,
+			from: "validating",
+			to:   "completed",
 			ctx:  statemachine.TransitionContext{EvidenceRefs: []string{"validation.completed:test"}},
 		},
 		{
 			name:    "validating cannot complete without evidence",
-			from:    domain.RunStatusValidating,
-			to:      domain.RunStatusCompleted,
+			from:    "validating",
+			to:      "completed",
 			wantErr: true,
 		},
 		{
 			name:    "terminal cannot resume",
-			from:    domain.RunStatusCompleted,
-			to:      domain.RunStatusRunning,
+			from:    "completed",
+			to:      "running",
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := statemachine.CanTransition(statemachine.AggregateRun, string(tt.from), string(tt.to), tt.ctx)
+			err := statemachine.CanTransition(statemachine.AggregateRun, tt.from, tt.to, tt.ctx)
 			if tt.wantErr && err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -65,21 +65,21 @@ func TestRunTransitions(t *testing.T) {
 func TestTaskTransitions(t *testing.T) {
 	tests := []struct {
 		name    string
-		from    domain.TaskStatus
-		to      domain.TaskStatus
+		from    string
+		to      string
 		ctx     statemachine.TransitionContext
 		wantErr bool
 	}{
-		{name: "created to triaged", from: domain.TaskStatusCreated, to: domain.TaskStatusTriaged},
-		{name: "triaged to planned", from: domain.TaskStatusTriaged, to: domain.TaskStatusPlanned},
-		{name: "planned cannot jump to running", from: domain.TaskStatusPlanned, to: domain.TaskStatusRunning, wantErr: true},
-		{name: "validating completes with justification", from: domain.TaskStatusValidating, to: domain.TaskStatusCompleted, ctx: statemachine.TransitionContext{Justification: "manual validation accepted"}},
-		{name: "completed terminal", from: domain.TaskStatusCompleted, to: domain.TaskStatusRunning, wantErr: true},
+		{name: "created to triaged", from: "created", to: "triaged"},
+		{name: "triaged to planned", from: "triaged", to: "planned"},
+		{name: "planned cannot jump to running", from: "planned", to: "running", wantErr: true},
+		{name: "validating completes with justification", from: "validating", to: "completed", ctx: statemachine.TransitionContext{Justification: "manual validation accepted"}},
+		{name: "completed terminal", from: "completed", to: "running", wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := statemachine.CanTransition(statemachine.AggregateTask, string(tt.from), string(tt.to), tt.ctx)
+			err := statemachine.CanTransition(statemachine.AggregateTask, tt.from, tt.to, tt.ctx)
 			if tt.wantErr && err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -93,21 +93,21 @@ func TestTaskTransitions(t *testing.T) {
 func TestWorkUnitTransitions(t *testing.T) {
 	tests := []struct {
 		name    string
-		from    domain.WorkUnitStatus
-		to      domain.WorkUnitStatus
+		from    string
+		to      string
 		ctx     statemachine.TransitionContext
 		wantErr bool
 	}{
-		{name: "created to running allowed for current MVP CLI", from: domain.WorkUnitStatusCreated, to: domain.WorkUnitStatusRunning},
-		{name: "running to validating", from: domain.WorkUnitStatusRunning, to: domain.WorkUnitStatusValidating},
-		{name: "validating completes with evidence", from: domain.WorkUnitStatusValidating, to: domain.WorkUnitStatusCompleted, ctx: statemachine.TransitionContext{EvidenceRefs: []string{"artifact:diff"}}},
-		{name: "running cannot complete directly", from: domain.WorkUnitStatusRunning, to: domain.WorkUnitStatusCompleted, ctx: statemachine.TransitionContext{EvidenceRefs: []string{"artifact:diff"}}, wantErr: true},
-		{name: "failed terminal", from: domain.WorkUnitStatusFailed, to: domain.WorkUnitStatusRunning, wantErr: true},
+		{name: "created to running allowed for current MVP CLI", from: "created", to: "running"},
+		{name: "running to validating", from: "running", to: "validating"},
+		{name: "validating completes with evidence", from: "validating", to: "completed", ctx: statemachine.TransitionContext{EvidenceRefs: []string{"artifact:diff"}}},
+		{name: "running cannot complete directly", from: "running", to: "completed", ctx: statemachine.TransitionContext{EvidenceRefs: []string{"artifact:diff"}}, wantErr: true},
+		{name: "failed terminal", from: "failed", to: "running", wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := statemachine.CanTransition(statemachine.AggregateWorkUnit, string(tt.from), string(tt.to), tt.ctx)
+			err := statemachine.CanTransition(statemachine.AggregateWorkUnit, tt.from, tt.to, tt.ctx)
 			if tt.wantErr && err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -121,20 +121,20 @@ func TestWorkUnitTransitions(t *testing.T) {
 func TestAgentSessionTransitions(t *testing.T) {
 	tests := []struct {
 		name    string
-		from    domain.AgentSessionStatus
-		to      domain.AgentSessionStatus
+		from    string
+		to      string
 		wantErr bool
 	}{
-		{name: "starting to running", from: domain.AgentSessionStatusStarting, to: domain.AgentSessionStatusRunning},
-		{name: "running to stopping", from: domain.AgentSessionStatusRunning, to: domain.AgentSessionStatusStopping},
-		{name: "stopping to stopped", from: domain.AgentSessionStatusStopping, to: domain.AgentSessionStatusStopped},
-		{name: "running directly to stopped blocked", from: domain.AgentSessionStatusRunning, to: domain.AgentSessionStatusStopped, wantErr: true},
-		{name: "stopped terminal", from: domain.AgentSessionStatusStopped, to: domain.AgentSessionStatusRunning, wantErr: true},
+		{name: "starting to running", from: "starting", to: "running"},
+		{name: "running to stopping", from: "running", to: "stopping"},
+		{name: "stopping to stopped", from: "stopping", to: "stopped"},
+		{name: "running directly to stopped blocked", from: "running", to: "stopped", wantErr: true},
+		{name: "stopped terminal", from: "stopped", to: "running", wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := statemachine.CanTransition(statemachine.AggregateAgentSession, string(tt.from), string(tt.to), statemachine.TransitionContext{})
+			err := statemachine.CanTransition(statemachine.AggregateAgentSession, tt.from, tt.to, statemachine.TransitionContext{})
 			if tt.wantErr && err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -167,16 +167,16 @@ func TestReplayProjection(t *testing.T) {
 	}
 
 	state := statemachine.Project(events)
-	if state.TaskStatus != domain.TaskStatusCreated {
+	if state.TaskStatus != "created" {
 		t.Fatalf("expected task status created, got %s", state.TaskStatus)
 	}
-	if state.WorkUnitStatuses[workUnitID] != domain.WorkUnitStatusCreated {
+	if state.WorkUnitStatuses[workUnitID] != "created" {
 		t.Fatalf("expected work unit status created, got %s", state.WorkUnitStatuses[workUnitID])
 	}
-	if state.RunStatuses[runID] != domain.RunStatusCompleted {
+	if state.RunStatuses[runID] != "completed" {
 		t.Fatalf("expected run status completed, got %s", state.RunStatuses[runID])
 	}
-	if state.AgentSessionStatus[agentID] != domain.AgentSessionStatusRunning {
+	if state.AgentSessionStatus[agentID] != "running" {
 		t.Fatalf("expected agent session status running, got %s", state.AgentSessionStatus[agentID])
 	}
 	if state.LastCheckpoint == nil || state.LastCheckpoint.Type != "agent.checkpoint_reached" {
@@ -216,7 +216,7 @@ func TestReplayProjectionAcceptsCompletedWithEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected replay to accept valid completion, got %v", err)
 	}
-	if state.RunStatuses[runID] != domain.RunStatusCompleted {
+	if state.RunStatuses[runID] != "completed" {
 		t.Fatalf("expected run completed, got %s", state.RunStatuses[runID])
 	}
 }

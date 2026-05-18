@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 type Aggregate string
@@ -53,23 +52,14 @@ func CanTransition(aggregate Aggregate, from, to string, ctx TransitionContext) 
 }
 
 func isTerminal(status string) bool {
-	return status == string(domain.TaskStatusCompleted) ||
-		status == string(domain.TaskStatusFailed) ||
-		status == string(domain.TaskStatusCancelled) ||
-		status == string(domain.WorkUnitStatusCompleted) ||
-		status == string(domain.WorkUnitStatusFailed) ||
-		status == string(domain.WorkUnitStatusCancelled) ||
-		status == string(domain.RunStatusCompleted) ||
-		status == string(domain.RunStatusFailed) ||
-		status == string(domain.RunStatusCancelled) ||
-		status == string(domain.AgentSessionStatusStopped) ||
-		status == string(domain.AgentSessionStatusFailed)
+	return status == "completed" ||
+		status == "failed" ||
+		status == "cancelled" ||
+		status == "stopped"
 }
 
 func isCompleted(status string) bool {
-	return status == string(domain.TaskStatusCompleted) ||
-		status == string(domain.WorkUnitStatusCompleted) ||
-		status == string(domain.RunStatusCompleted)
+	return status == "completed"
 }
 
 func hasCompletionEvidence(ctx TransitionContext) bool {
@@ -86,39 +76,39 @@ func invalidTransition(aggregate Aggregate, from, to string) error {
 
 var transitions = map[Aggregate]map[string][]string{
 	AggregateTask: {
-		string(domain.TaskStatusCreated):          {string(domain.TaskStatusTriaged), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusTriaged):          {string(domain.TaskStatusPlanned), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusPlanned):          {string(domain.TaskStatusScheduled), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusScheduled):        {string(domain.TaskStatusSandboxPreparing), string(domain.TaskStatusRunning), string(domain.TaskStatusPaused), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusSandboxPreparing): {string(domain.TaskStatusRunning), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusRunning):          {string(domain.TaskStatusWaitingApproval), string(domain.TaskStatusPaused), string(domain.TaskStatusValidating), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusWaitingApproval):  {string(domain.TaskStatusRunning), string(domain.TaskStatusPaused), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusPaused):           {string(domain.TaskStatusRunning), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
-		string(domain.TaskStatusValidating):       {string(domain.TaskStatusCompleted), string(domain.TaskStatusRunning), string(domain.TaskStatusFailed), string(domain.TaskStatusCancelled)},
+		"created":           {"triaged", "failed", "cancelled"},
+		"triaged":           {"planned", "failed", "cancelled"},
+		"planned":           {"scheduled", "failed", "cancelled"},
+		"scheduled":         {"sandbox_preparing", "running", "paused", "cancelled"},
+		"sandbox_preparing": {"running", "failed", "cancelled"},
+		"running":           {"waiting_approval", "paused", "validating", "failed", "cancelled"},
+		"waiting_approval":  {"running", "paused", "failed", "cancelled"},
+		"paused":            {"running", "failed", "cancelled"},
+		"validating":        {"completed", "running", "failed", "cancelled"},
 	},
 	AggregateWorkUnit: {
-		string(domain.WorkUnitStatusCreated):         {string(domain.WorkUnitStatusPlanned), string(domain.WorkUnitStatusScheduled), string(domain.WorkUnitStatusBlocked), string(domain.WorkUnitStatusRunning), string(domain.WorkUnitStatusCancelled)},
-		string(domain.WorkUnitStatusPlanned):         {string(domain.WorkUnitStatusScheduled), string(domain.WorkUnitStatusBlocked), string(domain.WorkUnitStatusFailed), string(domain.WorkUnitStatusCancelled)},
-		string(domain.WorkUnitStatusScheduled):       {string(domain.WorkUnitStatusRunning), string(domain.WorkUnitStatusBlocked), string(domain.WorkUnitStatusPaused), string(domain.WorkUnitStatusCancelled)},
-		string(domain.WorkUnitStatusBlocked):         {string(domain.WorkUnitStatusScheduled), string(domain.WorkUnitStatusRunning), string(domain.WorkUnitStatusFailed), string(domain.WorkUnitStatusCancelled)},
-		string(domain.WorkUnitStatusRunning):         {string(domain.WorkUnitStatusWaitingApproval), string(domain.WorkUnitStatusPaused), string(domain.WorkUnitStatusValidating), string(domain.WorkUnitStatusFailed), string(domain.WorkUnitStatusCancelled)},
-		string(domain.WorkUnitStatusWaitingApproval): {string(domain.WorkUnitStatusRunning), string(domain.WorkUnitStatusPaused), string(domain.WorkUnitStatusFailed), string(domain.WorkUnitStatusCancelled)},
-		string(domain.WorkUnitStatusPaused):          {string(domain.WorkUnitStatusRunning), string(domain.WorkUnitStatusFailed), string(domain.WorkUnitStatusCancelled)},
-		string(domain.WorkUnitStatusValidating):      {string(domain.WorkUnitStatusCompleted), string(domain.WorkUnitStatusRunning), string(domain.WorkUnitStatusFailed), string(domain.WorkUnitStatusCancelled)},
+		"created":          {"planned", "scheduled", "blocked", "running", "cancelled"},
+		"planned":          {"scheduled", "blocked", "failed", "cancelled"},
+		"scheduled":        {"running", "blocked", "paused", "cancelled"},
+		"blocked":          {"scheduled", "running", "failed", "cancelled"},
+		"running":          {"waiting_approval", "paused", "validating", "failed", "cancelled"},
+		"waiting_approval": {"running", "paused", "failed", "cancelled"},
+		"paused":           {"running", "failed", "cancelled"},
+		"validating":       {"completed", "running", "failed", "cancelled"},
 	},
 	AggregateRun: {
-		string(domain.RunStatusCreated):         {string(domain.RunStatusRunning), string(domain.RunStatusFailed), string(domain.RunStatusCancelled)},
-		string(domain.RunStatusRunning):         {string(domain.RunStatusWaitingApproval), string(domain.RunStatusPaused), string(domain.RunStatusValidating), string(domain.RunStatusFailed), string(domain.RunStatusCancelled)},
-		string(domain.RunStatusWaitingApproval): {string(domain.RunStatusRunning), string(domain.RunStatusPaused), string(domain.RunStatusFailed), string(domain.RunStatusCancelled)},
-		string(domain.RunStatusPaused):          {string(domain.RunStatusRunning), string(domain.RunStatusFailed), string(domain.RunStatusCancelled)},
-		string(domain.RunStatusValidating):      {string(domain.RunStatusCompleted), string(domain.RunStatusRunning), string(domain.RunStatusFailed), string(domain.RunStatusCancelled)},
+		"created":          {"running", "failed", "cancelled"},
+		"running":          {"waiting_approval", "paused", "validating", "failed", "cancelled"},
+		"waiting_approval": {"running", "paused", "failed", "cancelled"},
+		"paused":           {"running", "failed", "cancelled"},
+		"validating":       {"completed", "running", "failed", "cancelled"},
 	},
 	AggregateAgentSession: {
-		string(domain.AgentSessionStatusStarting):        {string(domain.AgentSessionStatusRunning), string(domain.AgentSessionStatusFailed)},
-		string(domain.AgentSessionStatusRunning):         {string(domain.AgentSessionStatusWaitingApproval), string(domain.AgentSessionStatusPaused), string(domain.AgentSessionStatusDisconnected), string(domain.AgentSessionStatusStopping), string(domain.AgentSessionStatusFailed)},
-		string(domain.AgentSessionStatusWaitingApproval): {string(domain.AgentSessionStatusRunning), string(domain.AgentSessionStatusPaused), string(domain.AgentSessionStatusStopping), string(domain.AgentSessionStatusFailed)},
-		string(domain.AgentSessionStatusPaused):          {string(domain.AgentSessionStatusRunning), string(domain.AgentSessionStatusStopping), string(domain.AgentSessionStatusFailed)},
-		string(domain.AgentSessionStatusDisconnected):    {string(domain.AgentSessionStatusRunning), string(domain.AgentSessionStatusStopping), string(domain.AgentSessionStatusFailed)},
-		string(domain.AgentSessionStatusStopping):        {string(domain.AgentSessionStatusStopped), string(domain.AgentSessionStatusFailed)},
+		"starting":         {"running", "failed"},
+		"running":          {"waiting_approval", "paused", "disconnected", "stopping", "failed"},
+		"waiting_approval": {"running", "paused", "stopping", "failed"},
+		"paused":           {"running", "stopping", "failed"},
+		"disconnected":     {"running", "stopping", "failed"},
+		"stopping":         {"stopped", "failed"},
 	},
 }

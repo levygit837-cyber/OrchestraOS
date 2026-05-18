@@ -887,7 +887,7 @@ func TestAgentSessionStartingEventReplays(t *testing.T) {
 	if err != nil {
 		t.Fatalf("replay run: %v", err)
 	}
-	if state.AgentSessionStatus[agentID] != domain.AgentSessionStatusStarting {
+	if state.AgentSessionStatus[agentID] != "starting" {
 		t.Fatalf("expected replayed agent session starting, got %s", state.AgentSessionStatus[agentID])
 	}
 }
