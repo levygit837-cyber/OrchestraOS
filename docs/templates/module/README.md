@@ -54,7 +54,7 @@ State Flow:
 
 Forbidden:
 - `internal/modules/*` (direct imports)
-- `internal/core/coordination` (reserved for orchestrator module)
+- `internal/core/*` packages not listed above
 - Inline SQL outside `queries.go`
 - Direct mutation of other module's tables
 

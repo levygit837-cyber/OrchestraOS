@@ -1,7 +1,10 @@
 # 0028. Padrões de Arquitetura Core e Nomenclatura — Eliminação do Deus Pacote
 
-**Status:** Proposed  
+**Status:** Superseded by ADR 0022 (conteúdo absorvido em 2026-05-18)  
 **Data:** 2026-05-17
+
+> **Nota:** Este ADR foi absorvido pelo ADR 0022. O conteúdo abaixo é mantido para referência histórica.
+> As regras de nomenclatura, template de `doc.go` e nomes proibidos de arquivos foram incorporados à Seção 5 do ADR 0022.
 
 ---
 
@@ -12,9 +15,7 @@ Após a consolidação da Arquitetura de Módulos Verticais (ADR-0022), o projet
 No entanto, a camada de infraestrutura compartilhada (`internal/core/*`) e a camada de coordenação cross-module (`internal/core/coordination/`) acumularam inconsistências estruturais e nomes genéricos que quebram a previsibilidade do sistema:
 
 1. **`core/coordination/`** evoluiu para um **"Deus Pacote"** — acumula 7 responsabilidades distintas (runtime relay, prompt orchestration, cascade cancellation, run-workunit sync, session timeout, projection updates, cross-module validation), importando 8 dos 10 módulos do sistema.
-2. **Nomes de arquivos genéricos** (`helpers.go`, `utils.go`, `txkit.go`, `eventops.go`) dificultam a navegação por LLMs, que dependem de nomes descritivos para inferir conteúdo sem abrir arquivos.
-3. **SQL orfão** em `coordination/queries.go` viola o encapsulamento de módulos — queries de `runs`, `work_units` e `agent_sessions` não deveriam estar fora de seus módulos.
-4. **Falta de padrão unificado** para `core/*` — enquanto `modules/*` tem template rígido, `core/*` cresceu organicamente sem convenção.
+2. **Falta de padrão unificado** para `core/*` — enquanto `modules/*` tem template rígido, `core/*` cresceu organicamente sem convenção.
 
 ## 2. Decisão
 
@@ -24,17 +25,9 @@ No entanto, a camada de infraestrutura compartilhada (`internal/core/*`) e a cam
 
 **Corolário:** `core/coordination/` será **esvaziado de lógica de negócio** e posteriormente removido. Sua lógica será distribuída para os módulos que possuem o processo.
 
-#### 2.1.1 Distribuição da Lógica de `coordination/`
+#### 2.1.1 Eliminação de Pacotes "Deus"
 
-| Arquivo Atual | Responsabilidade | Módulo Dono | Novo Arquivo |
-|---------------|------------------|-------------|--------------|
-| `cascade.go` | Cancelamento em cascata de task → runs → WUs | `task` | `service_cascade.go` |
-| `run_workunit_sync.go` | Sincronização de transição run ↔ workunit | `run` | `service_workunit.go` |
-| `agentsession_orchestrator.go` | Timeout de session com pause de run | `agentsession` | `service_timeout.go` |
-| `helpers.go` | Atualização de projeção de run | `run` | `repository.go` (método `UpdateProjection`) |
-| `prompt_orchestrator.go` | Gather cross-module para prompt | `prompt` | `service_orchestrate.go` |
-| `runtime_relay.go` | Consumo de eventos de runtime | `run` | `service_relay.go` |
-| `queries.go` | SQL compartilhado | — | Dividir entre módulos |
+**Regra absoluta:** Nenhum pacote em `internal/core/*` ou `internal/modules/*` pode acumular mais de **3 responsabilidades de domínio distintas**.
 
 **Regra de ouro para cross-module:** Se um fluxo envolve módulos A e B, a orquestração deve residir no módulo que **inicia o processo** ou que **possui o aggregate raiz** do fluxo. Nunca em um pacote utilitário genérico.
 
@@ -112,11 +105,8 @@ internal/core/
   statemachine/      → Regras de transição de estado (tabela + CanTransition).
   transition/        → Builders de payload/contexto para transições.
   eventstore/        → Persistência de eventos com schema validation.
-  eventappend/       → Serviço de append idempotente (wrapper do eventstore).
+  event/             → Serviço de append idempotente (wrapper do eventstore).
 ```
-
-**O que NÃO existe mais:**
-- `coordination/` — removido após migração da lógica para módulos.
 
 ### 2.4 Regra de SQL e Encapsulamento
 

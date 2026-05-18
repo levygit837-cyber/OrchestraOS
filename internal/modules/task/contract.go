@@ -28,8 +28,6 @@ import _ "embed"
 // ALLOWED core/* imports:
 //   - core/apperrors, core/db, core/validation, core/event
 //   - core/statemachine, core/transition, core/serialization
-// FORBIDDEN core/* imports:
-//   - core/transition (shared types)
 //
 // For full contracts, read CONTRACTS.md in this directory.
 

@@ -1,6 +1,7 @@
 # Module: orchestrator
 
-> **⚠️ NOME FUTURO:** Este módulo será renomeado para `runner/` ou `taskflow/` em uma futura refatoração. O nome `orchestrator` será reservado para um módulo de orquestração de agentes (`director/`). Ver `docs/adr/0027-orchestrator-module-naming.md`.
+> **Nome do Módulo:** `orchestrator/` é o nome estável do Task Execution Workflow Engine.
+> Um futuro módulo `director/` pode lidar com orquestração de alto nível de agentes, mas `orchestrator/` permanece como a camada de execução de workflow.
 
 ## Purpose
 

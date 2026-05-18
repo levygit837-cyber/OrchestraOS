@@ -24,7 +24,7 @@ Every module under `internal/modules/` MUST contain:
 - Inline SQL strings outside `queries.go`
 - Business logic inside `repository.go`
 - Direct mutation of another module's tables
-- Calling another module's `Service` methods — use DI interfaces or `core/coordination`
+- Calling another module's `Service` methods — use DI interfaces or `core/transition` helpers
 - `panic()` — always return `apperrors.Error`
 - `fmt.Println` / `fmt.Printf` — use structured logging or return errors
 

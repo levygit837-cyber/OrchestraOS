@@ -31,6 +31,13 @@ O primeiro corte executavel usara um planner local deterministico baseado em `Ta
 - Tasks sem criterios suficientes sao rejeitadas em vez de gerar work units fracas.
 - Um planner por LLM pode ser adicionado depois como nova `planner_strategy`, produzindo o mesmo contrato validado.
 
+## Planners Implementados
+
+| Estratégia | Arquivo | Descrição |
+|---|---|---|
+| `llm_gemini_v1` | `internal/modules/taskgraph/planner_gemini.go` | Usa API do Google Gemini para decomposição semântica. Requer `GEMINI_API_KEY` e `GEMINI_MODEL` (fallback para `gemini-1.5-pro` se ausente). Implementa fallback automático para o planner heurístico em caso de erro da API. |
+| `heuristic` (padrão) | `internal/modules/taskgraph/planner_heuristic.go` | Planner local determinístico descrito neste ADR. Usado como fallback e quando variáveis de ambiente do Gemini não estão configuradas. |
+
 ## Alternativas consideradas
 
 - **LLM Planner agora**: melhor potencial semantico, mas maior custo operacional e superficie de falha.

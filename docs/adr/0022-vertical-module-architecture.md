@@ -41,7 +41,7 @@ Adotaremos uma arquitetura baseada em **Vertical Slices** (ou Módulos Verticais
 
 2. **Isolamento Estrito (Regra de Ouro):**
    Um módulo em `internal/modules/*` **NÃO PODE** importar arquivos de outro módulo em `internal/modules/*`. Eles devem ser complementamente autônomos.
-   Se precisarem se comunicar, devem fazê-lo de forma assíncrona (via `core/eventstore`) ou ser orquestrados por uma camada de aplicação superior (`cmd/` ou `internal/core/coordination/`), que os interliga usando dependências puras (ex: IDs genéricos em vez de structs concretas).
+   Se precisarem se comunicar, devem fazê-lo de forma assíncrona (via `core/eventstore`) ou ser orquestrados por uma camada de aplicação superior (`cmd/` ou `internal/modules/orchestrator/`), que os interliga usando dependências puras (ex: IDs genéricos em vez de structs concretas).
 
 ## 3. Consequências
 
@@ -77,7 +77,6 @@ A ADR 0017 é marcada como **DEPRECATED**. Os princípios fundamentais continuam
 
 - Cada entidade de domínio tem seu próprio módulo autônomo
 - Comunicação Cross-Module: Módulos NUNCA importam outros módulos diretamente
-- Core/Coordination: Helpers cross-domain residem em `internal/core/coordination/`
 - Bootstrap: Wiring de dependências via `internal/bootstrap/services.go` com adapters
 - Isolamento para LLMs: Cada módulo pode ser compreendido isoladamente por agentes de IA
 
@@ -162,7 +161,7 @@ REGRAS ESPECÍFICAS  → Válidas apenas para este módulo
 3. NEVER write SQL strings outside `queries.go`.
 4. NEVER call `panic()` — always return `apperrors.Error`.
 5. NEVER put business logic inside `repository.go`.
-6. NEVER call another module's Service methods — use DI interfaces or `core/coordination`.
+6. NEVER call another module's Service methods — use DI interfaces or `core/transition` helpers.
 7. NEVER ignore errors (`_ = someCall()`) without a documented reason.
 8. ALWAYS emit a domain event inside the same transaction for every mutation.
 
@@ -192,9 +191,7 @@ REGRAS ESPECÍFICAS  → Válidas apenas para este módulo
 | `core/statemachine` | Regras de transição | Módulos com state machine | Se tiver status transitions |
 | `core/transition` | Helpers de transição | Módulos com state machine | Se tiver status transitions |
 | `core/eventstore` | Leitura de eventos | Módulos que leem event store | Se precisar de deduplicação |
-| `core/coordination` | Coordenação cross-module | **APENAS `orchestrator/`** | Proibido para todos os outros |
-
-**Nota:** `orchestrator/` é o **único** módulo que pode importar `core/coordination`.
+(Nenhum pacote core/* restringido — todos os módulos usam core/* conforme necessidade.)
 
 ### 3.4 Template Unificado de `contract.go`
 
@@ -266,72 +263,67 @@ type TaskReader interface {
 }
 ```
 
-**Pilar 3: `core/coordination` e `orchestrator` são exceções arquiteturais**
+**Pilar 3: `orchestrator` é a exceção arquitetural para coordenação cross-module**
 
-- `internal/core/coordination`: Pode importar **qualquer módulo** e `internal/domain`. É a camada de orquestração cross-module.
-- `internal/modules/orchestrator`: Pode importar **qualquer módulo**, `core/coordination`, e `internal/domain`. É o módulo de orquestração de alto nível.
+> Nota: `internal/core/coordination/` foi removido (ADR 0028, concluído 2026-05-17). Sua lógica foi distribuída para os módulos de domínio e para `core/transition`.
+
+- `internal/modules/orchestrator`: Pode importar **qualquer módulo** e `internal/domain`. É o único módulo de orquestração de alto nível.
 - `internal/bootstrap`: Pode importar **tudo**. É a camada de wiring/DI.
 - `cmd/orchestraos`: Pode importar **tudo**. É a camada de entrada.
 
 ---
 
-## 5. Renomeação Semântica de Diretórios
+## 5. Nomenclatura e Padrões de Arquivos
 
 ### 5.1 Contexto adicional
 
-Após a adoção da arquitetura de módulos verticais, a estrutura de `internal/` está arquiteturalmente coerente. Porém, alguns diretórios ainda carregam nomes que não refletem sua responsabilidade real, gerando ambiguidade para novos desenvolvedores e agentes de IA.
+Após a adoção da arquitetura de módulos verticais, identificamos que nomes de arquivos genéricos (`helpers.go`, `utils.go`, etc.) dificultam a navegação por LLMs. Agentes de IA dependem de nomes descritivos para inferir conteúdo sem abrir arquivos.
 
 ### 5.2 Decisão
 
-Renomearemos os diretórios cujos nomes são semanticamente incorretos ou ambíguos.
+Adotaremos padrões de nomenclatura rigorosos para `internal/core/*` e `internal/modules/*`.
 
-**Diretórios a Renomear:**
+**Nomes Proibidos (MUST NOT):**
 
-| Diretório Atual | Novo Nome | Por que renomear? |
-|-----------------|-----------|-------------------|
-| `internal/modules/orchestrator/` | `internal/modules/taskflow/` | Não é um "orchestrator" no sentido de DDD/Orchestration. É um *workflow engine* que executa uma task do início ao fim. |
-| `internal/core/event/` | `internal/core/eventappend/` | O pacote não *define* eventos. Ele implementa o **serviço de append idempotente** com validação de schema e deduplicação. |
+| Nome Proibido | Motivo |
+|---------------|--------|
+| `helpers.go` | Não comunica conteúdo. É um "lixo" semântico. |
+| `utils.go` | Mesmo problema. "Util" significa tudo e nada. |
+| `common.go` | O que é "comum"? Comum para quem? |
+| `base.go` | Sugere herança. Go não tem herança. |
+| `misc.go` | "Miscelânea" é admissão de falta de coesão. |
+| `kit.go` / `txkit.go` | Jargão de framework. Não descreve função. |
+| `ops.go` / `eventops.go` | Abreviação vaga. "Operations" de quê? |
 
-**Diretórios com Movimentação Interna:**
+**Exceção única:** Um arquivo pode se chamar `<package>.go` (ex: `validation.go` em `package validation`) **apenas se** for o único arquivo do pacote. Pacotes com 2+ arquivos devem usar nomes descritivos.
 
-| Diretório | Ação | Por que? |
-|-----------|------|----------|
-| `internal/core/transition/` | Manter nome; mover `eventops.go` para `eventappend/` | `transition` é semanticamente correto para *state-machine transition helpers*. `eventops.go` contém operações de event store, não de transição de estado. |
+**Template Unificado de `doc.go`:**
 
-**Diretórios que NÃO Serão Renomeados:**
+Cada `doc.go` deve seguir a estrutura:
+```go
+// Package <nome> <verbo> <objeto>.
+//
+// # Responsibility
+// <uma frase clara do que este pacote faz>
+//
+// # Key Types
+//   - <Type>: <descrição de uma linha>
+//
+// # Dependencies
+//   - core/<X>: <para que serve o import>
+//
+// # Related Packages
+//   - modules/<Y>: <relação com este pacote>
+//
+// # Rules (para LLMs)
+//   - <regra específica que agentes devem seguir>
+package <nome>
+```
 
-| Diretório | Por que permanece? |
-|-----------|------------------|
-| `internal/core/` | "core" é convencional em Go para shared internal packages. Renomeação teria impacto em ~40 arquivos. |
-| `internal/core/coordination/` | ADR 0026 reafirmou o papel de cross-module coordination. |
-| `internal/core/db/` | `db` é aceitável para database infrastructure helpers. |
-| `internal/modules/agent/` | Nome da entidade. Correto. |
-| `internal/modules/agentsession/` | Nome composto aceitável em Go. |
-| `internal/modules/prompt/` | Nome do domínio. Correto. |
-| `internal/modules/run/` | Nome da entidade. Correto. |
-| `internal/modules/task/` | Nome da entidade. Correto. |
-| `internal/modules/taskgraph/` | Nome da entidade. Correto. |
-| `internal/modules/workunit/` | Nome da entidade. Correto. |
-| `internal/bootstrap/` | Semanticamente correto: wiring/DI. |
+### 5.3 Consequências
 
-**Análise das Alternativas:**
-
-- `orchestrator` → `runner/`: Rejeitada. Ambiguidade com `run/`.
-- `orchestrator` → `workflow/`: Rejeitada. Muito ampla; projeto já tem `taskgraph/` (define workflow) e `run/` (executa unidade).
-- `orchestrator` → `taskexecutor/`: Rejeitada. Muito longo (13 caracteres).
-- `orchestrator` → `taskflow/`: **Aceita.** Composto de `task` + `flow`. Não colide com nenhum módulo. Curto o suficiente (8 caracteres).
-- `event` → `eventlog/`: Rejeitada. O pacote não é um log; não oferece leitura.
-- `event` → `eventjournal/`: Rejeitada. Jargão de nicho.
-- `event` → `eventappend/`: **Aceita.** Composto de `event` + `append`. Descreve o serviço exato. Elimina a necessidade de alias.
-
-### 5.3 Consequências (Renomeação)
-
-- Eliminação de aliases de import obrigatórios.
-- Zero ambiguidade para LLMs.
-- Reserva semântica de `orchestrator/` para futuro módulo de Agente Orquestrador (também chamado de `director/`).
-- Coesão em `core/`: `eventappend/` concentra toda a lógica de append.
-
-**Impacto negativo:** ~15 arquivos precisam de atualização de imports. Scripts e ferramentas que referenciem `internal/modules/orchestrator/` quebrarão.
+- **Zero ambiguidade para LLMs:** Nomes de arquivos comunicam conteúdo.
+- **Coesão por responsabilidade:** Cada pacote faz uma coisa. Se um pacote precisa de 7 arquivos com nomes diferentes, isso é um sinal de que talvez sejam 2 pacotes.
 
 ---
 
@@ -343,7 +335,7 @@ Renomearemos os diretórios cujos nomes são semanticamente incorretos ou ambíg
 | 2026-05-13 | Deprecação formal da ADR 0017; mapeamento de serviços → módulos | ADR 0024 |
 | 2026-05-16 | Padronização unificada de estrutura, template contract.go e regras hierárquicas | ADR 0025 |
 | 2026-05-17 | Política de importação refinada: 3 pilares (domain=infra, DI permitido, exceções) | ADR 0026 |
-| 2026-05-17 | Renomeação semântica: `orchestrator/` → `taskflow/`, `event/` → `eventappend/` | ADR 0027 |
+| 2026-05-17 | Padrões de nomenclatura e nomes proibidos de arquivos | ADR 0028 |
 | 2026-05-17 | Todos consolidados neste documento único | — |
 
 ## Apêndice B: Alternativas Consideradas (Arquitetura)

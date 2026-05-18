@@ -47,7 +47,7 @@ State Flow:
 - `internal/core/apperrors`
 - `internal/core/db`
 - `internal/core/eventstore`
-- `internal/core/coordination`
+- `internal/core/transition`
 - `internal/core/serialization`
 - `internal/core/statemachine`
 - `internal/core/validation`
@@ -57,7 +57,7 @@ State Flow:
 
 Forbidden:
 - Direct imports of other modules' service logic (ADR 0022: modules never import other modules directly)
-- Cross-module mutations outside `core/coordination`
+- Cross-module mutations outside `modules/orchestrator`
 - `internal/services` (replaced by `internal/modules/*`)
 - `internal/repository` (removed - each module has its own repository)
 
@@ -70,5 +70,5 @@ Forbidden:
 3. Preserve all invariants listed above.
 4. Avoid architectural refactors — keep changes minimal and localized.
 5. State transitions MUST use `core/statemachine.CanTransition`.
-6. Every mutation MUST emit an event via `core/coordination` helpers.
+6. Every mutation MUST emit an event via `core/transition` helpers.
 7. SQL belongs only in `queries.go` — never inline in services.

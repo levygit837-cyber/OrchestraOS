@@ -10,7 +10,7 @@ import _ "embed"
 //   3. NEVER write SQL strings outside queries.go.
 //   4. NEVER call panic() — always return apperrors.Error.
 //   5. NEVER put business logic inside repository.go.
-//   6. NEVER call another module's Service methods — use DI interfaces or core/coordination.
+//   6. NEVER call another module's Service methods — use DI interfaces or core/transition helpers.
 //   7. NEVER ignore errors without a documented reason.
 //   8. ALWAYS emit a domain event inside the same transaction for every mutation.
 //
@@ -35,7 +35,7 @@ import _ "embed"
 // ALLOWED: core/apperrors, core/db, core/validation, core/event
 // ALLOWED: core/statemachine, core/transition, core/serialization (if emitting events)
 // ALLOWED: core/eventstore (if reading events for deduplication)
-// FORBIDDEN: core/coordination (only orchestrator module may import this)
+// FORBIDDEN: core/* packages not listed above.
 //
 // For full contracts and state machine, read CONTRACTS.md in this directory.
 // For purpose and dependencies, read README.md in this directory.

@@ -202,7 +202,7 @@ UserMessage/CLI
 
 ### Fase 5: Orquestração Automatizada
 
-**ADR de referência:** ADR 0020 (Orchestrator Service), ADR 0021 (Agent Service), ADR 0023 (Hybrid Intelligent Orchestrator)
+**ADR de referência:** ADR 0020 (Orchestrator Service — absorve ADR 0021), ADR 0023 (Hybrid Intelligent Orchestrator)
 
 **Objetivo:** Automatizar o fluxo manual da Fase 4 com um único comando, estabelecendo a arquitetura híbrida de orquestração (Go determinístico + Agente Inteligente LLM).
 

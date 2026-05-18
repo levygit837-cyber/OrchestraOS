@@ -27,9 +27,8 @@ import _ "embed"
 //
 // ALLOWED core/* imports:
 //   - core/apperrors, core/db, core/validation, core/event
-//   - core/serialization
+//   - core/serialization, core/transition
 // FORBIDDEN core/* imports:
-//   - core/transition (shared types)
 //   - core/statemachine (prompt does not manage lifecycle states)
 //
 // For full contracts, read CONTRACTS.md in this directory.

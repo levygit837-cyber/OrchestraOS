@@ -14,8 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	dbcore "github.com/levygit837-cyber/OrchestraOS/internal/core/db"
-	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/statemachine"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
@@ -92,12 +92,12 @@ func (s *TaskService) Create(ctx context.Context, input CreateTaskInput) (*trans
 	if err != nil {
 		return nil, err
 	}
-	appendResult, err := transition.AppendServiceEvent(ctx, tx, &eventmod.Envelope{
+	appendResult, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
 		ID:          input.EventID,
 		Type:        "task.created",
 		Version:     transition.EventVersionV1,
 		TaskID:      task.ID,
-		Priority:    eventmod.PriorityNotification,
+		Priority:    domain.EventPriorityNotification,
 		RequiresAck: false,
 		Payload:     payload,
 	})

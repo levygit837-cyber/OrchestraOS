@@ -86,7 +86,7 @@ func (g *GeminiRuntime) Start(ctx context.Context, config RuntimeConfig) error {
 	})
 
 	g.status.State = "running"
-	g.emitEvent("agent.Started", "v1", map[string]interface{}{
+	g.emitEvent("agent.started", "v1", map[string]interface{}{
 		"agent_id":            config.AgentID,
 		"run_id":              config.RunID,
 		"work_unit":           config.WorkUnitID,

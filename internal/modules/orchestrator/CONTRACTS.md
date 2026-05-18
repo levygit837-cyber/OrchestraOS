@@ -1,6 +1,7 @@
 # Contracts: orchestrator
 
-> **⚠️ FUTURE RENAME:** This module will be renamed to `runner/` or `taskflow/`. The name `orchestrator` will be reserved for a future Agent Orchestrator module (`director/`). See `docs/adr/0027-orchestrator-module-naming.md`.
+> **Module Name:** `orchestrator/` is the stable name of the Task Execution Workflow Engine.
+> A future `director/` module may handle higher-level agent orchestration, but `orchestrator/` remains the workflow execution layer.
 
 ## Invariants
 

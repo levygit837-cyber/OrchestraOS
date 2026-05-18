@@ -75,6 +75,8 @@ Motivos da escolha:
 - O projeto precisará separar melhor serviços de aplicação da camada `cmd`, para que CLI e TUI compartilhem a mesma lógica.
 - A TUI deve respeitar a autonomia M0 aprovada: sugestão e execução com revisão humana, sem operar acima de Nível 2.
 
+> ⚠️ **Status de implementação (2026-05-18):** A TUI foi definida como interface local principal neste ADR, mas ainda **não foi implementada**. O projeto conta apenas com a CLI (`cmd/orchestraos/`) e scripts de bootstrap. A TUI será desenvolvida em sprint futura após estabilização do núcleo de eventos e runs.
+
 O desenvolvimento começará com um protótipo para validar:
 
 - renderizar lista de tasks/runs/eventos com dados reais do Postgres;

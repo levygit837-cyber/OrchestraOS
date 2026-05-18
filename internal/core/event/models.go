@@ -1,6 +1,6 @@
 package event
 
-// Aliases temporários para domain. Serão convertidos em definições próprias na Onda 10.
+// Aliases para os tipos canônicos em internal/domain/. internal/domain/ é a fonte de verdade.
 import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
 type Envelope = domain.EventEnvelope

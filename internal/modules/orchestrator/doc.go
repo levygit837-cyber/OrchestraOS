@@ -1,8 +1,9 @@
 // Package orchestrator provides the Task Execution Workflow Engine.
 //
-// ⚠️ FUTURE RENAME: This module will be renamed to runner/ or taskflow/.
-// The name "orchestrator" will be reserved for a future Agent Orchestrator module
-// (director/). See docs/adr/0027-orchestrator-module-naming.md.
+// The OrchestratorService is the cross-module coordination layer that executes
+// tasks end-to-end. A future director/ module may handle higher-level agent
+// orchestration (resource allocation, prioritization), but orchestrator/ remains
+// the workflow engine.
 //
 // The OrchestratorService is NOT an "Agent Orchestrator". It does not decide
 // which task to run, allocate resources, or prioritize work. It is a deterministic
@@ -21,8 +22,8 @@
 //   - Decide which task to execute or when (future director/ module)
 //   - Perform low-level transaction coordination (belongs to orchestrator module)
 //
-// This service follows the architectural guidance from ADR 0020 (Orchestrator Service),
-// ADR 0021 (Agent Service), and ADR 0023 (Hybrid Intelligent Orchestrator).
+// This service follows the architectural guidance from ADR 0020 (Orchestrator Service)
+// and ADR 0023 (Hybrid Intelligent Orchestrator).
 //
 // The first implementation is sequential (1 work unit at a time) with deterministic
 // Go logic. Future iterations may add parallelism.

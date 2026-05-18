@@ -39,11 +39,11 @@ Um sistema operacional de projeto onde agentes entendem contexto, propõem próx
 
 - O sistema terá um Orchestrator central como control plane.
 - Agentes serão workers isolados por task, inicialmente usando Codex/CLI.
-- Cada task terá branch, worktree e sandbox próprios.
+- Cada task terá branch, workspace (via WSM) e sandbox próprios.
 - A comunicação agente-orquestrador será feita por WebSocket, com eventos persistidos.
 - A comunicação entre agentes será mediada pelo Orchestrator para preservar auditoria, política e isolamento de contexto.
 - O MVP começa local-first, mas com desenho compatível com servidor.
-- A operação inicial será GitHub-first, usando issues, branches, worktrees, pull requests, reviews e checks.
+- A operação inicial será GitHub-first, usando issues, branches, workspaces, pull requests, reviews e checks.
 - A interface inicial do MVP será scripts de bootstrap + CLI fina.
 - O paralelismo inicial esperado será de 2 a 5 agentes.
 - A autonomia aprovada para o MVP será Nível 2.
@@ -91,6 +91,6 @@ Um sistema operacional de projeto onde agentes entendem contexto, propõem próx
 
 **Foco imediato (Fase 4):** Integrar os componentes existentes em um fluxo end-to-end funcional. O sistema já possui Event Store, Task Graph, Prompt Composer e Runtimes isolados, mas eles não se comunicam. A próxima fronteira é fazer o caminho Task → Graph → Run → AgentSession → Runtime → Complete funcionar de forma automatizada, com relay de eventos, testes E2E e depreciação do Commander legado.
 
-**Depois disso (Fases 5-12):** Orquestração automatizada (OrchestratorService), sandbox com worktree, policy engine, comunicação em tempo real (WebSocket), runtime real (Codex/CLI), review/merge gate, GitHub integration, memória recursiva e, por fim, migração para a arquitetura de módulos verticais (ADR 0022) pós-MVP.
+**Depois disso (Fases 5-12):** Orquestração automatizada (OrchestratorService), sandbox com Workspace Manager (WSM), policy engine, comunicação em tempo real (WebSocket), runtime real (Codex/CLI), review/merge gate, GitHub integration, memória recursiva e, por fim, migração para a arquitetura de módulos verticais (ADR 0022) pós-MVP.
 
 O MVP completo será validado quando uma task puder ser criada pela CLI, decomposta em work units, executada em sandbox com agente, revisada e mergeada, tudo com trilha de auditoria persistida.
