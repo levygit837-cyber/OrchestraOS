@@ -1,8 +1,0 @@
-{
-  "from": "A02",
-  "to": "A03",
-  "signal": "done",
-  "topic": "api",
-  "message": "A02 terminou a implementação da API REST",
-  "timestamp": "2026-05-12T15:30:00Z"
-}
