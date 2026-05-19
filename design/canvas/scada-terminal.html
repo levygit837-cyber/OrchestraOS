@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrchestraOS SCADA Terminal</title>
+    
+    <!-- Framework -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Roboto+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'rajdhani': ['Rajdhani', 'sans-serif'],
+                        'mono': ['"Roboto Mono"', 'monospace'],
+                    },
+                    colors: {
+                        steel: {
+                            800: '#3E3E42',
+                            900: '#2D2D30',
+                            border: '#525252'
+                        },
+                        tactical: {
+                            orange: '#FF6B35',
+                            green: '#7CB342',
+                            red: '#E53935',
+                            yellow: '#FFB300',
+                            white: '#ECECEC',
+                            dim: '#9CA3AF'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base resets and hardware acceleration */
+        * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: theme('colors.steel.900');
+            color: theme('colors.tactical.white');
+            overflow: hidden;
+        }
+
+        /* Industrial Scrollbars */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+            background: theme('colors.steel.900');
+            border-left: 2px solid theme('colors.steel.border');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.steel.800');
+            border: 2px solid theme('colors.steel.border');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-corner {
+            background: theme('colors.steel.900');
+        }
+
+        /* Hardware Indicator Pulse */
+        @keyframes led-pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0px var(--led-color); }
+            50% { opacity: 0.4; }
+        }
+        
+        .led {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid theme('colors.steel.900');
+        }
+        .led-pulse {
+            animation: led-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Terminal Striping Effect */
+        .scada-stripe {
+            background: repeating-linear-gradient(
+                -45deg,
+                theme('colors.tactical.orange'),
+                theme('colors.tactical.orange') 10px,
+                rgba(255, 107, 53, 0.8) 10px,
+                rgba(255, 107, 53, 0.8) 20px
+            );
+        }
+
+        /* Strict Grid Hide utility for mobile collapse */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="font-rajdhani h-[100dvh] w-full flex flex-col text-[13px] leading-tight select-none">
+
+    <!-- GLOBAL TELEMETRY / TOP BAR -->
+    <header class="h-14 bg-steel-800 border-b-2 border-steel-border flex items-center justify-between px-4 shrink-0 z-20">
+        
+        <!-- Branding & Core Session -->
+        <div class="flex items-center h-full gap-6">
+            <div class="flex items-center gap-2 text-tactical-orange font-bold text-xl tracking-widest">
+                <i class="ph-bold ph-cpu text-2xl"></i>
+                <span class="mt-1">ORCHESTRA_OS</span>
+            </div>
+            
+            <div class="h-8 w-[2px] bg-steel-border"></div>
+            
+            <div class="flex gap-4 font-mono text-xs">
+                <div class="flex flex-col">
+                    <span class="text-tactical-dim text-[10px] uppercase font-bold tracking-wider">Session ID</span>
+                    <span class="text-tactical-white">session-042</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-tactical-dim text-[10px] uppercase font-bold tracking-wider">Container</span>
+                    <span class="text-tactical-white bg-steel-900 border border-steel-border px-1.5 rounded-[2px]">orch-sandbox-7a3f</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Metrics -->
+        <div class="flex items-center h-full gap-6 font-mono text-xs">
+            <!-- Workload Summary Array -->
+            <div class="flex items-center bg-steel-900 border border-steel-border rounded-[4px] py-1 px-2 gap-3">
+                <div class="flex items-center gap-1.5"><div class="led bg-tactical-yellow" style="--led-color: theme('colors.tactical.yellow');"></div> <span class="text-tactical-dim">PENDING</span><span class="text-tactical-white font-bold ml-1">1</span></div>
+                <div class="h-3 w-px bg-steel-border"></div>
+                <div class="flex items-center gap-1.5"><div class="led bg-tactical-orange led-pulse" style="--led-color: theme('colors.tactical.orange');"></div> <span class="text-tactical-dim">RUNNING</span><span class="text-tactical-white font-bold ml-1">2</span></div>
+                <div class="h-3 w-px bg-steel-border"></div>
+                <!-- Adding Pending Approval as per prompt -->
+                <div class="flex items-center gap-1.5"><div class="led bg-tactical-white" style="--led-color: theme('colors.tactical.white');"></div> <span class="text-tactical-dim">REVIEW</span><span class="text-tactical-white font-bold ml-1">1</span></div>
+                <div class="h-3 w-px bg-steel-border"></div>
+                <div class="flex items-center gap-1.5"><div class="led bg-tactical-green" style="--led-color: theme('colors.tactical.green');"></div> <span class="text-tactical-dim">DONE</span><span class="text-tactical-white font-bold ml-1">3</span></div>
+            </div>
+
+            <div class="flex flex-col text-right">
+                <span class="text-tactical-dim text-[10px] uppercase font-bold tracking-wider">CPU Load</span>
+                <span class="text-tactical-white font-bold">45.0%</span>
+            </div>
+            
+            <div class="flex flex-col text-right">
+                <span class="text-tactical-dim text-[10px] uppercase font-bold tracking-wider">Mem Alloc</span>
+                <span class="text-tactical-white font-bold">128 MB</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- TASK CONTEXT BAR -->
+    <div class="h-10 bg-steel-900 border-b flex items-center justify-between px-4 shrink-0 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.5)] z-10 border-steel-border">
+        <div class="flex items-center gap-3">
+            <div class="bg-tactical-white text-steel-900 font-mono font-bold px-2 py-0.5 rounded-[2px] uppercase text-sm flex items-center gap-1">
+                <i class="ph-bold ph-hash"></i> task-099
+            </div>
+            <i class="ph-bold ph-caret-right text-steel-border"></i>
+            <!-- Event Badges -->
+            <div class="flex gap-1 font-mono text-[10px] font-bold">
+                <span class="border border-steel-border px-1.5 py-0.5 text-tactical-dim rounded-[2px] bg-steel-800">[INTAKE]</span>
+                <span class="border border-steel-border px-1.5 py-0.5 text-tactical-dim rounded-[2px] bg-steel-800">[TASK]</span>
+                <span class="border border-tactical-orange px-1.5 py-0.5 text-tactical-orange rounded-[2px] bg-tactical-orange/10">[WU]</span>
+                <span class="border border-steel-border px-1.5 py-0.5 text-tactical-dim rounded-[2px] bg-steel-800">[RUN]</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-5">
+            <div class="font-mono text-xs flex items-center gap-2">
+                <span class="text-tactical-dim uppercase font-bold text-[10px]">Active Engine:</span>
+                <span class="text-tactical-white border-b border-dashed border-tactical-white leading-none pb-0.5">run-101 Attempt 2/3</span>
+            </div>
+            <div class="h-4 w-[2px] bg-steel-border"></div>
+            <div class="flex items-center gap-2 bg-tactical-yellow/10 border border-tactical-yellow px-2 py-0.5 rounded-[2px]">
+                <span class="text-tactical-yellow uppercase font-bold tracking-widest text-[11px] mt-0.5">State //</span>
+                <span class="text-tactical-yellow font-mono font-bold animate-pulse">SCHEDULING</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 min-h-0 flex flex-col relative w-full pb-[30%] md:pb-0"> 
+        
+        <!-- KANBAN BOARD CONTAINER -->
+        <div class="flex-1 min-h-0 md:h-[70%] w-full overflow-x-auto overflow-y-hidden bg-steel-900">
+            <div class="h-full min-w-full md:grid md:grid-cols-4 flex gap-4 p-4 items-start w-fit">
+                
+                <!-- COLUMN: PENDING -->
+                <div class="h-full flex flex-col w-[300px] md:w-auto shrink-0 bg-steel-900 border-2 border-steel-border rounded-[4px] overflow-hidden">
+                    <div class="bg-steel-800 p-2 border-b-2 border-steel-border flex items-center justify-between sticky top-0 uppercase tracking-widest font-bold text-sm">
+                        <span class="text-tactical-dim flex items-center gap-2"><div class="led bg-tactical-yellow"></div> PENDING</span>
+                        <span class="font-mono bg-steel-900 px-2 py-0.5 border border-steel-border rounded-[2px] text-xs">1</span>
+                    </div>
+                    <div class="p-2 flex border-spacing-2 flex-col gap-2 overflow-y-auto">
+                        <!-- Card: WU-003 -->
+                        <div class="bg-steel-800 border-2 border-steel-border rounded-[4px] p-2 flex flex-col gap-2 hover:border-tactical-dim transition-colors cursor-default">
+                            <div class="flex justify-between items-center pb-1">
+                                <span class="font-mono text-xs text-tactical-dim font-bold bg-steel-900 px-1 py-0.5 rounded-[2px] border border-steel-border">WU-003</span>
+                                <div class="led bg-tactical-yellow"></div>
+                            </div>
+                            <div class="text-[14px] font-bold tracking-wide leading-snug">Design payload validation schema</div>
+                            <div class="font-mono text-[11px] text-tactical-dim flex justify-between items-center mt-1">
+                                <span>AGENT: Schema-Builder</span>
+                                <i class="ph-bold ph-hourglass text-tactical-yellow"></i>
+                            </div>
+                            <div class="mt-1 flex gap-1">
+                                <span class="text-[10px] font-mono border border-steel-border px-1 bg-steel-900 text-tactical-dim">DEP: WU-002</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN: RUNNING (Focus Column) -->
+                <div class="h-full flex flex-col w-[300px] md:w-auto shrink-0 bg-steel-900 border-2 border-tactical-orange/50 rounded-[4px] overflow-hidden relative shadow-[0_0_15px_rgba(255,107,53,0.1)]">
+                    <!-- Column Warning Header Decoration -->
+                    <div class="absolute top-0 left-0 w-full h-1 scada-stripe"></div>
+                    <div class="bg-steel-800 p-2 pt-3 border-b-2 border-tactical-orange/50 flex items-center justify-between sticky top-0 uppercase tracking-widest font-bold text-sm">
+                        <span class="text-tactical-orange flex items-center gap-2"><div class="led bg-tactical-orange led-pulse"></div> RUNNING</span>
+                        <span class="font-mono bg-steel-900 px-2 py-0.5 border border-tactical-orange/50 text-tactical-orange rounded-[2px] text-xs">2</span>
+                    </div>
+                    
+                    <div class="p-2 flex flex-col gap-2 overflow-y-auto">
+                        <!-- Card: WU-002 (Scenario Trigger) -->
+                        <div class="bg-steel-800 border-2 border-tactical-orange rounded-[4px] p-2 flex flex-col gap-2 relative z-10 shadow-[4px_4px_0_rgba(255,107,53,0.2)] transform -translate-y-[1px]">
+                            <div class="flex justify-between items-center pb-1">
+                                <span class="font-mono text-xs text-tactical-white font-bold bg-steel-900 px-1 py-0.5 rounded-[2px] border border-tactical-orange/50">WU-002</span>
+                                <div class="led bg-tactical-orange led-pulse"></div>
+                            </div>
+                            <div class="text-[14px] font-bold tracking-wide leading-snug text-tactical-white">Implement event envelope system</div>
+                            <div class="font-mono text-[11px] text-tactical-dim flex justify-between items-center">
+                                <span>AGENT: Codex-Builder</span>
+                                <span class="text-tactical-orange border border-tactical-orange px-1 rounded-[2px] text-[9px]">LOCKED</span>
+                            </div>
+                            
+                            <!-- Tactical Progress Bar -->
+                            <div class="w-full h-3 bg-steel-900 border border-steel-border mt-1 relative rounded-[2px] overflow-hidden">
+                                <div class="h-full bg-tactical-orange w-[60%] flex items-center justify-end pr-1">
+                                    <span class="font-mono text-[9px] text-steel-900 font-bold mix-blend-color-burn">60%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Alert Banner (Tool Request) -->
+                            <div class="mt-1 bg-tactical-orange/10 border border-tactical-orange rounded-[2px] p-1.5 pt-1">
+                                <div class="text-tactical-orange font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 border-b border-tactical-orange/30 pb-0.5 mb-1">
+                                    <i class="ph-fill ph-warning-octagon text-sm min-w-max"></i> TOOL REQUEST DETECTED
+                                </div>
+                                <div class="font-mono text-[11px] text-tactical-white truncate bg-steel-900 p-1 border border-tactical-orange/30 rounded-[2px]">$ bash 'go test ./...'</div>
+                                <div class="flex justify-between items-center mt-1.5">
+                                    <div class="text-tactical-orange font-mono text-[10px] uppercase font-bold flex gap-1 items-center">Risk Analysis: <span class="bg-tactical-orange text-steel-900 px-1 rounded-[2px]">MEDIUM</span></div>
+                                    <div class="flex gap-1">
+                                        <button class="font-mono text-[9px] bg-steel-900 border border-tactical-dim text-tactical-dim hover:text-tactical-white px-2 py-0.5 rounded-[2px]">DENY</button>
+                                        <button class="font-mono text-[9px] bg-tactical-orange text-steel-900 font-bold px-2 py-0.5 rounded-[2px]">ALLOW</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card: Generic Running Task -->
+                         <div class="bg-steel-800 border-2 border-steel-border rounded-[4px] p-2 flex flex-col gap-2">
+                            <div class="flex justify-between items-center pb-1">
+                                <span class="font-mono text-xs text-tactical-dim font-bold bg-steel-900 px-1 py-0.5 rounded-[2px] border border-steel-border">WU-006</span>
+                                <div class="led bg-tactical-orange led-pulse"></div>
+                            </div>
+                            <div class="text-[14px] font-bold tracking-wide leading-snug text-tactical-dim">Provision AWS RDS instance</div>
+                            <div class="font-mono text-[11px] text-tactical-dim">
+                                <span>AGENT: Infra-Ops</span>
+                            </div>
+                            <!-- Infinite Indeterminate bar -->
+                            <div class="w-full h-1.5 bg-steel-900 border border-steel-border mt-1 relative rounded-[2px] overflow-hidden">
+                                <div class="h-full bg-tactical-dim w-[30%] absolute animate-[slide_1.5s_infinite_linear]" style="animation: slide 2s infinite linear;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN: REVIEW -->
+                <div class="h-full flex flex-col w-[300px] md:w-auto shrink-0 bg-steel-900 border-2 border-steel-border rounded-[4px] overflow-hidden">
+                    <div class="bg-steel-800 p-2 border-b-2 border-steel-border flex items-center justify-between sticky top-0 uppercase tracking-widest font-bold text-sm">
+                        <span class="text-tactical-dim flex items-center gap-2"><div class="led bg-tactical-white"></div> REVIEW</span>
+                        <span class="font-mono bg-steel-900 px-2 py-0.5 border border-steel-border rounded-[2px] text-xs">1</span>
+                    </div>
+                    <div class="p-2 flex flex-col gap-2 overflow-y-auto">
+                        <!-- Card: WU-005 -->
+                        <div class="bg-steel-800 border-2 border-tactical-white/50 rounded-[4px] p-2 flex flex-col gap-2">
+                            <div class="flex justify-between items-center pb-1">
+                                <span class="font-mono text-xs text-tactical-white font-bold bg-steel-900 px-1 py-0.5 rounded-[2px] border border-steel-border">WU-005</span>
+                                <i class="ph-bold ph-shield-check text-tactical-white text-lg"></i>
+                            </div>
+                            <div class="text-[14px] font-bold tracking-wide leading-snug">Generate final deployment template</div>
+                            <div class="font-mono text-[11px] text-tactical-dim">AGENT: Release-Bot</div>
+                            <div class="mt-2 bg-steel-900 border border-steel-border p-1.5 flex flex-col gap-1 rounded-[2px]">
+                                <div class="text-tactical-dim text-[10px] uppercase font-bold tracking-wider mb-0.5 border-b border-steel-border pb-0.5">Execution Summary</div>
+                                <div class="flex justify-between font-mono text-[10px]"><span>Lines Diff:</span> <span class="text-tactical-white">+48 / -12</span></div>
+                                <div class="flex justify-between font-mono text-[10px]"><span>Test Cov:</span> <span class="text-tactical-green">100% (Pass)</span></div>
+                            </div>
+                            <button class="w-full mt-1 bg-tactical-white text-steel-900 font-bold py-1 uppercase tracking-wider text-xs rounded-[2px]">APPROVE PR-102</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN: DONE -->
+                <div class="h-full flex flex-col w-[300px] md:w-auto shrink-0 bg-steel-900 border-2 border-steel-border rounded-[4px] overflow-hidden opacity-80">
+                    <div class="bg-steel-800 p-2 border-b-2 border-steel-border flex items-center justify-between sticky top-0 uppercase tracking-widest font-bold text-sm">
+                        <span class="text-tactical-green flex items-center gap-2"><div class="led bg-tactical-green"></div> DONE</span>
+                        <span class="font-mono bg-steel-900 px-2 py-0.5 border border-steel-border rounded-[2px] text-xs">3</span>
+                    </div>
+                    <div class="p-2 flex flex-col gap-2 overflow-y-auto">
+                        <!-- Card: WU-004 -->
+                        <div class="bg-steel-800 border-2 border-steel-border border-l-tactical-green rounded-[4px] p-2 flex flex-col gap-1.5">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                     <i class="ph-bold ph-check text-tactical-green"></i>
+                                     <span class="font-mono text-xs text-tactical-dim bg-steel-900 px-1 rounded-[2px]">WU-004</span>
+                                </div>
+                                <span class="font-mono text-[10px] text-tactical-dim">12:44:09</span>
+                            </div>
+                            <div class="text-[13px] font-bold text-tactical-dim line-through decoration-steel-border decoration-2">Initialize core repository</div>
+                        </div>
+
+                         <!-- Card: WU-001 -->
+                         <div class="bg-steel-800 border-2 border-steel-border border-l-tactical-green rounded-[4px] p-2 flex flex-col gap-1.5">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                     <i class="ph-bold ph-check text-tactical-green"></i>
+                                     <span class="font-mono text-xs text-tactical-dim bg-steel-900 px-1 rounded-[2px]">WU-001</span>
+                                </div>
+                                <span class="font-mono text-[10px] text-tactical-dim">12:40:11</span>
+                            </div>
+                            <div class="text-[13px] font-bold text-tactical-dim line-through decoration-steel-border decoration-2">Parse API swagger specs</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- BOTTOM DRAWER: AGENT COMMS (30% Height on Desktop, fixed bottom on mobile) -->
+        <div class="absolute bottom-0 w-full h-[30%] min-h-[250px] bg-steel-800 border-t-4 border-steel-border flex flex-col shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-30 transition-transform duration-300 transform translate-y-0">
+            <!-- Drawer Handle / Header -->
+            <div class="h-8 bg-steel-900 border-b border-steel-border flex items-center justify-between px-4 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <i class="ph-fill ph-terminal-window text-tactical-dim text-lg"></i>
+                    <span class="font-bold uppercase tracking-widest text-xs text-tactical-white mt-0.5">COMMS_LINK_ACTIVE</span>
+                    <span class="font-mono text-[10px] bg-steel-800 border border-steel-border text-tactical-dim px-1.5 py-0.5 rounded-[2px] ml-2">TARGET: Codex-Builder</span>
+                </div>
+                <div class="flex gap-2">
+                    <div class="w-3 h-1 bg-steel-border rounded-full hover:bg-tactical-white transition-colors"></div>
+                    <div class="w-3 h-1 bg-steel-border rounded-full hover:bg-tactical-white transition-colors"></div>
+                </div>
+            </div>
+
+            <!-- Chat / Terminal Area -->
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 font-mono text-xs bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiM1MjUyNTIiIGZpbGwtb3BhY2l0eT0iMC4yIi8+PC9zdmc+')]">
+                
+                <!-- System Message -->
+                <div class="flex items-start gap-3 opacity-70">
+                    <span class="text-tactical-dim mt-0.5 min-w-[65px] shrink-0">[12:45:01]</span>
+                    <div class="text-tactical-dim flex gap-2 w-full border-l-2 border-steel-border pl-2">
+                        <span class="text-steel-border font-bold">SYS></span> Session attached. Codex-Builder (v2.1) allocated to WU-002.
+                    </div>
+                </div>
+
+                <!-- Agent Message -->
+                <div class="flex items-start gap-3">
+                    <span class="text-tactical-dim mt-0.5 min-w-[65px] shrink-0 text-right">[12:46:12]</span>
+                    <div class="flex gap-2 w-full">
+                        <div class="bg-tactical-orange text-steel-900 font-bold px-1.5 py-0.5 h-fit rounded-[2px]">AGT</div>
+                        <div class="bg-steel-900 border border-tactical-orange/50 text-tactical-white p-2 rounded-[2px] rounded-tl-none w-fit relative shadow-[2px_2px_0_rgba(255,107,53,0.1)]">
+                            Writing tests for event envelope... Encountered strict struct requirements. Initiating tool request to run go test protocol.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Human Message -->
+                <div class="flex items-start gap-3 justify-end mt-2">
+                    <div class="flex gap-2 w-full justify-end">
+                        <div class="bg-steel-900 border border-steel-border text-tactical-white p-2 rounded-[2px] rounded-tr-none w-fit relative">
+                            Add correlation ID validation before finalizing the struct.
+                        </div>
+                        <div class="bg-tactical-white text-steel-900 font-bold px-1.5 py-0.5 h-fit rounded-[2px]">USR</div>
+                    </div>
+                    <span class="text-tactical-dim mt-0.5 min-w-[65px] shrink-0">[12:47:30]</span>
+                </div>
+
+                <!-- Terminal prompt cursor simulation -->
+                <div class="mt-auto pt-2 flex items-center gap-2 text-tactical-dim">
+                    <div class="led bg-tactical-green"></div> COMMS LINE SECURE
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="h-12 bg-steel-900 border-t border-steel-border flex items-center px-3 gap-2">
+                <span class="font-mono text-tactical-orange font-bold text-sm">></span>
+                <input type="text" placeholder="Transmit instruction to Codex-Builder..." class="bg-transparent border-none outline-none text-tactical-white font-mono text-xs w-full placeholder:text-steel-border focus:ring-0">
+                <button class="bg-steel-800 border border-steel-border hover:bg-steel-border text-tactical-white px-3 py-1 font-bold uppercase text-[10px] tracking-wider rounded-[2px] transition-colors">
+                    SEND <kbd class="ml-1 text-tactical-dim font-mono">⏎</kbd>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <style>
+        /* Small utility for indeterminate bar animation */
+        @keyframes slide {
+            0% { left: -30%; }
+            100% { left: 100%; }
+        }
+    </style>
+
+</body>
+</html>

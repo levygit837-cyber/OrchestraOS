@@ -1,0 +1,690 @@
+{
+  "editor_session_id": "37d7162c-c3e7-4693-b4d9-939067440101",
+  "canvas": {
+    "id": "6a7c2936-20cb-45bb-a413-4d909ae39b5f",
+    "name": "AI Orchestrator Hub",
+    "slug": "orchestrator",
+    "screen_slug": null,
+    "kind": "ui",
+    "origin": "agent",
+    "version": 2,
+    "updated_at": "2026-05-17T10:37:24.627189+00:00"
+  }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORCHESTRA OS | Node Visualization</title>
+    
+    <!-- Fonts: Syne (sub for Clash Display) & Fira Code -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#0F0F23',
+                        panel: '#1A1A2E',
+                        purple: {
+                            neon: '#A855F7',
+                            deep: '#4C1D95',
+                        },
+                        cyan: {
+                            neon: '#06B6D4',
+                            deep: '#0891B2',
+                        },
+                        pink: {
+                            neon: '#EC4899',
+                            pulse: '#BE185D',
+                        }
+                    },
+                    fontFamily: {
+                        display: ['Syne', 'sans-serif'],
+                        mono: ['"Fira Code"', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neon-purple': '0 0 10px #A855F7, 0 0 20px #A855F7, inset 0 0 10px #A855F7',
+                        'neon-cyan': '0 0 10px #06B6D4, 0 0 20px #06B6D4, inset 0 0 10px #06B6D4',
+                        'neon-pink': '0 0 10px #EC4899, 0 0 40px #EC4899, inset 0 0 15px #EC4899',
+                        'core': '0 0 50px #A855F7, 0 0 100px #06B6D4, inset 0 0 30px #A855F7',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': 'linear-gradient(to right, rgba(168, 85, 247, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(168, 85, 247, 0.05) 1px, transparent 1px)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            /* Core Variables for JS manipulation */
+            --node-size: 24px;
+        }
+
+        /* Base Resets & Global Styles */
+        body {
+            background-color: theme('colors.void');
+            color: white;
+            overflow: hidden;
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.4;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: theme('colors.void'); }
+        ::-webkit-scrollbar-thumb { background: theme('colors.purple.neon'); border-radius: 0px; }
+
+        /* Structural Layout */
+        .stage-grid {
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            height: calc(100vh - 60px); /* 60px for command bar */
+        }
+
+        @media (max-width: 1024px) {
+            .stage-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: 2fr 1fr;
+            }
+        }
+
+        /* Forms / Shapes (Strict 0px Corners) */
+        .shape-hex {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+        .shape-triangle {
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .shape-diamond {
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        /* Orbital Architecture */
+        .orbital-system {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        /* Background grid that scales with "energy" */
+        .grid-bg {
+            position: absolute;
+            inset: -50%;
+            background-image: theme('backgroundImage.grid-pattern');
+            background-size: 40px 40px;
+            transform: rotateX(60deg) translateY(-200px);
+            opacity: 0.15;
+            animation: gridMove 20s linear infinite;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.05) inset;
+            pointer-events: none;
+        }
+
+        /* The Neon Trail Effect */
+        .ring::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: conic-gradient(from var(--angle), transparent 20%, theme('colors.cyan.neon') 90%, transparent 100%);
+            -webkit-mask: radial-gradient(transparent calc(100% - 4px), black calc(100% - 3px));
+            mask: radial-gradient(transparent calc(100% - 4px), black calc(100% - 3px));
+            opacity: 0.5;
+            animation: spin var(--duration) linear infinite var(--direction);
+        }
+
+        .ring-1 { width: 300px; height: 300px; --duration: 12s; --direction: normal; }
+        .ring-2 { width: 500px; height: 500px; --duration: 24s; --direction: reverse; }
+        .ring-3 { width: 750px; height: 750px; --duration: 36s; --direction: normal; }
+
+        .orbit-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: spin var(--duration) linear infinite var(--direction);
+        }
+
+        .node-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: var(--node-size);
+            height: var(--node-size);
+            margin: calc(var(--node-size) / -2);
+            /* Transform logic handled in JS to push to radius and counter-rotate */
+            pointer-events: auto;
+            cursor: crosshair;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .node-wrapper:hover {
+            transform: scale(1.5) !important; /* Overridden slightly by JS runtime, but visually effective */
+            z-index: 100;
+        }
+
+        .node {
+            width: 100%;
+            height: 100%;
+            background-color: theme('colors.void');
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5rem;
+            border: 2px solid;
+            position: relative;
+        }
+
+        /* Node States */
+        .node.running {
+            border-color: theme('colors.cyan.neon');
+            box-shadow: theme('boxShadow.neon-cyan');
+            animation: pulseCyan 1.5s ease-out infinite;
+        }
+        .node.done {
+            border-color: theme('colors.purple.neon');
+            box-shadow: theme('boxShadow.neon-purple');
+            background-color: theme('colors.purple.deep');
+        }
+        .node.error {
+            border-color: theme('colors.pink.neon');
+            box-shadow: theme('boxShadow.neon-pink');
+            animation: flashPink 0.2s steps(2) infinite;
+        }
+        .node.idle {
+            border-color: theme('colors.panel');
+            background-color: rgba(26, 26, 46, 0.5);
+        }
+
+        /* Central Core */
+        .core {
+            position: absolute;
+            width: 80px; height: 80px;
+            background: radial-gradient(circle, theme('colors.cyan.neon') 0%, theme('colors.purple.neon') 50%, theme('colors.void') 100%);
+            border-radius: 50%;
+            box-shadow: theme('boxShadow.core');
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50;
+            animation: coreBeat 2s ease-in-out infinite alternate;
+        }
+        
+        .core-inner {
+            width: 40px; height: 40px;
+            background: theme('colors.void');
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; align-items: center; justify-content: center;
+            animation: spin 10s linear infinite reverse;
+        }
+
+        /* Signal Injection */
+        .signal-path {
+            position: absolute;
+            bottom: 0; left: 50%;
+            width: 2px;
+            height: 50%;
+            background: linear-gradient(to top, transparent, theme('colors.purple.neon'));
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(45deg);
+            opacity: 0;
+            z-index: 10;
+        }
+
+        /* Inspector Panel Effects */
+        .inspector-panel {
+            background: rgba(15, 15, 35, 0.85);
+            backdrop-filter: blur(10px);
+            border-left: 2px solid theme('colors.purple.neon');
+            position: relative;
+        }
+
+        .inspector-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -2px; bottom: 0; width: 2px;
+            background: theme('colors.cyan.neon');
+            height: 20%;
+            animation: scanlineMove 3s linear infinite;
+        }
+
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: theme('colors.void');
+        }
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 theme('colors.pink.neon');
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -2px 0 theme('colors.cyan.neon');
+            clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        /* Command Line Input Glow */
+        .cmd-input:focus {
+            outline: none;
+            box-shadow: inset 0 -2px 0 theme('colors.cyan.neon'), 0 5px 15px -5px theme('colors.cyan.neon');
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        /* Decorative UI Elements */
+        .ui-corner {
+            position: absolute;
+            width: 10px; height: 10px;
+            border: 2px solid theme('colors.cyan.neon');
+        }
+        .ui-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .ui-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .ui-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .ui-br { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+        /* Keyframes */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes counter-spin { 100% { transform: rotate(-360deg); } }
+        
+        @keyframes pulseCyan {
+            0% { box-shadow: 0 0 5px #06B6D4, inset 0 0 5px #06B6D4; background-color: transparent; }
+            50% { box-shadow: 0 0 20px #06B6D4, inset 0 0 10px #06B6D4; background-color: rgba(6, 182, 212, 0.2); transform: scale(1.1); }
+            100% { box-shadow: 0 0 5px #06B6D4, inset 0 0 5px #06B6D4; background-color: transparent; }
+        }
+
+        @keyframes flashPink {
+            0%, 50% { background-color: theme('colors.pink.neon'); box-shadow: theme('boxShadow.neon-pink'); }
+            51%, 100% { background-color: theme('colors.void'); box-shadow: none; }
+        }
+
+        @keyframes coreBeat {
+            0% { transform: scale(0.95); box-shadow: 0 0 30px #A855F7, 0 0 50px #06B6D4; }
+            100% { transform: scale(1.05); box-shadow: 0 0 60px #A855F7, 0 0 120px #06B6D4, inset 0 0 40px #A855F7; }
+        }
+
+        @keyframes gridMove {
+            0% { transform: rotateX(60deg) translateY(-200px); }
+            100% { transform: rotateX(60deg) translateY(0px); }
+        }
+
+        @keyframes scanlineMove {
+            0% { top: 0%; opacity: 1; }
+            90% { top: 100%; opacity: 0; }
+            100% { top: 0%; opacity: 0; }
+        }
+
+        @keyframes signalShoot {
+            0% { opacity: 0; background-position: 0 100%; }
+            50% { opacity: 1; background-position: 0 0%; }
+            100% { opacity: 0; background-position: 0 -100%; }
+        }
+
+        @keyframes glitch-anim {
+            0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); transform: translate(0); }
+            20% { clip-path: polygon(0 15%, 100% 15%, 100% 15%, 0 15%); transform: translate(-2px, 2px); }
+            40% { clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%); transform: translate(2px, -2px); }
+            60% { clip-path: polygon(0 1%, 100% 1%, 100% 2%, 0 2%); transform: translate(-2px, 2px); }
+            80% { clip-path: polygon(0 33%, 100% 33%, 100% 33%, 0 33%); transform: translate(2px, -2px); }
+            100% { clip-path: polygon(0 44%, 100% 44%, 100% 44%, 0 44%); transform: translate(0); }
+        }
+        
+        @keyframes glitch-anim-2 {
+            0% { clip-path: polygon(0 25%, 100% 25%, 100% 30%, 0 30%); transform: translate(0); }
+            20% { clip-path: polygon(0 3%, 100% 3%, 100% 3%, 0 3%); transform: translate(2px, -2px); }
+            40% { clip-path: polygon(0 5%, 100% 5%, 100% 20%, 0 20%); transform: translate(-2px, 2px); }
+            60% { clip-path: polygon(0 2%, 100% 2%, 100% 2%, 0 2%); transform: translate(2px, -2px); }
+            80% { clip-path: polygon(0 28%, 100% 28%, 100% 28%, 0 28%); transform: translate(-2px, 2px); }
+            100% { clip-path: polygon(0 40%, 100% 40%, 100% 40%, 0 40%); transform: translate(0); }
+        }
+
+        /* Typewriter Cursor */
+        .cursor-blink {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: theme('colors.cyan.neon');
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body class="font-mono text-sm antialiased border border-purple-neon m-1">
+
+    <div class="crt-overlay"></div>
+
+    <!-- Main Application Shell -->
+    <main class="w-full h-[100dvh] flex flex-col relative bg-void">
+        
+        <!-- Header / Status Bar -->
+        <header class="h-12 border-b border-purple-neon/30 flex items-center px-6 justify-between bg-panel/50 backdrop-blur-md relative z-40">
+            <div class="flex items-center gap-4">
+                <div class="w-2 h-2 bg-cyan-neon shadow-[0_0_8px_#06B6D4]"></div>
+                <h1 class="font-display font-bold text-xl tracking-widest text-white uppercase glitch-text" data-text="Orchestra.OS">Orchestra.OS</h1>
+            </div>
+            
+            <div class="flex items-center gap-8 font-mono text-xs text-purple-200">
+                <div class="flex flex-col">
+                    <span class="text-gray-500 uppercase text-[10px]">System Load</span>
+                    <span class="text-cyan-neon font-bold">84.2%</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-gray-500 uppercase text-[10px]">Active Agents</span>
+                    <span class="text-pink-neon font-bold">128</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-gray-500 uppercase text-[10px]">Network Uplink</span>
+                    <span class="text-purple-neon font-bold">SECURE.T9</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stage Area -->
+        <div class="stage-grid flex-1 relative z-10">
+            
+            <!-- Radial Visualizer (Left) -->
+            <section class="orbital-system overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-deep/10 via-void to-void">
+                <div class="grid-bg"></div>
+
+                <!-- Central Orb -->
+                <div class="core cursor-pointer hover:scale-110 transition-transform duration-300">
+                    <div class="core-inner">
+                        <i class="ph ph-cpu text-cyan-neon text-xl animate-pulse"></i>
+                    </div>
+                </div>
+
+                <!-- Rings container (Injected via JS for density) -->
+                <div id="orbital-rings" class="absolute inset-0 flex items-center justify-center">
+                    <!-- Rings generated here -->
+                </div>
+
+                <!-- Signal visualizer -->
+                <div class="signal-path" id="signal-beam"></div>
+            </section>
+
+            <!-- Holographic Inspector (Right) -->
+            <aside class="inspector-panel h-full flex flex-col z-20">
+                <!-- Inner padding wrapper to keep borders tight -->
+                <div class="p-6 flex-1 overflow-hidden flex flex-col relative">
+                    <div class="ui-tl"></div> <div class="ui-tr"></div>
+                    
+                    <!-- Header -->
+                    <div class="border-b-2 border-purple-neon/50 pb-4 mb-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h2 class="font-display text-3xl font-bold uppercase text-white tracking-widest leading-none">Inspector_</h2>
+                            <div class="px-2 py-1 bg-cyan-neon/10 border border-cyan-neon text-cyan-neon text-xs font-bold shrink-0">
+                                LIVE STREAM
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-xs uppercase tracking-widest">Select a node to intercept telemetry.</p>
+                    </div>
+
+                    <!-- Telemetry Data (Static Dense Representation) -->
+                    <div class="flex-1 overflow-y-auto space-y-6 pr-2">
+                        
+                        <!-- Entity block -->
+                        <div class="space-y-2 group">
+                            <div class="flex justify-between text-[10px] uppercase text-gray-500">
+                                <span>Entity ID</span>
+                                <span>Status</span>
+                            </div>
+                            <div class="flex justify-between items-center text-lg font-bold border-l-4 border-cyan-neon pl-3 bg-panel p-2">
+                                <span class="text-white">WRK_UNIT_0X89A</span>
+                                <span class="text-cyan-neon animate-pulse">RUNNING</span>
+                            </div>
+                        </div>
+
+                        <!-- Data Visualizers -->
+                        <div class="space-y-4">
+                            <div class="flex justify-between text-xs text-purple-300 mb-1">
+                                <span>Compute Allocation</span>
+                                <span class="font-mono text-white">92.4%</span>
+                            </div>
+                            <!-- Sharp Progress bar -->
+                            <div class="h-2 w-full bg-void border border-purple-neon/30 relative">
+                                <div class="absolute top-0 left-0 h-full bg-cyan-neon w-[92.4%] shadow-[0_0_10px_#06B6D4]"></div>
+                                <!-- Micro tick marks -->
+                                <div class="absolute inset-0 flex justify-between px-[10%] opacity-30">
+                                    <div class="w-[1px] h-full bg-white"></div>
+                                    <div class="w-[1px] h-full bg-white"></div>
+                                    <div class="w-[1px] h-full bg-white"></div>
+                                    <div class="w-[1px] h-full bg-white"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between text-xs text-purple-300 mb-1">
+                                <span>Memory Buffer</span>
+                                <span class="font-mono text-white">4.2 TB</span>
+                            </div>
+                            <div class="h-2 w-full bg-void border border-purple-neon/30 relative">
+                                <div class="absolute top-0 left-0 h-full bg-purple-neon w-[45%]"></div>
+                            </div>
+                        </div>
+
+                        <!-- Logs -->
+                        <div class="mt-8 border-t border-purple-neon/20 pt-4">
+                            <h3 class="font-display text-sm font-bold text-gray-400 mb-3 uppercase tracking-wider">Intercepted Stream</h3>
+                            <div class="bg-void border border-panel p-3 h-48 overflow-hidden relative font-mono text-[10px] leading-relaxed text-gray-400">
+                                <!-- Log lines fade out at top -->
+                                <div class="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-void to-transparent z-10"></div>
+                                
+                                <div class="space-y-1" id="log-stream">
+                                    <div class="flex gap-2"><span class="text-cyan-neon">>></span> <span class="text-pink-neon">[WARN]</span> Thermal flux detected in sector 4.</div>
+                                    <div class="flex gap-2"><span class="text-cyan-neon">>></span> Re-routing packet stream via proxy node Alpha.</div>
+                                    <div class="flex gap-2"><span class="text-cyan-neon">>></span> Handshake successful. Decrypting payload...</div>
+                                    <div class="flex gap-2"><span class="text-cyan-neon">>></span> Processing tensor weights... 0x48FA91.</div>
+                                    <div class="flex gap-2"><span class="text-cyan-neon">>></span> <span class="text-purple-neon">[OK]</span> Work Unit completed. Awaiting next cycle.</div>
+                                    <div class="flex gap-2"><span class="text-cyan-neon">>></span> Allocating new thread for USER_MESSAGE.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Value pairs -->
+                        <div class="grid grid-cols-2 gap-4 mt-6">
+                            <div class="p-3 border border-panel bg-panel/30">
+                                <div class="text-[10px] text-gray-500 uppercase mb-1">Agent Model</div>
+                                <div class="text-sm font-bold text-purple-300">GPT-ORCH-v9</div>
+                            </div>
+                            <div class="p-3 border border-panel bg-panel/30">
+                                <div class="text-[10px] text-gray-500 uppercase mb-1">Cycle Time</div>
+                                <div class="text-sm font-bold text-purple-300">14.02ms</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Command Strip (Bottom) -->
+        <footer class="h-[60px] bg-void border-t-2 border-cyan-neon shadow-[0_-5px_20px_rgba(6,182,212,0.15)] flex items-center relative z-40">
+            <div class="w-16 h-full bg-cyan-neon flex items-center justify-center shrink-0">
+                <i class="ph-fill ph-terminal text-void text-2xl"></i>
+            </div>
+            <div class="flex-1 h-full relative">
+                <input type="text" 
+                       class="cmd-input w-full h-full bg-transparent border-none text-cyan-neon font-mono text-lg px-6 uppercase placeholder-cyan-neon/30 tracking-widest"
+                       placeholder="INJECT_USER_SIGNAL..."
+                       value="EXECUTE /run orchestration --force"
+                       spellcheck="false">
+            </div>
+            <div class="px-8 h-full flex items-center justify-center bg-panel border-l border-cyan-neon/30 cursor-pointer hover:bg-cyan-neon hover:text-void transition-colors text-cyan-neon font-bold tracking-widest uppercase">
+                Transmit <i class="ph ph-paper-plane-right ml-2"></i>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Interactive Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ringsContainer = document.getElementById('orbital-rings');
+            
+            // Generate dense radial layout
+            const config = [
+                { ringClass: 'ring-1', count: 8, radius: 150 },
+                { ringClass: 'ring-2', count: 18, radius: 250 },
+                { ringClass: 'ring-3', count: 32, radius: 375 }
+            ];
+
+            const shapes = ['shape-hex', 'shape-diamond', 'shape-triangle'];
+            const statuses = ['idle', 'idle', 'running', 'done', 'done', 'error', 'idle', 'running']; // Weighted distribution
+            
+            config.forEach((ringDef, rIdx) => {
+                // Create ring path
+                const ringEl = document.createElement('div');
+                ringEl.className = `ring ${ringDef.ringClass}`;
+                ringsContainer.appendChild(ringEl);
+
+                // Create orbit container mechanism (spins)
+                const orbitCont = document.createElement('div');
+                orbitCont.className = `orbit-container ${ringDef.ringClass}`;
+                
+                // Add CSS variables for timing via class mapping
+                let dur = rIdx === 0 ? 12 : (rIdx === 1 ? 24 : 36);
+                let dir = rIdx === 1 ? 'reverse' : 'normal';
+                orbitCont.style.setProperty('--duration', `${dur}s`);
+                orbitCont.style.setProperty('--direction', dir);
+                
+                // Generate Nodes
+                for(let i=0; i<ringDef.count; i++) {
+                    const angle = (i / ringDef.count) * 360;
+                    
+                    // The wrapper is positioned mathematically on the radius
+                    const nodeWrapper = document.createElement('div');
+                    nodeWrapper.className = 'node-wrapper';
+                    
+                    // Convert polar to cartesian for initial positioning on the wrapper
+                    // We define transform explicitly here
+                    const rad = angle * (Math.PI / 180);
+                    const tx = Math.cos(rad) * ringDef.radius;
+                    const ty = Math.sin(rad) * ringDef.radius;
+                    
+                    // Complex transform: move to radius, then counter-rotate to keep node upright
+                    // Note: counter-rotate needs animation to perfectly match orbit container spin in pure CSS,
+                    // For static placement + container rotation, we use CSS variables inside keyframes if possible.
+                    // For this elegant solution: we let them rotate with the grid, adding to DJ vibe.
+                    nodeWrapper.style.transform = `translate(${tx}px, ${ty}px) rotate(${angle}deg)`;
+                    
+                    const node = document.createElement('div');
+                    
+                    // Assign random properties
+                    const status = statuses[Math.floor(Math.random() * statuses.length)];
+                    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                    
+                    node.className = `node ${status} ${shape}`;
+                    
+                    // Add inner content based on state (icons)
+                    if(status === 'running') node.innerHTML = '<i class="ph ph-arrows-clockwise animate-spin text-[10px]"></i>';
+                    else if (status === 'error') node.innerHTML = '<i class="ph-fill ph-warning-circle text-[12px] text-pink-neon"></i>';
+                    else if (status === 'done') node.innerHTML = '<i class="ph-bold ph-check text-[10px] text-purple-200"></i>';
+                    
+                    nodeWrapper.appendChild(node);
+                    orbitCont.appendChild(nodeWrapper);
+                    
+                    // Interactive touch (simulated)
+                    nodeWrapper.addEventListener('mouseenter', () => {
+                        const evt = new CustomEvent('node-hover', { detail: { id: `WRK_${rIdx}_${i}`, status } });
+                        document.dispatchEvent(evt);
+                    });
+                }
+                
+                ringsContainer.appendChild(orbitCont);
+            });
+
+            // Stream simulation
+            const stream = document.getElementById('log-stream');
+            const msgs = [
+                "Optimizing routing vectors...",
+                "<span class='text-purple-neon'>[INFO]</span> Handshake established.",
+                "<span class='text-pink-neon'>[ERR]</span> Null pointer in Sector 7G.",
+                "Compiling structural tensors...",
+                "<span class='text-cyan-neon'>[SYSTEM]</span> Orchestrator heartbeat OK."
+            ];
+            
+            setInterval(() => {
+                const el = document.createElement('div');
+                el.className = 'flex gap-2 opacity-0 transition-opacity duration-300';
+                const msg = msgs[Math.floor(Math.random() * msgs.length)];
+                el.innerHTML = `<span class="text-cyan-neon">>></span> ${msg}`;
+                stream.appendChild(el);
+                
+                // Fade in
+                setTimeout(() => el.classList.remove('opacity-0'), 10);
+                
+                if (stream.children.length > 8) {
+                    stream.removeChild(stream.firstElementChild);
+                }
+                stream.scrollTop = stream.scrollHeight;
+            }, 2500);
+
+            // Signal Injection animation
+            const inputBase = document.querySelector('.cmd-input');
+            inputBase.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') {
+                    const beam = document.getElementById('signal-beam');
+                    beam.style.animation = 'none';
+                    beam.offsetHeight; // trigger reflow
+                    
+                    // Calculate visual angle from bottom center to core
+                    const stageRect = document.querySelector('.stage-grid').getBoundingClientRect();
+                    const coreRect = document.querySelector('.core').getBoundingClientRect();
+                    
+                    beam.style.height = `${stageRect.height / 2}px`;
+                    beam.style.background = `linear-gradient(to top, transparent, theme('colors.cyan.neon'))`;
+                    beam.style.boxShadow = `0 0 20px theme('colors.cyan.neon')`;
+                    
+                    beam.style.animation = 'signalShoot 0.8s ease-out forwards';
+                    
+                    inputBase.value = "";
+                    inputBase.placeholder = "PROCESSING...";
+                    setTimeout(() => inputBase.placeholder = "INJECT_USER_SIGNAL...", 1000);
+                }
+            });
+            
+            // Add blinking cursor to terminal input visually
+            // Handled natively by browser caret, but styling applied via CSS focus.
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased text-[#2C2C2C] bg-[#F7F5F0]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrchestraOS - Focus Mode</title>
+    
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans JP"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        washi: '#F7F5F0',
+                        pure: '#FFFFFF',
+                        sumi: '#2C2C2C',
+                        terra: '#D4734F',
+                        sage: '#81B29A',
+                        mutedred: '#C75146',
+                    },
+                    boxShadow: {
+                        'soft': '0 24px 50px -12px rgba(44, 44, 44, 0.06)',
+                        'float': '0 32px 64px -16px rgba(44, 44, 44, 0.08), 0 0 0 1px rgba(44,44,44,0.03)',
+                        'input': '0 12px 32px -8px rgba(44, 44, 44, 0.04)',
+                    },
+                    animation: {
+                        'breath': 'breath 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slideUpFade': 'slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'staggerIn': 'staggerIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        breath: {
+                            '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+                            '50%': { opacity: '1', transform: 'scale(1.15)' },
+                        },
+                        slideUpFade: {
+                            '0%': { opacity: '0', transform: 'translateY(24px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        staggerIn: {
+                            '0%': { opacity: '0', transform: 'translateY(12px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Base Resets & Custom Scrollbar */
+        ::selection {
+            background-color: #D4734F;
+            color: #FFFFFF;
+            text-shadow: none;
+        }
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        /* Deliberate Stagger Logic for Entrance */
+        .stagger-item { opacity: 0; animation: staggerIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .stagger-item:nth-child(1) { animation-delay: 100ms; }
+        .stagger-item:nth-child(2) { animation-delay: 250ms; }
+        .stagger-item:nth-child(3) { animation-delay: 400ms; }
+        .stagger-item:nth-child(4) { animation-delay: 550ms; }
+
+        /* Elegant button hover physics */
+        .btn-primary {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -8px rgba(44, 44, 44, 0.2);
+        }
+        .btn-primary:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .btn-secondary {
+            transition: all 0.2s ease-out;
+        }
+        .btn-secondary:hover {
+            background-color: rgba(44, 44, 44, 0.04);
+        }
+        .btn-secondary:active {
+            transform: scale(0.98);
+            background-color: rgba(44, 44, 44, 0.08);
+        }
+
+        /* Ambient Glass Refraction */
+        .glass-refraction {
+            position: relative;
+        }
+        .glass-refraction::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.2) 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-[100dvh] flex flex-col relative w-full text-[18px] leading-[1.6]">
+
+    <!-- Macro Architecture: Global Header (Navigation Dots) -->
+    <header class="w-full pt-10 pb-6 flex justify-center items-center z-50">
+        <nav class="flex gap-6 items-center" aria-label="Agent Status">
+            <!-- Codex-Builder: Running (Pulse) -->
+            <div class="relative flex h-3 w-3 group cursor-pointer">
+                <span class="absolute inline-flex h-full w-full rounded-full bg-terra opacity-60 animate-breath"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-terra"></span>
+                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[10px] text-sumi/60 tracking-wider whitespace-nowrap pointer-events-none">CODEX</div>
+            </div>
+            <!-- Review-Bot: Idle -->
+            <div class="relative group cursor-pointer">
+                <div class="h-2 w-2 rounded-full bg-sumi/15 transition-colors hover:bg-sumi/30"></div>
+                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[10px] text-sumi/60 tracking-wider whitespace-nowrap pointer-events-none">REVIEW</div>
+            </div>
+            <!-- Docs-Writer: Idle -->
+            <div class="relative group cursor-pointer">
+                <div class="h-2 w-2 rounded-full bg-sumi/15 transition-colors hover:bg-sumi/30"></div>
+                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[10px] text-sumi/60 tracking-wider whitespace-nowrap pointer-events-none">DOCS</div>
+            </div>
+            <!-- Test-Agent: Done -->
+            <div class="relative group cursor-pointer">
+                <div class="h-2 w-2 rounded-full bg-sage"></div>
+                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[10px] text-sumi/60 tracking-wider whitespace-nowrap pointer-events-none">TEST</div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Workspace Canvas -->
+    <main class="flex-1 w-full max-w-[720px] mx-auto px-4 sm:px-6 flex flex-col pb-40">
+        
+        <!-- Metadata Header & Agent Profile -->
+        <div class="flex flex-col items-center mt-6 lg:mt-10 mb-14 stagger-item">
+            <!-- Subtle Technical Metadata -->
+            <div class="font-mono text-[11px] tracking-widest text-sumi/40 flex flex-wrap justify-center gap-x-6 gap-y-2 mb-10 uppercase">
+                <span>Task: <span class="text-sumi/70">task-099</span> Event Envelope</span>
+                <span class="hidden sm:inline opacity-30">•</span>
+                <span>WU: <span class="text-sumi/70">wu-002</span></span>
+                <span class="hidden sm:inline opacity-30">•</span>
+                <span>CP: <span class="text-sumi/70">cp-003</span></span>
+            </div>
+
+            <!-- Focus Agent Avatar -->
+            <div class="relative w-16 h-16 rounded-full bg-pure shadow-soft flex items-center justify-center p-1 mb-5">
+                <!-- Using an abstract, calm architectural/paper image to represent a system agent -->
+                <img src="https://images.unsplash.com/photo-1600174297956-c6d4d9998f14?auto=format&fit=crop&w=200&q=80" alt="Codex-Builder Avatar" class="w-full h-full object-cover rounded-full filter grayscale contrast-125 opacity-90">
+                <!-- Activity Ring Overlay -->
+                <div class="absolute -inset-[2px] border border-terra/30 rounded-full animate-[spin_8s_linear_infinite]"></div>
+                <!-- Status pip -->
+                <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-pure rounded-full flex items-center justify-center">
+                    <div class="w-2 h-2 bg-terra rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Agent Typographic Identity -->
+            <h1 class="text-2xl font-medium tracking-tight text-sumi mb-2">Codex-Builder</h1>
+            <div class="flex items-center gap-2">
+                <span class="text-terra text-sm font-medium tracking-wide">Running</span>
+                <span class="w-1 h-1 rounded-full bg-sumi/20"></span>
+                <span class="font-mono text-xs text-sumi/50">2m 14s</span>
+            </div>
+        </div>
+
+        <!-- Conversational / Action Flow -->
+        <div class="flex flex-col space-y-10">
+            
+            <!-- Meso-Architecture: Standard Agent Output -->
+            <div class="flex flex-col outline-none stagger-item">
+                <div class="bg-pure rounded-[24px] rounded-tl-sm p-7 sm:p-8 shadow-soft border border-pure/50 glass-refraction">
+                    <p class="text-sumi/90 font-light leading-relaxed">
+                        Implementing the event envelope schema with metadata and correlation IDs. I've structured the Go structs to decouple the transport layer payload from domain specific logic.
+                    </p>
+                </div>
+                <div class="mt-3 ml-2 flex items-center gap-3 font-mono text-[10px] text-sumi/40">
+                    <i class="ph ph-check-circle text-sage/70 text-sm"></i>
+                    <span>Committed a38f9b2</span>
+                </div>
+            </div>
+
+            <!-- Meso-Architecture: High-Priority Action Interface (The Interruption) -->
+            <div class="relative z-10 w-[calc(100%+32px)] -ml-4 sm:w-full sm:ml-0 my-4 animate-slideUpFade" style="animation-delay: 0.6s; opacity: 0;">
+                <!-- Decorative element behind to emphasize focus -->
+                <div class="absolute inset-0 bg-pure/40 blur-xl rounded-[32px] -z-10 transform scale-105"></div>
+                
+                <div class="bg-pure/95 backdrop-blur-xl rounded-[24px] p-7 sm:p-9 shadow-float border border-sumi/[0.04] glass-refraction">
+                    <!-- Card Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-terra/10 flex items-center justify-center text-terra">
+                                <i class="ph ph-terminal-window text-lg"></i>
+                            </div>
+                            <span class="font-medium text-sm text-sumi tracking-wide">System Authorization</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-sumi/[0.03] px-3 py-1.5 rounded-full border border-sumi/[0.05]">
+                            <span class="w-1.5 h-1.5 bg-terra rounded-full"></span>
+                            <span class="text-[11px] font-mono text-sumi/70 uppercase">Risk: Medium</span>
+                        </div>
+                    </div>
+
+                    <!-- Execution Context -->
+                    <p class="text-sumi/80 text-base mb-4 font-light">Codex-Builder requests permission to execute test suite across all modified packages.</p>
+                    
+                    <!-- Code/Terminal Block -->
+                    <div class="bg-washi rounded-[20px] p-5 mb-8 border border-sumi/[0.05] overflow-x-auto relative group">
+                        <div class="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="ph ph-copy text-sumi/30 hover:text-sumi cursor-pointer"></i>
+                        </div>
+                        <code class="font-mono text-[13px] text-sumi/90 flex flex-col gap-1 whitespace-nowrap">
+                            <span class="text-sumi/40"># Run tests explicitly tracking race conditions</span>
+                            <span><span class="text-sage">$</span> bash -c "go test -race -v ./..."</span>
+                        </code>
+                    </div>
+
+                    <!-- Macro Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button class="btn-primary flex-1 bg-sumi text-pure h-14 rounded-[16px] font-medium text-sm tracking-wide flex items-center justify-center gap-2">
+                            <i class="ph ph-check text-lg"></i>
+                            Approve Execution
+                        </button>
+                        <button class="btn-secondary sm:w-[140px] bg-transparent border border-sumi/[0.08] text-sumi h-14 rounded-[16px] font-medium text-sm tracking-wide flex items-center justify-center gap-2">
+                            <i class="ph ph-x"></i>
+                            Reject
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meso-Architecture: Human Input Alignment -->
+            <div class="flex flex-col items-end outline-none stagger-item w-full">
+                <div class="max-w-[85%] bg-washi rounded-[24px] rounded-br-sm p-6 sm:p-7 border border-sumi/[0.04]">
+                    <p class="text-sumi/90 font-light">
+                        Use table-driven tests for the struct validations. Ensure coverage accounts for nil pointer exceptions.
+                    </p>
+                </div>
+                <!-- Typographic timestamp right aligned -->
+                <div class="mt-3 mr-2 font-mono text-[10px] text-sumi/30 uppercase tracking-widest">
+                    You · 12:44 PM
+                </div>
+            </div>
+
+             <!-- Subtle loading indicator for next agent step -->
+             <div class="flex gap-2 items-center py-6 ml-4 stagger-item opacity-50">
+                <div class="w-1.5 h-1.5 bg-terra rounded-full animate-bounce" style="animation-duration: 1.2s; animation-delay: 0s;"></div>
+                <div class="w-1.5 h-1.5 bg-terra rounded-full animate-bounce" style="animation-duration: 1.2s; animation-delay: 0.2s;"></div>
+                <div class="w-1.5 h-1.5 bg-terra rounded-full animate-bounce" style="animation-duration: 1.2s; animation-delay: 0.4s;"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Macro Architecture: Floating Input Controller -->
+    <div class="fixed bottom-0 left-0 w-full pointer-events-none z-40">
+        <!-- Gradient wash to soften bottom edge -->
+        <div class="h-32 w-full bg-gradient-to-t from-washi via-washi/90 to-transparent absolute bottom-0 left-0"></div>
+        
+        <div class="relative w-full max-w-[720px] mx-auto px-4 sm:px-6 pb-8 pt-4 pointer-events-auto">
+            <div class="bg-pure rounded-[24px] p-2 pl-6 flex items-center shadow-input border border-sumi/[0.04] glass-refraction group focus-within:border-sumi/[0.1] transition-colors">
+                <input 
+                    type="text" 
+                    placeholder="Message Codex-Builder or type /command..." 
+                    class="w-full bg-transparent border-none outline-none text-[16px] font-light text-sumi placeholder:text-sumi/30 h-10"
+                >
+                <div class="ml-4 shrink-0 flex items-center gap-2">
+                    <button class="w-10 h-10 rounded-[16px] hover:bg-washi text-sumi/40 hover:text-sumi transition-colors flex items-center justify-center">
+                        <i class="ph ph-paperclip text-xl transition-transform hover:scale-105"></i>
+                    </button>
+                    <button class="w-10 h-10 rounded-[16px] bg-sumi text-pure flex items-center justify-center hover:-translate-y-[1px] transition-transform shadow-sm">
+                        <i class="ph ph-arrow-up text-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Micro-interaction hints purely typographic -->
+            <div class="flex justify-center mt-4 space-x-6 text-center opacity-0 transform translate-y-2 transition-all duration-500 hover:opacity-100 hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0 text-sumi/40 font-mono text-[9px] uppercase tracking-widest hidden sm:flex">
+                <span><kbd class="font-sans px-1.5 py-0.5 rounded-md bg-sumi/5 border border-sumi/10">⌘</kbd> + <kbd class="font-sans px-1.5 py-0.5 rounded-md bg-sumi/5 border border-sumi/10">K</kbd> Commands</span>
+                <span><kbd class="font-sans px-1.5 py-0.5 rounded-md bg-sumi/5 border border-sumi/10">↵</kbd> Send</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vanilla JS to manage subtle focus effects if necessary (None required for spatial layout, CSS handles physics) -->
+    <script>
+        // Simulate a slight parallax on scroll for depth
+        document.addEventListener('scroll', () => {
+            const scrolled = window.scrollY;
+            const avatars = document.querySelectorAll('.animate-\\[spin_8s_linear_infinite\\]');
+            avatars.forEach(el => {
+                // Subtle rotation modification based on scroll to make it feel connected
+                el.style.transform = `rotate(${scrolled * 0.1}deg)`;
+            });
+        }, { passive: true });
+    </script>
+</body>
+</html>
