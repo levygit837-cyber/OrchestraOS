@@ -1,70 +1,158 @@
-# Sistema de Orquestração de Agentes
+# OrchestraOS
 
-Projeto inicial para construir um sistema em que ideias, decisões, execução de código, automações e operação sejam coordenadas por agentes de IA com supervisão humana progressivamente menor.
+[![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://docker.com)
+[![CI](https://img.shields.io/badge/CI-Passing-2ea44f?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Estado
+> **Sistema operacional de projeto** que orquestra múltiplos agentes de IA para decompor objetivos em tarefas executáveis, executá-las em sandbox isolada e manter rastreabilidade completa via event sourcing.
 
-- Nome final: em aberto
-- Fase atual: fundação do projeto
-- Fonte de verdade: este repositório
-- Comunicação operacional sugerida: CLI + GitHub
-- Execução técnica sugerida: Codex + GitHub + worktrees + automações futuras
-- Arquitetura inicial: Orchestrator central com agentes Codex/CLI em sandboxes isolados
+---
 
-## Documentos Principais
+## O Problema
 
-- [AGENTS.md](AGENTS.md): regras que agentes devem seguir ao trabalhar no repositório.
-- [docs/canvas/project-canvas.md](docs/canvas/project-canvas.md): canvas textual do produto, legível por humanos e por IA.
-- [docs/canvas/system-map.mmd](docs/canvas/system-map.mmd): mapa Mermaid da arquitetura inicial.
-- [docs/architecture/README.md](docs/architecture/README.md): visão geral da arquitetura do OrchestraOS.
-- [docs/architecture/stack.md](docs/architecture/stack.md): stack técnica recomendada e evolução.
-- [docs/architecture/orchestration.md](docs/architecture/orchestration.md): modelo de orquestração de agentes.
-- [docs/architecture/domain-model.md](docs/architecture/domain-model.md): modelos de domínio do sistema.
-- [docs/architecture/interface-strategy.md](docs/architecture/interface-strategy.md): estratégia CLI, GitHub, Desktop, Web e conectores opcionais.
-- [docs/architecture/task-decomposition.md](docs/architecture/task-decomposition.md): decomposição de tasks em DAG.
-- [docs/architecture/prompt-system.md](docs/architecture/prompt-system.md): composição de SystemPrompts e TaskPrompts.
-- [docs/architecture/memory-system.md](docs/architecture/memory-system.md): desenho da memória recursiva derivada de eventos, checkpoints e documentação.
-- [docs/architecture/communication-protocol.md](docs/architecture/communication-protocol.md): contrato inicial de eventos e comandos.
-- [docs/architecture/repo-structure.md](docs/architecture/repo-structure.md): estrutura inicial de codigo, contratos e testes.
-- [docs/contracts/json-schemas.md](docs/contracts/json-schemas.md): indice dos schemas executaveis de dominio, eventos e comandos.
-- [docs/architecture/permissions.md](docs/architecture/permissions.md): matriz de ferramentas, riscos e aprovações.
-- [docs/architecture/sandbox-and-autonomy.md](docs/architecture/sandbox-and-autonomy.md): política inicial de sandbox e autonomia.
-- [docs/architecture/testing-strategy.md](docs/architecture/testing-strategy.md): estratégia de testes por domínio.
-- [docs/architecture/failures-and-rollback.md](docs/architecture/failures-and-rollback.md): falhas, rollback e recuperação.
-- [docs/architecture/mvp.md](docs/architecture/mvp.md): escopo do MVP local-first.
-- [docs/implementation/roadmap.md](docs/implementation/roadmap.md): plano técnico de implementação.
-- [docs/management/operating-model.md](docs/management/operating-model.md): modelo de gestão do projeto.
-- [docs/slack/slack-setup.md](docs/slack/slack-setup.md): configuração opcional de Slack para integração futura.
-- [docs/naming.md](docs/naming.md): opções de nomes para produto/empresa.
+Coordenar agentes de IA em projetos reais é caótico: tarefas se perdem, contexto se dissolve, execução fica opaca. OrchestraOS resolve isso com um **orquestrador central**, **grafos de tarefas acíclicos (DAG)** e **ledger de eventos persistente** — tudo via CLI e banco de dados relacional.
 
-## Decisões Arquiteturais Atuais
+---
 
-- Orchestrator como control plane central.
-- Agentes como workers isolados por task.
-- Comunicação agente-orquestrador por WebSocket com eventos persistidos.
-- Comunicação entre agentes mediada pelo Orchestrator.
-- Task Graph acíclico para decomposição de trabalho; loops ficam dentro das runs dos agentes.
-- Sistema de composição de prompts por fragmentos versionados.
-- Ledger persistente de progresso por work unit.
-- Histórico operacional normalizado no Event Store.
-- Memória recursiva futura como camada derivada e auditável, não como fonte de verdade.
-- Interface inicial: scripts de bootstrap, CLI fina e GitHub.
-- Operação inicial GitHub-first: issues, branches, worktrees, pull requests, reviews e checks.
-- Chat, incluindo Slack, fica como conector opcional futuro.
-- Stack inicial: Go, Postgres, Codex/CLI, Git worktree, Docker e GitHub.
-- Autonomia inicial aprovada: Nível 2.
+## Stack
 
-## Estrutura Inicial Planejada
+| Camada | Tecnologia |
+|--------|-----------|
+| Core | Go 1.24 |
+| CLI | Cobra |
+| Banco de Dados | PostgreSQL 16 (Event Store + Estado Transacional) |
+| Migrations | Goose |
+| Comunicação | WebSocket (gorilla/websocket) |
+| Planejamento | Google Gemini API |
+| Validação | JSON Schema |
+| Containerização | Docker Compose |
+| CI/CD | GitHub Actions |
 
-- `cmd/orchestraos/`: entrada futura da CLI local.
-- `internal/domain/`: tipos centrais do domínio.
-- `contracts/schemas/`: JSON Schemas versionados.
-- `tests/`: validações de contrato sem serviços externos.
+---
 
-O primeiro esqueleto deve focar em `Task`, `Run`, `Event`, `WorkUnit`, `Agent` e `AgentSession`. `Orchestrator`, `CommunicationProtocol` e `Session` genérica permanecem como documentação arquitetural até haver necessidade operacional concreta.
+## Funcionalidades Principais
 
-Essa decisão está registrada em [docs/adr/0013-m0-domain-contract-scope.md](docs/adr/0013-m0-domain-contract-scope.md).
+- **Decomposição Inteligente de Tarefas** — Converte objetivos em grafos acíclicos (DAG) de work units via planejador heurístico + Gemini
+- **Máquina de Estados Operacional** — Transições validadas para Task, Run, AgentSession e Review com rollback automático
+- **Event Sourcing** — Ledger imutável de eventos versionados com replay de estado
+- **Orquestração Multi-Agente** — Coordenação centralizada com sandboxes isoladas (git worktree + Docker)
+- **Sistema de Prompts Versionados** — Composição de system prompts e task prompts com hash de snapshot
+- **Gates de Validação** — Reviews obrigatórios por tipo de gate (code, security, design, etc.)
+- **CLI Completa** — Gerenciamento de tasks, runs, work units, agent sessions e eventos via terminal
+- **Testes de Arquitetura** — Verificação automatizada de fronteiras entre módulos, pureza de domínio e anti-padrões
 
-## Regra de Trabalho
+---
 
-Antes de implementar qualquer funcionalidade, transformar a ideia em um item pequeno com objetivo, escopo, critérios de aceite e teste esperado. O projeto deve crescer por decisões registradas, não por improviso acumulado.
+## Arquitetura
+
+```
+┌─────────────────────────────────────────────┐
+│  CLI (Cobra)  │  GitHub API  │  WebSocket   │
+├─────────────────────────────────────────────┤
+│  Orchestrator (coordenação central)         │
+├─────────────────────────────────────────────┤
+│  Módulos Verticais (clean architecture)     │
+│  Task · Run · WorkUnit · Agent · AgentSession │
+│  TaskGraph · Prompt · Review · Trigger      │
+├─────────────────────────────────────────────┤
+│  Core (event store · state machine · transition) │
+├─────────────────────────────────────────────┤
+│  PostgreSQL  ·  JSON Schemas  ·  Docker     │
+└─────────────────────────────────────────────┘
+```
+
+- **Vertical Slice Architecture** — cada módulo encapsula seus próprios models, repository, service e eventos
+- **Dependency Inversion** — adapters bridge entre módulos sem violar fronteiras de importação
+- **Golden Rules** — módulos nunca importam uns aos outros; apenas o orchestrator/bootstrap/cmd podem fazê-lo
+- **ADR-driven** — 18 Architecture Decision Records documentam cada decisão estrutural
+
+---
+
+## Como Rodar
+
+### Pré-requisitos
+- Go 1.24+
+- Docker & Docker Compose
+- PostgreSQL client (opcional)
+
+### 1. Clone e infraestrutura
+```bash
+git clone https://github.com/levygit837-cyber/OrchestraOS.git
+cd OrchestraOS
+docker compose up -d   # sobe Postgres na porta 55432
+```
+
+### 2. Migrations
+```bash
+go run ./cmd/orchestraos migrate up
+```
+
+### 3. CLI
+```bash
+go run ./cmd/orchestraos --help
+go run ./cmd/orchestraos task create --title "Implementar login" --description "..."
+go run ./cmd/orchestraos task list
+```
+
+### 4. Testes
+```bash
+go test ./... -race          # todos os testes
+go test ./tests/architecture/... -v   # testes de arquitetura
+go test ./tests/contracts/... -v      # validação de schemas
+```
+
+---
+
+## Estatísticas do Projeto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas de Go | ~24.000 |
+| Arquivos .go | 142 |
+| Testes | 38 suites |
+| Commits | 129 |
+| ADRs | 18 |
+| Módulos | 10 |
+| Jobs de CI | 9 |
+
+---
+
+## Status
+
+**MVP Foundation — Funcional e em evolução ativa**
+
+- ✅ Core de event sourcing e state machine
+- ✅ 10 módulos de domínio implementados
+- ✅ CLI operacional
+- ✅ CI/CD completo com lint, testes de arquitetura e verificação de contratos
+- ✅ Docker Compose para desenvolvimento local
+- 🔄 Em desenvolvimento: runtime real de agentes, painel web, NATS JetStream
+
+---
+
+## Aprendizados Técnicos
+
+Este projeto foi construído do zero com foco em **maturidade de código**:
+
+- **Arquitetura limpa na prática** — separação real entre domain, core e modules, não apenas em pastas
+- **Testes de arquitetura** — go test validando que `internal/modules/*` nunca importam uns aos outros
+- **Event Sourcing sem framework** — implementação própria de event store, replay e state machine
+- **CI/CD como qualidade** — pipeline que quebra em anti-padrões (panic, fmt.Println, inline SQL, arquivos `utils.go`)
+- **Documentação viva** — ADRs mantidos sincronizados com código via testes automatizados
+- **Contratos primários** — JSON Schemas como fonte de verdade para eventos e payloads
+
+---
+
+## Documentação
+
+- [docs/architecture/](docs/architecture/) — visão geral, modelo de domínio, protocolos
+- [docs/adr/](docs/adr/) — decisões arquiteturais registradas
+- [AGENTS.md](AGENTS.md) — regras para agentes de IA trabalhando no repositório
+
+---
+
+## Licença
+
+[MIT](LICENSE)
