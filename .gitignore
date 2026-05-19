@@ -5,7 +5,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-
 # Dependencies
 node_modules/
 .go/
@@ -13,41 +12,104 @@ node_modules/
 venv/
 __pycache__/
 .tools/
-
 # Build outputs
 dist/
 build/
 coverage/
 .next/
 .turbo/
-
 # Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
-
 # Codedb snapshots
 codedb.snapshot
-
 # IDE / Editor
 .vscode/
 .idea/
 .cursor/
 .claude/
-
 # Agent / AI tool artifacts
 .codeium/
 .codex/
 .playwright-mcp/
 .windsurf/
 .gmb/
-
 # Design screenshots / temporary assets
 canvas-v3-*.png
 canvas-v4-*.png
-
 # Plans — kept locally only, not in repo
 plans/
 .ultraplan/
 temp/
+# ============================
+# Portfolio protection rules
+# Logs e arquivos temporários
+*.txt
+!requirements.txt
+logs/
+tmp/
+# Arquivos de IA / Assistants
+.aidesigner/
+.aider/
+.agents/
+.archive/
+.bg-shell/
+.clinerules/
+.factory/
+.kiro/
+.mcp.json
+.planning/
+.playwright-cli/
+.qwen/
+# Status / Temp docs
+ANALISE*.md
+ANALISE-*.md
+CORRECAO*.md
+CORRECAO-*.md
+DECISAO*.md
+IMPLEMENTACAO*.md
+IMPLEMENTATION_*.md
+RESUMO*.md
+RESUMO-*.md
+SOLUCAO*.md
+STREAMING_FIX*.md
+SUCESSO*.md
+TESTE*.md
+SELFCODE-REVIEW*.md
+CODE-REVIEW*.md
+LIGHTPANDA*.md
+PROJECT_STRUCTURE.md
+FRONTEND_CONECTADO.md
+PHASE-*-TEST-RESULTS.md
+blocked.txt
+pytest_output.txt
+pytest_fail_details.txt
+# Arquivos binários / Artefatos
+*.docx
+*.doc
+*.xlsx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+output/
+# IDE / Local
+*.swp
+*.swo
+*~
+# Secrets / Configs locais
+.env.local
+.env.*.local
+config.yaml
+config.local.yaml
+# Dependências
+vendor/
+*.pyc
+*.pyo
+.gitkeep
+# Build / Dist
+*.tsbuildinfo
