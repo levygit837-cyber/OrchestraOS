@@ -113,3 +113,9 @@ vendor/
 .gitkeep
 # Build / Dist
 *.tsbuildinfo
+
+# Documentacoes tecnicas internas - nao commitar em repo publico
+/docs/
+/design/
+AGENTS.md
+docker-compose.yml
