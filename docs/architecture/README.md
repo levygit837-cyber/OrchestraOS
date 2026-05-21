@@ -44,34 +44,39 @@ flowchart TD
 
     GitHub --> Intake
     CLI --> Intake
-    Intake --> Orchestrator["Orchestrator API"]
+    Intake --> IOA["Agente Orquestrador Inteligente (LLM)"]
 
-    Orchestrator --> Planner["Task Graph Planner"]
-    Planner --> Prompts["Prompt Composer"]
-    Orchestrator --> Scheduler["Scheduler"]
-    Orchestrator --> Policy["Policy Engine"]
-    Orchestrator --> Events["Event Store"]
-    Orchestrator --> Artifacts["Artifact Manager"]
-    Events -.-> Memory["Recursive Memory Service futuro"]
-    Artifacts -.-> Memory
-    Memory -.-> Prompts
+    IOA -->|"comandos estruturados"| OS["OrchestratorService (Go)"]
+    OS -->|"Observation API"| IOA
 
-    Scheduler --> Sandbox["Sandbox Manager"]
-    Sandbox --> Worktree["Git worktree por task"]
-    Sandbox --> Container["Container isolado"]
-    Container --> Agent["Agent Worker: Codex/CLI"]
+    OS --> TG["Task Graph Planner"]
+    TG --> WU["Work Units"]
+    WU --> Run["Run / AgentSession"]
 
-    Agent <-->|"WebSocket: eventos e comandos"| Orchestrator
-    Policy --> Approvals["Aprovacoes de ferramentas"]
-    Events --> Observability["Logs, traces e auditoria"]
-    Artifacts --> GitHub
-    Orchestrator --> CLI
-    Chat["Chat opcional futuro"] -.-> Intake
-    Orchestrator -.-> Chat
+    OS --> ES["Event Store (fonte canônica)"]
+    ES -.->|"projeções"| Run
 
-    %% Arquitetura Hibrida: Agente Orquestrador Inteligente
-    IntelligentAgent["Intelligent Orchestrator Agent (LLM)"] -->|"Observation API / Eventos"| Orchestrator
-    Orchestrator -->|"Respostas / Validacoes"| IntelligentAgent
+    OS --> WSM["Workspace Manager (WSM)"]
+    WSM --> Snap["Snapshot Engine"]
+    WSM --> OEG["Operation Event Graph"]
+    WSM --> MergeO["Merge Orchestrator"]
+
+    WSM -->|"FileAPI / WorkspaceAPI"| Agent["Agent Worker (LLM/CLI)"]
+    Agent -->|"checkpoints + ledger"| ES
+    Agent <-->|"eventos / comandos"| OS
+
+    OS --> Policy["Policy Engine"]
+    Policy --> Approvals["Aprovações de ferramentas"]
+
+    ES --> Observability["Logs, traces e auditoria"]
+    ES -.-> Memory["Memória Recursiva"]
+    Memory -.-> Prompts["Prompt Composer"]
+    Prompts --> Agent
+
+    MergeO --> GitHub
+    OS --> CLI
+    Chat["Conectores opcionais"] -.-> Intake
+    OS -.-> Chat
 ```
 
 ## Principios
@@ -80,7 +85,7 @@ flowchart TD
 - GitHub e CLI sao as interfaces operacionais iniciais.
 - Chat e outras interfaces conversacionais sao conectores opcionais futuros, nao memoria definitiva.
 - CLI e a primeira interface oficial do MVP; scripts sao bootstrap interno.
-- Cada task deve ter worktree, branch, estado e trilha de auditoria.
+- Cada task deve ter workspace isolado (via WSM), branch, estado e trilha de auditoria.
 - Cada task complexa deve ser decomposta em Task Graph aciclico.
 - Prompts devem ser montados por fragmentos versionados e registrados em snapshot.
 - Memoria recursiva deve ser camada derivada de eventos, checkpoints, ledger, artefatos e documentos versionados, nunca fonte canonica paralela.

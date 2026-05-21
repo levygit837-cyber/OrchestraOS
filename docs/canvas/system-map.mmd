@@ -1,44 +1,138 @@
 flowchart TD
-    Human --> CLI["CLI local: controle do MVP"]
-    Human --> Repo["Repositório: fonte de verdade"]
-    Human --> GitHub["GitHub: issues, PRs e revisão"]
-    Human -. futuro .-> Chat["Chat opcional: Slack/Discord/etc"]
+    subgraph Intake["Intake"]
+        CLI["CLI: comandos locais"]
+        GitHub["GitHub: issues, PRs, checks"]
+        Chat["Conectores: Slack/Discord/etc"]
+    end
 
-    CLI --> Inbox
-    Inbox --> Triage["Triagem: escopo, prioridade, risco"]
+    Human --> CLI
+    Human --> GitHub
+    Human -.-> Chat
+
+    CLI --> Inbox["Inbox / UserMessage"]
     GitHub --> Inbox
-    Chat -. conector opcional .-> Inbox
+    Chat -.-> Inbox
 
-    Triage --> Orchestrator["Orchestrator: control plane"]
-    Repo --> Orchestrator
-    GitHub --> Orchestrator
+    Inbox --> Triage["Triagem: escopo, prioridade, risco"]
+    Triage --> IOA["Agente Orquestrador Inteligente (LLM)"]
 
-    Orchestrator --> Policy["Políticas de autonomia e aprovação"]
-    Orchestrator --> Planner["Task Graph Planner: DAG de work units"]
-    Planner --> Prompts["Prompt Composer: SystemPrompt + TaskPrompt"]
-    Prompts --> Ledger["Agent Task Ledger"]
-    Orchestrator --> Scheduler["Scheduler de tasks"]
-    Orchestrator --> Events["Event Store: logs e auditoria"]
-    Events -. futuro .-> Memory["Memória Recursiva: contexto derivado"]
-    Memory -. contexto recuperado .-> Prompts
-    Scheduler --> Sandbox["Sandbox Manager"]
-    Sandbox --> Worktree["Git worktree por task"]
-    Sandbox --> Container["Container isolado"]
-    Container --> Agent["Agente Codex/CLI"]
-    Agent <-->|"WebSocket: eventos e comandos"| Orchestrator
+    subgraph Orchestration["Orquestração Híbrida"]
+        IOA -->|"comandos estruturados"| OS["OrchestratorService (Go)"]
+        OS -->|"Observation API"| IOA
+        OS --> Policy["Policy Engine"]
+    end
 
-    Agent --> Tests["Validações: testes, lint, revisão"]
-    Tests --> Artifacts["Artefatos: diff, logs e evidências"]
-    Artifacts --> Orchestrator
-    Artifacts -. futuro .-> Memory
-    Orchestrator --> GitHub
-    Orchestrator -. futuro .-> Chat
+    IOA -->|"decomposição semântica"| TG["Task Graph Planner"]
+    OS --> TG
+    TG --> WU["Work Units"]
 
-    Events --> Observability["Observabilidade: trilha de auditoria e rollback"]
-    Repo --> Docs["Docs: canvas, ADRs, manuais"]
-    Docs --> Orchestrator
-    Docs -. futuro .-> Memory
-    Policy --> Automations["Automações futuras"]
-    Automations --> GitHub
-    Automations -. futuro .-> Chat
-    Automations --> Observability
+    subgraph Modules["Módulos Verticais (internal/modules/)"]
+        Task["task/"]
+        WU
+        Run["run/"]
+        AgentSession["agentsession/"]
+        Prompt["prompt/"]
+        Review["review/"]
+    end
+
+    WU --> Run
+    Prompt -->|"PromptSnapshot"| AgentSession
+    Run -->|"runtime_type"| AgentSession
+
+    subgraph Core["Core (internal/core/)"]
+        ES["Event Store<br/>fonte de verdade canônica"]
+        EV["event/ (event bus)"]
+    end
+
+    OS -->|"comandos + eventos"| EV
+    EV --> ES
+    ES -.->|"projeções"| Task
+    ES -.->|"projeções"| Run
+    ES -.->|"projeções"| WU
+    ES -.->|"projeções"| AgentSession
+
+    subgraph WSM["Workspace Manager (WSM)"]
+        VWS["Virtual Workspace Service"]
+        Snap["Snapshot Engine"]
+        OEG["Operation Event Graph"]
+        MergeO["Merge Orchestrator"]
+    end
+
+    OS -->|"cria / gerencia"| VWS
+    VWS --> Snap
+    VWS --> OEG
+    OEG --> MergeO
+
+    subgraph AgentRuntime["Agent Runtime"]
+        AR["Agente Executor (LLM/CLI)"]
+        CP["Checkpoints"]
+        Ledger["Agent Task Ledger"]
+    end
+
+    AgentSession -->|"inicia"| AR
+    AR -->|"registra"| CP
+    AR -->|"atualiza"| Ledger
+    CP -->|"eventos"| EV
+    Ledger -->|"eventos"| EV
+
+    WSM -->|"FileAPI / WorkspaceAPI"| AR
+    AR -->|"artefatos"| Snap
+
+    subgraph Intervention["Protocolo de Intervenção"]
+        PING["Nível 0: PING"]
+        HINT["Nível 1: HINT"]
+        WARN["Nível 2: WARNING"]
+        INT["Nível 3: INTERRUPT"]
+        PAUSE["Nível 4: PAUSE"]
+        REST["Nível 5: RESTART"]
+        TERM["Nível 6: TERMINATE"]
+        ESC["Nível 7: ESCALATE"]
+    end
+
+    Human -->|"mensagem direta"| PING
+    IOA -->|"sugere"| HINT
+    OS -->|"envia sinal"| WARN
+    OS -->|"envia sinal"| INT
+    OS -->|"comando"| PAUSE
+    OS -->|"comando"| REST
+    OS -->|"comando"| TERM
+    OS -->|"escala"| ESC
+    PING --> AR
+    HINT --> AR
+    WARN --> AR
+    INT --> AR
+    PAUSE --> AR
+    REST --> AR
+    TERM --> AR
+    ESC --> Human
+
+    subgraph Memory["Memória"]
+        MR["MemoryRecord"]
+        RB["RetrievedMemoryBundle"]
+    end
+
+    ES -.->|"deriva"| MR
+    CP -.->|"deriva"| MR
+    Ledger -.->|"deriva"| MR
+    MR -->|"injetada no prompt"| RB
+    RB -->|"contexto recuperado"| Prompt
+
+    subgraph Observability["Observabilidade"]
+        Trace["TraceSpan / tracing"]
+        Audit["Audit Log"]
+    end
+
+    ES -->|"sequência + correlação"| Trace
+    ES -->|"registro imutável"| Audit
+    Trace -->|"live view"| Human
+    Audit -->|"rollback / replay"| OS
+
+    Review -->|"validação de artefatos"| MergeO
+    MergeO -->|"merge aprovado"| GitHub
+    OS -->|"atualiza status"| GitHub
+    GitHub -->|"feedback"| Inbox
+
+    Repo["Repositório Git: código + ADRs + docs"] -->|"contexto"| IOA
+    Repo -->|"implantação"| VWS
+    Docs["Docs: canvas, ADRs, manuais"] -->|"contexto estruturado"| IOA
+    Docs -.->|"referência"| Repo

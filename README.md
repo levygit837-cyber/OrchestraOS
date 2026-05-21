@@ -15,7 +15,7 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 
 - [AGENTS.md](AGENTS.md): regras que agentes devem seguir ao trabalhar no repositório.
 - [docs/canvas/project-canvas.md](docs/canvas/project-canvas.md): canvas textual do produto, legível por humanos e por IA.
-- [docs/canvas/system-map.mmd](docs/canvas/system-map.mmd): mapa Mermaid da arquitetura inicial.
+- [docs/canvas/system-map.mmd](docs/canvas/system-map.mmd): mapa Mermaid da arquitetura atual (módulos verticais, orquestração híbrida, WSM, protocolo de intervenção).
 - [docs/architecture/README.md](docs/architecture/README.md): visão geral da arquitetura do OrchestraOS.
 - [docs/architecture/stack.md](docs/architecture/stack.md): stack técnica recomendada e evolução.
 - [docs/architecture/orchestration.md](docs/architecture/orchestration.md): modelo de orquestração de agentes.

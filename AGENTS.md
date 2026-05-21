@@ -15,9 +15,10 @@ Este arquivo deve ser lido por qualquer agente antes de editar o projeto.
 1. Entender o item de trabalho.
 2. Consultar o canvas em `docs/canvas/project-canvas.md`.
 3. Consultar decisões arquiteturais em `docs/adr/`.
-4. Implementar a menor mudança suficiente.
-5. Rodar validações relevantes.
-6. Registrar o que mudou e qualquer risco restante.
+4. Seguir o `docs/agent/PLAYBOOK.md` para gerar artefatos necessários (BRIEFING, SPEC, PLAN quando aplicável).
+5. Implementar a menor mudança suficiente.
+6. Rodar validações relevantes.
+7. Registrar o que mudou e qualquer risco restante.
 
 ## Boas Práticas de Código
 
