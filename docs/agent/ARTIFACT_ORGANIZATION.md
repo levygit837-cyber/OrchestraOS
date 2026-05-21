@@ -133,7 +133,9 @@ Para tarefas que:
 - Tocam `internal/core/*` (infraestrutura compartilhada)
 - Tocam 2+ módulos de `internal/modules/`
 - São refatorações globais ou de infraestrutura pura
-- São pequenas demais para justificar um contexto de domain
+- Não têm um domain claro como "dono"
+
+> O tamanho ou complexidade da task não importa — tasks transversais podem ser tão simples quanto um ajuste de configuração ou tão complexas quanto uma refatoração cross-module com plano por domínio.
 
 ```
 docs/agent/tasks/
