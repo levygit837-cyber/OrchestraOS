@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Verify Module Structure
-        run: ./scripts/verify-module-structure.sh
+        run: ./scripts/go/verify-module-structure.sh
 
   contracts:
     name: Contract Verification
@@ -90,7 +90,7 @@ jobs:
           cache: true
 
       - name: Contract Verification
-        run: ./scripts/verify-contracts.sh
+        run: ./scripts/go/verify-contracts.sh
 
   lint:
     name: Lint

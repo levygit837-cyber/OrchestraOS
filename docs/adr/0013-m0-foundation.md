@@ -25,7 +25,7 @@ No M0, os schemas executaveis e tipos principais devem cobrir apenas:
 
 `Orchestrator` permanece como componente arquitetural e deve aparecer inicialmente como pacote ou servico da implementacao, nao como entidade de dominio com schema proprio.
 
-`CommunicationProtocol` permanece documentado por `docs/architecture/communication-protocol.md` e pelo envelope versionado de eventos e comandos. O contrato executavel relevante no M0 e o `EventEnvelope` com payloads versionados.
+`CommunicationProtocol` permanece documentado por `docs/architecture/protocols/communication-protocol.md` e pelo envelope versionado de eventos e comandos. O contrato executavel relevante no M0 e o `EventEnvelope` com payloads versionados.
 
 `Session` generica fica adiada. O primeiro caso operacional de sessao e `AgentSession`; sessoes para CLI, GitHub, humano ou conectores devem ser modeladas depois, quando precisarem de estado vivo proprio.
 

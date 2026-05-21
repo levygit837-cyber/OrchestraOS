@@ -85,10 +85,10 @@ Every module under `internal/modules/` MUST contain:
 
 ## Adding a New Module
 
-1. Run `./scripts/new-module.sh <name>`.
+1. Run `./scripts/scaffold/new-module.sh <name>`.
 2. Fill in `README.md` and `CONTRACTS.md`.
 3. Implement `models.go`, `queries.go`, `repository.go`, `service.go`.
 4. Add the service factory to `internal/bootstrap/services.go`.
 5. Run `go test ./internal/modules/<name>`.
-6. Run `./scripts/verify-contracts.sh`.
-7. Run `./scripts/lint.sh`.
+6. Run `./scripts/go/verify-contracts.sh`.
+7. Run `./scripts/go/lint.sh`.

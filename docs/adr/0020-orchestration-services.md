@@ -16,7 +16,7 @@ No entanto, nenhum componente conecta esses servicos em um fluxo automatizado. O
 
 As ADRs 0002, 0006 e 0017 definem que o Orchestrator deve ser o control plane central, mediando decomposicao, spawn de agentes, monitoramento de eventos, aprovacao de ferramentas e replanejamento. Mas nenhuma ADR define como o Orchestrator deve ser implementado.
 
-A analise de gaps (`docs/analysis/orchestrator-agent-gap-analysis.md`) identifica esse como o gap mais critico do sistema: sem um loop de orquestracao, o OrchestraOS e uma plataforma de execucao manual, nao um sistema de orquestracao de agentes.
+A analise de gaps (`docs/analysis/architecture/orchestrator-agent-gap-analysis.md`) identifica esse como o gap mais critico do sistema: sem um loop de orquestracao, o OrchestraOS e uma plataforma de execucao manual, nao um sistema de orquestracao de agentes.
 
 A arquitetura hibrida proposta pela analise recomenda separar decisoes estrategicas (que usam LLM) de decisoes taticas (que usam codigo Go deterministico). Isso reduz custo, latencia e superficie de falha.
 

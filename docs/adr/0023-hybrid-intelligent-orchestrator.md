@@ -15,7 +15,7 @@ O sistema hoje opera em dois extremos:
 1. **Go deterministico** (`OrchestratorService`, `TaskGraphService`, etc.): executa regras rigidas, transiciona estados, valida dependencias, mas nao entende semantica, contexto ou intencao. Ele reage a eventos, mas nao antecipa problemas.
 2. **Agentes executores LLM** (`code_worker`, `docs_writer`, etc.): executam trabalho tecnico isolado, mas nao tem visao global do sistema, nao coordenam uns com os outros, e nao tomam decisoes estrategicas de orquestracao.
 
-A analise de gaps (`docs/analysis/orchestrator-agent-gap-analysis.md`) identificou que sem um "Agente Orquestrador", o sistema e uma plataforma de execucao manual, nao um sistema de orquestracao autonomo.
+A analise de gaps (`docs/analysis/architecture/orchestrator-agent-gap-analysis.md`) identificou que sem um "Agente Orquestrador", o sistema e uma plataforma de execucao manual, nao um sistema de orquestracao autonomo.
 
 Foi discutida a possibilidade de tornar o proprio `OrchestratorService` um agente LLM. Isso traria inteligencia, mas a superficie de falha seria enorme: um LLM tomando decisoes de estado, transacoes e seguranca diretamente aumenta latencia, custo e risco operacional.
 
@@ -206,12 +206,12 @@ type OrchestratorToolset struct {
 
 ## 5. Referencias
 
-- `docs/analysis/orchestrator-agent-gap-analysis.md`
+- `docs/analysis/architecture/orchestrator-agent-gap-analysis.md`
 - `docs/adr/0002-orchestrator-control-plane.md`
 - `docs/adr/0020-orchestration-services.md`
 - `docs/architecture/orchestration.md`
-- `docs/architecture/communication-protocol.md`
-- `docs/architecture/intelligent-orchestrator-agent.md`
-- `docs/architecture/orchestrator-observation-api.md`
-- `docs/architecture/orchestrator-intervention-protocol.md`
-- `docs/architecture/multi-agent-coordination.md`
+- `docs/architecture/protocols/communication-protocol.md`
+- `docs/architecture/agents/intelligent-orchestrator-agent.md`
+- `docs/architecture/observability/orchestrator-observation-api.md`
+- `docs/architecture/protocols/orchestrator-intervention-protocol.md`
+- `docs/architecture/agents/multi-agent-coordination.md`

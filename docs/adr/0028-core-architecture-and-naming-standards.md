@@ -165,7 +165,7 @@ package <nome>
 | `transition/helpers.go` → `transition/payload.go` + `transition/audit.go` | 2 |
 | `transition/eventops.go` → `transition/append.go` | 1 |
 
-**Validação:** `go build ./...`, `go test ./...`, `./scripts/verify-contracts.sh`
+**Validação:** `go build ./...`, `go test ./...`, `./scripts/go/verify-contracts.sh`
 
 ### Fase 2: Esvaziamento de `coordination/` (PR por módulo, médio risco)
 
@@ -278,6 +278,6 @@ Antes de mergear qualquer PR que toque em `internal/core/*` ou `internal/modules
 - [ ] SQL está no módulo dono da tabela
 - [ ] `go build ./...` passa
 - [ ] `go test ./...` passa
-- [ ] `./scripts/verify-contracts.sh` passa
-- [ ] `./scripts/lint.sh` passa
+- [ ] `./scripts/go/verify-contracts.sh` passa
+- [ ] `./scripts/go/lint.sh` passa
 - [ ] Architecture tests passam (especialmente `module_boundaries_test.go`)

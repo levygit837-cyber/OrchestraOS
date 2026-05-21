@@ -15,9 +15,10 @@ Este arquivo deve ser lido por qualquer agente antes de editar o projeto.
 1. Entender o item de trabalho.
 2. Consultar o canvas em `docs/canvas/project-canvas.md`.
 3. Consultar decisões arquiteturais em `docs/adr/`.
-4. Implementar a menor mudança suficiente.
-5. Rodar validações relevantes.
-6. Registrar o que mudou e qualquer risco restante.
+4. Seguir o `docs/agent/PLAYBOOK.md` para gerar artefatos necessários (BRIEFING, SPEC, PLAN quando aplicável).
+5. Implementar a menor mudança suficiente.
+6. Rodar validações relevantes.
+7. Registrar o que mudou e qualquer risco restante.
 
 ## Boas Práticas de Código
 
@@ -50,7 +51,7 @@ Nenhum agente deve assumir autonomia maior que a aprovada explicitamente nos doc
 
 Sempre use o script controlado:
 ```bash
-./scripts/safe-commit.sh "mensagem do commit"
+./scripts/git/safe-commit.sh "mensagem do commit"
 ```
 
 Este script automaticamente:
@@ -62,15 +63,15 @@ Depois do commit, push a feature branch e abra um Pull Request. Aguarde o CI pas
 
 Para instalar os hooks localmente (proteção adicional):
 ```bash
-cp scripts/pre-commit.sh .git/hooks/pre-commit
-cp scripts/pre-push.sh .git/hooks/pre-push
+cp scripts/git/pre-commit.sh .git/hooks/pre-commit
+cp scripts/git/pre-push.sh .git/hooks/pre-push
 chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
 ## Novo Módulo
 
-Antes de criar um novo módulo, execute `./scripts/new-module.sh <nome>` para gerar a estrutura padronizada.
-Após implementar, execute `./scripts/verify-contracts.sh` e `./scripts/lint.sh` antes de commitar.
+Antes de criar um novo módulo, execute `./scripts/scaffold/new-module.sh <nome>` para gerar a estrutura padronizada.
+Após implementar, execute `./scripts/go/verify-contracts.sh` e `./scripts/go/lint.sh` antes de commitar.
 
 ## Padrões de Código
 

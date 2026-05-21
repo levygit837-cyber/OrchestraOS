@@ -44,34 +44,39 @@ flowchart TD
 
     GitHub --> Intake
     CLI --> Intake
-    Intake --> Orchestrator["Orchestrator API"]
+    Intake --> IOA["Agente Orquestrador Inteligente (LLM)"]
 
-    Orchestrator --> Planner["Task Graph Planner"]
-    Planner --> Prompts["Prompt Composer"]
-    Orchestrator --> Scheduler["Scheduler"]
-    Orchestrator --> Policy["Policy Engine"]
-    Orchestrator --> Events["Event Store"]
-    Orchestrator --> Artifacts["Artifact Manager"]
-    Events -.-> Memory["Recursive Memory Service futuro"]
-    Artifacts -.-> Memory
-    Memory -.-> Prompts
+    IOA -->|"comandos estruturados"| OS["OrchestratorService (Go)"]
+    OS -->|"Observation API"| IOA
 
-    Scheduler --> Sandbox["Sandbox Manager"]
-    Sandbox --> Worktree["Git worktree por task"]
-    Sandbox --> Container["Container isolado"]
-    Container --> Agent["Agent Worker: Codex/CLI"]
+    OS --> TG["Task Graph Planner"]
+    TG --> WU["Work Units"]
+    WU --> Run["Run / AgentSession"]
 
-    Agent <-->|"WebSocket: eventos e comandos"| Orchestrator
-    Policy --> Approvals["Aprovacoes de ferramentas"]
-    Events --> Observability["Logs, traces e auditoria"]
-    Artifacts --> GitHub
-    Orchestrator --> CLI
-    Chat["Chat opcional futuro"] -.-> Intake
-    Orchestrator -.-> Chat
+    OS --> ES["Event Store (fonte canônica)"]
+    ES -.->|"projeções"| Run
 
-    %% Arquitetura Hibrida: Agente Orquestrador Inteligente
-    IntelligentAgent["Intelligent Orchestrator Agent (LLM)"] -->|"Observation API / Eventos"| Orchestrator
-    Orchestrator -->|"Respostas / Validacoes"| IntelligentAgent
+    OS --> WSM["Workspace Manager (WSM)"]
+    WSM --> Snap["Snapshot Engine"]
+    WSM --> OEG["Operation Event Graph"]
+    WSM --> MergeO["Merge Orchestrator"]
+
+    WSM -->|"FileAPI / WorkspaceAPI"| Agent["Agent Worker (LLM/CLI)"]
+    Agent -->|"checkpoints + ledger"| ES
+    Agent <-->|"eventos / comandos"| OS
+
+    OS --> Policy["Policy Engine"]
+    Policy --> Approvals["Aprovações de ferramentas"]
+
+    ES --> Observability["Logs, traces e auditoria"]
+    ES -.-> Memory["Memória Recursiva"]
+    Memory -.-> Prompts["Prompt Composer"]
+    Prompts --> Agent
+
+    MergeO --> GitHub
+    OS --> CLI
+    Chat["Conectores opcionais"] -.-> Intake
+    OS -.-> Chat
 ```
 
 ## Principios
@@ -80,7 +85,7 @@ flowchart TD
 - GitHub e CLI sao as interfaces operacionais iniciais.
 - Chat e outras interfaces conversacionais sao conectores opcionais futuros, nao memoria definitiva.
 - CLI e a primeira interface oficial do MVP; scripts sao bootstrap interno.
-- Cada task deve ter worktree, branch, estado e trilha de auditoria.
+- Cada task deve ter workspace isolado (via WSM), branch, estado e trilha de auditoria.
 - Cada task complexa deve ser decomposta em Task Graph aciclico.
 - Prompts devem ser montados por fragmentos versionados e registrados em snapshot.
 - Memoria recursiva deve ser camada derivada de eventos, checkpoints, ledger, artefatos e documentos versionados, nunca fonte canonica paralela.
@@ -92,26 +97,26 @@ flowchart TD
 
 ## Documentos Relacionados
 
-- [Stack inicial](stack.md)
+- [Stack inicial](core/stack.md)
 - [Orquestracao de agentes](orchestration.md)
-- [Agente Orquestrador Inteligente](intelligent-orchestrator-agent.md)
-- [Observation API](orchestrator-observation-api.md)
-- [Protocolo de Intervencao](orchestrator-intervention-protocol.md)
-- [Coordenacao Multi-Agente](multi-agent-coordination.md)
-- [Modelo de dominio](domain-model.md)
-- [Estrategia de interface](interface-strategy.md)
-- [Decomposicao de tasks](task-decomposition.md)
-- [Sistema de prompts](prompt-system.md)
-- [Sistema de memoria recursiva](memory-system.md)
-- [Protocolo de comunicacao](communication-protocol.md)
-- [Estrutura inicial do repositorio](repo-structure.md)
+- [Agente Orquestrador Inteligente](agents/intelligent-orchestrator-agent.md)
+- [Observation API](observability/orchestrator-observation-api.md)
+- [Protocolo de Intervencao](protocols/orchestrator-intervention-protocol.md)
+- [Coordenacao Multi-Agente](agents/multi-agent-coordination.md)
+- [Modelo de dominio](core/domain-model.md)
+- [Estrategia de interface](interface/interface-strategy.md)
+- [Decomposicao de tasks](execution/task-decomposition.md)
+- [Sistema de prompts](interface/prompt-system.md)
+- [Sistema de memoria recursiva](observability/memory-system.md)
+- [Protocolo de comunicacao](protocols/communication-protocol.md)
+- [Estrutura inicial do repositorio](core/repo-structure.md)
 - [JSON Schemas](../contracts/json-schemas.md)
-- [Permissoes e ferramentas](permissions.md)
-- [Sandbox e autonomia](sandbox-and-autonomy.md)
-- [Estrategia de testes](testing-strategy.md)
-- [Falhas e rollback](failures-and-rollback.md)
-- [MVP local-first](mvp.md)
-- [Proposta futura: Massive Agents System](massive-agents-system.md)
+- [Permissoes e ferramentas](project/permissions.md)
+- [Sandbox e autonomia](agents/sandbox-and-autonomy.md)
+- [Estrategia de testes](project/testing-strategy.md)
+- [Falhas e rollback](execution/failures-and-rollback.md)
+- [MVP local-first](project/mvp.md)
+- [Proposta futura: Massive Agents System](agents/massive-agents-system.md)
 - [Plano de implementacao](../implementation/roadmap.md)
 - [ADR 0002: Orchestrator como control plane](../adr/0002-orchestrator-control-plane.md)
 - [ADR 0003: Stack inicial](../adr/0003-initial-technology-stack.md)
@@ -131,7 +136,7 @@ flowchart TD
 - [ADR 0022: LLM-Optimized Module Architecture](../adr/0022-llm-optimized-module-architecture.md)
 - [ADR 0023: Hybrid Intelligent Orchestrator Architecture](../adr/0023-hybrid-intelligent-orchestrator.md)
 - [ADR 0024: Deprecation of ADR 0017 - Domain Services Layer](../adr/0024-deprecation-of-adr-0017.md)
-- [Migration to Vertical Slices](migration-vertical-slices.md)
+- [Migration to Vertical Slices](execution/migration-vertical-slices.md)
 
 ## Referencias Tecnicas
 

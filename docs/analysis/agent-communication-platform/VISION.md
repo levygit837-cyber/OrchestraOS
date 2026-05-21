@@ -193,9 +193,9 @@ StartCascade → InitializeCascadePanelState → SendUserCascadeMessage → Stre
 ## Documentação Técnica Detalhada
 
 Para referência futura, os detalhes técnicos completos estão em:
-- `/docs/analysis/windsurf-streaming-success.md` - Protocolo Connect decodificado
-- `/docs/analysis/windsurf-error-analysis.md` - Análise de erros e permissões
-- `/docs/analysis/windsurf-model-test-results.md` - Modelos testados e resultados
+- `/docs/analysis/windsurf/windsurf-streaming-success.md` - Protocolo Connect decodificado
+- `/docs/analysis/windsurf/windsurf-error-analysis.md` - Análise de erros e permissões
+- `/docs/analysis/windsurf/windsurf-model-test-results.md` - Modelos testados e resultados
 - `/tmp/windsurf-real-interaction.js` - Script completo de demonstração
 
 ---

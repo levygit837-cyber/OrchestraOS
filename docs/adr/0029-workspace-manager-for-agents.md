@@ -32,7 +32,7 @@ O problema não é falta de diretórios separados — é falta de **coordenaçã
 
 ### 1.3 Necessidades do OrchestraOS
 
-Com base na evolução do projeto e nas necessidades de MAS (Massive Agents System), documentadas em `docs/architecture/massive-agents-system.md`, identificamos quatro requisitos inegociáveis:
+Com base na evolução do projeto e nas necessidades de MAS (Massive Agents System), documentadas em `docs/architecture/agents/massive-agents-system.md`, identificamos quatro requisitos inegociáveis:
 
 | Requisito | Justificativa |
 |-----------|---------------|
@@ -404,8 +404,8 @@ Antes de qualquer PR que toque no WSM:
 - [ ] Merge com conflito gera relatório estruturado
 - [ ] Workspace suspenso retoma com contexto intacto
 - [ ] `go test ./...` passa
-- [ ] `./scripts/verify-contracts.sh` passa
-- [ ] `./scripts/lint.sh` passa
+- [ ] `./scripts/go/verify-contracts.sh` passa
+- [ ] `./scripts/go/lint.sh` passa
 - [ ] Architecture tests passam (boundaries, module deps)
 
 ---

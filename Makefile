@@ -19,7 +19,7 @@ vet:
 
 ## lint: run golangci-lint (install with make install-tools if missing)
 lint:
-	./scripts/lint.sh
+	./scripts/go/lint.sh
 
 ## arch: run architecture boundary tests
 arch:
@@ -34,14 +34,14 @@ check-imports:
 
 ## contracts: verify CONTRACTS.md sync with code
 contracts:
-	./scripts/verify-contracts.sh
+	./scripts/go/verify-contracts.sh
 
 ## check: run all checks (vet, test, arch, contracts, lint)
 check: vet test arch contracts lint size-check
 
 ## install-tools: install development tools (golangci-lint)
 install-tools:
-	./scripts/install-tools.sh
+	./scripts/go/install-tools.sh
 
 ## new-module: create a new module from template (usage: make new-module NAME=foo)
 new-module:
@@ -49,11 +49,11 @@ new-module:
 		echo "Usage: make new-module NAME=<module-name>"; \
 		exit 1; \
 	fi
-	./scripts/new-module.sh "$(NAME)"
+	./scripts/scaffold/new-module.sh "$(NAME)"
 
 ## size-check: check if any module exceeds the recommended size limit (informational)
 size-check:
-	-@./scripts/check_module_size.sh || true
+	-@./scripts/go/check_module_size.sh || true
 
 ## format: format all Go files
 format:
