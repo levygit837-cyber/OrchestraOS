@@ -14,7 +14,7 @@ Conforme ADR 0022 (LLM-Optimized Module Architecture), o OrchestraOS adota uma a
 
 ### Regra de Ouro
 
-**Módulos verticais NUNCA importam outros módulos diretamente.** Comunicação cross-module ocorre via `internal/modules/orchestrator/` (camada de orquestração canônica) ou interfaces DI com adapters em `internal/bootstrap/services.go`.
+**Módulos verticais NUNCA importam outros módulos diretamente.** Comunicação cross-module ocorre via `internal/core/coordination/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
 
 ### Estrutura
 

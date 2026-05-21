@@ -64,7 +64,7 @@ Esse comportamento já existe em `TaskGraphService.buildPlan()` e deve ser prese
 
 ## Especificação: Unificação do Commander com Domain Services
 
-O pacote `internal/core/transition/` contém helpers cross-module (TransitionInput, OperationResult, AppendTransition, AppendServiceEvent). O cancelamento em cascata e a prompt orchestration foram migrados para `internal/modules/orchestrator/` (camada de orquestração canônica). O antigo `Commander` em `internal/orchestration/commands.go` foi removido quando os serviços de domínio passaram a ser a fronteira obrigatória para transições de estado (ADR 0020). Serviços de domínio em `internal/modules/*/service.go` agora implementam:
+O pacote `internal/core/coordination/` contém helpers cross-module (como cancelamento em cascata e prompt orchestration). O antigo `Commander` em `internal/orchestration/commands.go` foi removido quando os serviços de domínio passaram a ser a fronteira obrigatória para transições de estado (ADR 0020). Serviços de domínio em `internal/modules/*/service.go` agora implementam:
 
 - idempotência por `event_id`;
 - retry com backoff;
