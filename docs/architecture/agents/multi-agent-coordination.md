@@ -586,9 +586,9 @@ type CoordinationMetrics struct {
 ## Referencias
 
 - `docs/adr/0023-hybrid-intelligent-orchestrator.md`
-- `docs/architecture/intelligent-orchestrator-agent.md`
-- `docs/architecture/orchestrator-observation-api.md`
-- `docs/architecture/orchestrator-intervention-protocol.md`
-- `docs/architecture/communication-protocol.md`
+- `docs/architecture/agents/intelligent-orchestrator-agent.md`
+- `docs/architecture/observability/orchestrator-observation-api.md`
+- `docs/architecture/protocols/orchestrator-intervention-protocol.md`
+- `docs/architecture/protocols/communication-protocol.md`
 - `docs/architecture/orchestration.md`
 - `docs/adr/0006-task-graph-and-agent-intervention.md`

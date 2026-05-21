@@ -385,8 +385,8 @@ type InterventionConfig struct {
 ## Referencias
 
 - `docs/adr/0023-hybrid-intelligent-orchestrator.md`
-- `docs/architecture/intelligent-orchestrator-agent.md`
-- `docs/architecture/orchestrator-observation-api.md`
-- `docs/architecture/multi-agent-coordination.md`
-- `docs/architecture/communication-protocol.md`
-- `docs/architecture/permissions.md`
+- `docs/architecture/agents/intelligent-orchestrator-agent.md`
+- `docs/architecture/observability/orchestrator-observation-api.md`
+- `docs/architecture/agents/multi-agent-coordination.md`
+- `docs/architecture/protocols/communication-protocol.md`
+- `docs/architecture/project/permissions.md`

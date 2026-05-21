@@ -17,21 +17,21 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 - [docs/canvas/project-canvas.md](docs/canvas/project-canvas.md): canvas textual do produto, legível por humanos e por IA.
 - [docs/canvas/system-map.mmd](docs/canvas/system-map.mmd): mapa Mermaid da arquitetura atual (módulos verticais, orquestração híbrida, WSM, protocolo de intervenção).
 - [docs/architecture/README.md](docs/architecture/README.md): visão geral da arquitetura do OrchestraOS.
-- [docs/architecture/stack.md](docs/architecture/stack.md): stack técnica recomendada e evolução.
+- [docs/architecture/core/stack.md](docs/architecture/core/stack.md): stack técnica recomendada e evolução.
 - [docs/architecture/orchestration.md](docs/architecture/orchestration.md): modelo de orquestração de agentes.
-- [docs/architecture/domain-model.md](docs/architecture/domain-model.md): modelos de domínio do sistema.
-- [docs/architecture/interface-strategy.md](docs/architecture/interface-strategy.md): estratégia CLI, GitHub, Desktop, Web e conectores opcionais.
-- [docs/architecture/task-decomposition.md](docs/architecture/task-decomposition.md): decomposição de tasks em DAG.
-- [docs/architecture/prompt-system.md](docs/architecture/prompt-system.md): composição de SystemPrompts e TaskPrompts.
-- [docs/architecture/memory-system.md](docs/architecture/memory-system.md): desenho da memória recursiva derivada de eventos, checkpoints e documentação.
-- [docs/architecture/communication-protocol.md](docs/architecture/communication-protocol.md): contrato inicial de eventos e comandos.
-- [docs/architecture/repo-structure.md](docs/architecture/repo-structure.md): estrutura inicial de codigo, contratos e testes.
+- [docs/architecture/core/domain-model.md](docs/architecture/core/domain-model.md): modelos de domínio do sistema.
+- [docs/architecture/interface/interface-strategy.md](docs/architecture/interface/interface-strategy.md): estratégia CLI, GitHub, Desktop, Web e conectores opcionais.
+- [docs/architecture/execution/task-decomposition.md](docs/architecture/execution/task-decomposition.md): decomposição de tasks em DAG.
+- [docs/architecture/interface/prompt-system.md](docs/architecture/interface/prompt-system.md): composição de SystemPrompts e TaskPrompts.
+- [docs/architecture/observability/memory-system.md](docs/architecture/observability/memory-system.md): desenho da memória recursiva derivada de eventos, checkpoints e documentação.
+- [docs/architecture/protocols/communication-protocol.md](docs/architecture/protocols/communication-protocol.md): contrato inicial de eventos e comandos.
+- [docs/architecture/core/repo-structure.md](docs/architecture/core/repo-structure.md): estrutura inicial de codigo, contratos e testes.
 - [docs/contracts/json-schemas.md](docs/contracts/json-schemas.md): indice dos schemas executaveis de dominio, eventos e comandos.
-- [docs/architecture/permissions.md](docs/architecture/permissions.md): matriz de ferramentas, riscos e aprovações.
-- [docs/architecture/sandbox-and-autonomy.md](docs/architecture/sandbox-and-autonomy.md): política inicial de sandbox e autonomia.
-- [docs/architecture/testing-strategy.md](docs/architecture/testing-strategy.md): estratégia de testes por domínio.
-- [docs/architecture/failures-and-rollback.md](docs/architecture/failures-and-rollback.md): falhas, rollback e recuperação.
-- [docs/architecture/mvp.md](docs/architecture/mvp.md): escopo do MVP local-first.
+- [docs/architecture/project/permissions.md](docs/architecture/project/permissions.md): matriz de ferramentas, riscos e aprovações.
+- [docs/architecture/agents/sandbox-and-autonomy.md](docs/architecture/agents/sandbox-and-autonomy.md): política inicial de sandbox e autonomia.
+- [docs/architecture/project/testing-strategy.md](docs/architecture/project/testing-strategy.md): estratégia de testes por domínio.
+- [docs/architecture/execution/failures-and-rollback.md](docs/architecture/execution/failures-and-rollback.md): falhas, rollback e recuperação.
+- [docs/architecture/project/mvp.md](docs/architecture/project/mvp.md): escopo do MVP local-first.
 - [docs/implementation/roadmap.md](docs/implementation/roadmap.md): plano técnico de implementação.
 - [docs/management/operating-model.md](docs/management/operating-model.md): modelo de gestão do projeto.
 - [docs/slack/slack-setup.md](docs/slack/slack-setup.md): configuração opcional de Slack para integração futura.

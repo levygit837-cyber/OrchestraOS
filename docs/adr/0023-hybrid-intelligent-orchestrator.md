@@ -210,8 +210,8 @@ type OrchestratorToolset struct {
 - `docs/adr/0002-orchestrator-control-plane.md`
 - `docs/adr/0020-orchestration-services.md`
 - `docs/architecture/orchestration.md`
-- `docs/architecture/communication-protocol.md`
-- `docs/architecture/intelligent-orchestrator-agent.md`
-- `docs/architecture/orchestrator-observation-api.md`
-- `docs/architecture/orchestrator-intervention-protocol.md`
-- `docs/architecture/multi-agent-coordination.md`
+- `docs/architecture/protocols/communication-protocol.md`
+- `docs/architecture/agents/intelligent-orchestrator-agent.md`
+- `docs/architecture/observability/orchestrator-observation-api.md`
+- `docs/architecture/protocols/orchestrator-intervention-protocol.md`
+- `docs/architecture/agents/multi-agent-coordination.md`

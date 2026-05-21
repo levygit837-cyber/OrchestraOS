@@ -161,7 +161,7 @@ O MVP do OrchestraOS estará validado quando:
 7. O resultado tem diff, validação e resumo.
 8. CLI recebe status final com evidências.
 
-**Nota:** GitHub Issue/PR, WebSocket live view, Memória Recursiva e Autonomia Nível 4+ são **fora do MVP**, conforme `docs/architecture/mvp.md`.
+**Nota:** GitHub Issue/PR, WebSocket live view, Memória Recursiva e Autonomia Nível 4+ são **fora do MVP**, conforme `docs/architecture/project/mvp.md`.
 
 ---
 

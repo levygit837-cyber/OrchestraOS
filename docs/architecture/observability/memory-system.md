@@ -205,7 +205,7 @@ Registra:
     "repo_id": "repo_orchestraos",
     "task_id": "task_456",
     "work_unit_id": "wu_789",
-    "paths": ["docs/architecture/prompt-system.md"]
+    "paths": ["docs/architecture/interface/prompt-system.md"]
   },
   "title": "Prompt Composer registra PromptSnapshot por run",
   "canonical_claim": {
@@ -316,7 +316,7 @@ Antes de persistir, cada candidato deve ser convertido para uma proposicao canon
   "scope": {
     "project_id": "project_orchestraos",
     "repo_id": "repo_orchestraos",
-    "paths": ["docs/architecture/prompt-system.md"]
+    "paths": ["docs/architecture/interface/prompt-system.md"]
   },
   "canonical_claim": {
     "subject": "Prompt Composer",

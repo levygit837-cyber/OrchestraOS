@@ -117,7 +117,7 @@ Campos recomendados:
   "memory_refs": ["mem_123", "mem_456"],
   "evidence_refs": [
     "docs/adr/0007-agent-operational-cycle.md",
-    "docs/architecture/memory-system.md"
+    "docs/architecture/observability/memory-system.md"
   ],
   "token_budget": 1200,
   "created_at": "2026-05-03T12:00:00Z"

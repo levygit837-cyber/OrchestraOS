@@ -145,5 +145,5 @@ O código atual implementa os seguintes módulos verticais:
 
 - ADR 0022: LLM-Optimized Module Architecture
 - ADR 0024: Deprecation of ADR 0017
-- docs/architecture/module_index.md
+- docs/architecture/core/module_index.md
 - docs/development/CODING_STANDARDS.md

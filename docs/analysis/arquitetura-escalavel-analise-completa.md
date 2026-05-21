@@ -189,7 +189,7 @@ func (a *taskAdapter) GetByID(ctx context.Context, id string) (*domain.Task, err
 ### 4.2. Documentação Desatualizada
 
 **Arquivos que precisam de atualização:**
-- `docs/architecture/repo-structure.md`: Ainda fala de `internal/services/`
+- `docs/architecture/core/repo-structure.md`: Ainda fala de `internal/services/`
 - `docs/architecture/README.md`: Diagrama não reflete módulos verticais
 - ADRs 0017, 0020, 0021: Referenciam `internal/services/` que não existe mais
 
@@ -583,9 +583,9 @@ A arquitetura de **Módulos Verticais** é a escolha correta para um sistema ope
 
 - ADR 0001-0023
 - docs/architecture/README.md
-- docs/architecture/domain-model.md
-- docs/architecture/repo-structure.md
-- docs/architecture/stack.md
+- docs/architecture/core/domain-model.md
+- docs/architecture/core/repo-structure.md
+- docs/architecture/core/stack.md
 - docs/canvas/project-canvas.md
 - internal/modules/*/CONTRACTS.md
 - internal/modules/*/README.md
