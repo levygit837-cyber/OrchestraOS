@@ -1,22 +1,23 @@
 # Module: orchestrator
 
-> **Nome do Módulo:** `orchestrator/` é o nome estável do Task Execution Workflow Engine.
-> Um futuro módulo `director/` pode lidar com orquestração de alto nível de agentes, mas `orchestrator/` permanece como a camada de execução de workflow.
+> **Nome do Módulo:** `orchestrator/` é a **Camada de Orquestração Canônica** do OrchestraOS.
+> É o único módulo autorizado a coordenar operações cross-module. Todas as interações entre módulos verticais que exigem composição de dados, transações distribuídas ou sequenciamento de operações DEVEM passar pelo `orchestrator/`.
 
 ## Purpose
 
-This module is a **Task Execution Workflow Engine**. It is responsible for:
+This module is the **Canonical Cross-Module Orchestration Layer**. It is responsible for:
 - Executing a task from start to finish by orchestrating calls to domain services in the correct sequence.
 - Managing the sequential (and eventually parallel) execution of work units via Runtime + EventRelay.
+- **Coordinating all cross-module interactions**: prompt preparation, run-workunit synchronization, cascade cancellation, runtime event relay, and any future coordination logic.
 
-This is **NOT** an "Agent Orchestrator" (a future `director/` module). It does not decide which task to run, allocate resources, or prioritize work. It simply executes a task that has already been scheduled.
+This is **NOT** an "Agent Orchestrator" in the sense of strategic decision-making (a future `director/` module may handle that). It does not decide which task to run, allocate resources, or prioritize work. It simply executes a task that has already been scheduled, and **mediates all cross-module communication**.
 
 This module DOES NOT:
 - Decide which task to execute or when (belongs to future `director/`).
 - Implement runtime execution logic (belongs to `agent/`).
 - Manage persistent agent or session state directly (belongs to `agent/` and `agentsession/`).
-- Compose prompts directly (belongs to `prompt/`).
-- Perform low-level transaction coordination (belongs to owner modules via DI interfaces).
+- Define prompt fragments or compose prompts in isolation (belongs to `prompt/`).
+- Perform low-level transaction coordination for single-module operations (belongs to owner modules via DI interfaces).
 
 ---
 
@@ -52,8 +53,12 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 - `service.go` → OrchestratorService with RunTask and dependencies
 - `validation.go` → input validation for options
 
-### Optional Files
-- None at this time.
+### Optional / Contextual Files
+- `service_<context>.go` → Cross-module coordination logic for a specific domain (e.g., `service_cascade.go`, `service_prompt.go`, `service_run_workunit_sync.go`).
+- Subdirectories for complex coordination domains:
+  - `execution/` → Runtime execution coordination, event relay
+  - `recovery/` → Failover, retry, cascade cancellation
+  - `scheduling/` → Future: work unit scheduling and prioritization
 
 ---
 
@@ -70,8 +75,9 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 - `internal/modules/*` services (via DI interfaces, never direct repository imports)
 
 Forbidden:
-- Direct imports of `internal/modules/*/repository.go`.
-- Business logic beyond task orchestration and coordination.
+- Direct imports of `internal/modules/*/repository.go` (exception: `service_cascade.go` and similar emergency coordination where cyclic imports would occur).
+- Business logic that belongs to a single module (e.g., prompt composition details, task state machine rules).
+- Any cross-module coordination outside this module.
 
 ---
 

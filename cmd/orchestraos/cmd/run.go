@@ -94,13 +94,44 @@ var runStartCmd = &cobra.Command{
 			return fmt.Errorf("failed to connect agent session: %w", err)
 		}
 
-		preparedPrompt, err := bootstrap.PromptService(getDB()).PrepareRunPrompt(cmd.Context(), promptmod.PrepareRunPromptInput{
+		promptService := bootstrap.PromptService(getDB())
+		toolset, err := promptmod.SelectToolset(agentProfile)
+		if err != nil {
+			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
+			return fmt.Errorf("failed to select toolset: %w", err)
+		}
+		taskContext := promptmod.TaskContext{
+			TaskID:             wu.TaskID,
+			TaskTitle:          wu.Title,
+			TaskDescription:    wu.Objective,
+			RunID:              run.ID,
+			WorkUnitID:         wu.ID,
+			TaskGraphID:        wu.TaskGraphID,
+			WorkUnitTitle:      wu.Title,
+			WorkUnitObjective:  wu.Objective,
+			AgentProfile:       agentProfile,
+			OwnedPaths:         wu.OwnedPaths,
+			ReadPaths:          wu.ReadPaths,
+			DependsOn:          wu.DependsOn,
+			AcceptanceCriteria: wu.AcceptanceCriteria,
+			ValidationPlan:     wu.ValidationPlan,
+			Toolset:            toolset,
+		}
+		composed, err := promptmod.Compose(taskContext)
+		if err != nil {
+			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
+			return fmt.Errorf("failed to compose prompt: %w", err)
+		}
+		preparedPrompt, err := promptService.PersistComposedPrompt(cmd.Context(), composed, promptmod.PersistMetadata{
 			RunID:          run.ID,
+			WorkUnitID:     wu.ID,
+			TaskID:         wu.TaskID,
 			AgentSessionID: session.ID,
+			AgentID:        agentID,
 		})
 		if err != nil {
 			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
-			return fmt.Errorf("failed to prepare prompt: %w", err)
+			return fmt.Errorf("failed to persist prompt: %w", err)
 		}
 
 		// Start runtime if fake or gemini

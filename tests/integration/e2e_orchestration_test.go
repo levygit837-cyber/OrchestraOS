@@ -113,12 +113,40 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := promptService.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	toolset, err := promptmod.SelectToolset(wu.AssignedAgentProfile)
+	if err != nil {
+		t.Fatalf("Failed to select toolset: %v", err)
+	}
+	taskContext := promptmod.TaskContext{
+		TaskID:             task.ID,
+		TaskTitle:          task.Title,
+		TaskDescription:    task.Description,
+		RunID:              run.ID,
+		WorkUnitID:         wu.ID,
+		TaskGraphID:        wu.TaskGraphID,
+		WorkUnitTitle:      wu.Title,
+		WorkUnitObjective:  wu.Objective,
+		AgentProfile:       wu.AssignedAgentProfile,
+		OwnedPaths:         wu.OwnedPaths,
+		ReadPaths:          wu.ReadPaths,
+		DependsOn:          wu.DependsOn,
+		AcceptanceCriteria: wu.AcceptanceCriteria,
+		ValidationPlan:     wu.ValidationPlan,
+		Toolset:            toolset,
+	}
+	composed, err := promptmod.Compose(taskContext)
+	if err != nil {
+		t.Fatalf("Failed to compose prompt: %v", err)
+	}
+	preparedPrompt, err := promptService.PersistComposedPrompt(ctx, composed, promptmod.PersistMetadata{
 		RunID:          run.ID,
+		WorkUnitID:     wu.ID,
+		TaskID:         task.ID,
 		AgentSessionID: session.ID,
+		AgentID:        agentID,
 	})
 	if err != nil {
-		t.Fatalf("Failed to prepare prompt: %v", err)
+		t.Fatalf("Failed to persist prompt: %v", err)
 	}
 
 	// 6. Start FakeRuntime
@@ -344,12 +372,40 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	preparedPrompt, err := promptService.PrepareRunPrompt(ctx, promptmod.PrepareRunPromptInput{
+	toolset, err := promptmod.SelectToolset(wu.AssignedAgentProfile)
+	if err != nil {
+		t.Fatalf("Failed to select toolset: %v", err)
+	}
+	taskContext := promptmod.TaskContext{
+		TaskID:             task.ID,
+		TaskTitle:          task.Title,
+		TaskDescription:    task.Description,
+		RunID:              run.ID,
+		WorkUnitID:         wu.ID,
+		TaskGraphID:        wu.TaskGraphID,
+		WorkUnitTitle:      wu.Title,
+		WorkUnitObjective:  wu.Objective,
+		AgentProfile:       wu.AssignedAgentProfile,
+		OwnedPaths:         wu.OwnedPaths,
+		ReadPaths:          wu.ReadPaths,
+		DependsOn:          wu.DependsOn,
+		AcceptanceCriteria: wu.AcceptanceCriteria,
+		ValidationPlan:     wu.ValidationPlan,
+		Toolset:            toolset,
+	}
+	composed, err := promptmod.Compose(taskContext)
+	if err != nil {
+		t.Fatalf("Failed to compose prompt: %v", err)
+	}
+	preparedPrompt, err := promptService.PersistComposedPrompt(ctx, composed, promptmod.PersistMetadata{
 		RunID:          run.ID,
+		WorkUnitID:     wu.ID,
+		TaskID:         task.ID,
 		AgentSessionID: session.ID,
+		AgentID:        agentID,
 	})
 	if err != nil {
-		t.Fatalf("Failed to prepare prompt: %v", err)
+		t.Fatalf("Failed to persist prompt: %v", err)
 	}
 
 	// 6. Start GeminiRuntime with an empty toolset to avoid blocking

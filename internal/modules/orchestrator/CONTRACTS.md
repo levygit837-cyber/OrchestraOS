@@ -90,7 +90,16 @@ Low-level cross-module transaction coordination belongs to the module that owns 
 
 ## File Decomposition
 
-No service decomposition at this time. `service.go` is the single file for orchestration logic.
+### `service_<context>.go` Pattern
+
+Cross-module coordination logic SHOULD be extracted into `service_<context>.go` files:
+- `service.go` → Main `RunTask` workflow and core orchestration
+- `service_cascade.go` → Cascade cancellation across runs and work units
+- `service_prompt.go` → Prompt preparation coordination (fetch aggregates, compose, persist)
+- `service_run_workunit_sync.go` → Run-to-workunit transition synchronization
+- `service_relay.go` → Runtime event relay coordination (future)
+
+This pattern keeps `service.go` focused while allowing the orchestrator to grow as the canonical cross-module layer.
 
 ---
 

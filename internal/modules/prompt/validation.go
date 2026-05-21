@@ -34,17 +34,6 @@ func ValidateFragment(fragment *PromptFragment) error {
 	return nil
 }
 
-// ValidateSnapshotInput checks that a PrepareRunPromptInput has required fields.
-func ValidateSnapshotInput(input PrepareRunPromptInput) error {
-	if strings.TrimSpace(input.RunID) == "" {
-		return fmt.Errorf("run_id is required")
-	}
-	if strings.TrimSpace(input.AgentSessionID) == "" {
-		return fmt.Errorf("agent_session_id is required")
-	}
-	return nil
-}
-
 // ValidateToolsetInput checks that a toolset snapshot has required fields.
 func ValidateToolsetInput(snapshot *ToolsetSnapshot) error {
 	if snapshot == nil {

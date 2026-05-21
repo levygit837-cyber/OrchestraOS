@@ -7,7 +7,7 @@
 //
 // # Key Types
 //   - PromptService: domain service for prompt operations
-//   - PrepareRunPromptInput: input to prepare a prompt for a run
+//   - PersistMetadata: input to persist a composed prompt
 //   - PreparedRunPrompt: resulting prompt with hashes and snapshots
 //   - Composer: assembles fragments into system + task prompts
 //   - Toolset: manages available tools for a session
