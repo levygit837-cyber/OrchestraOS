@@ -11,9 +11,9 @@
 **Os testes de arquitetura e os scripts de validação existentes NÃO detectam a maioria das violações reais.**
 
 - `go test ./tests/architecture/...` → **PASSA** (todos os 13 testes)
-- `./scripts/verify-module-structure.sh` → **PASSA**
-- `./scripts/verify-contracts.sh` → **PASSA**
-- `./scripts/lint.sh` → **PASSA**
+- `./scripts/go/verify-module-structure.sh` → **PASSA**
+- `./scripts/go/verify-contracts.sh` → **PASSA**
+- `./scripts/go/lint.sh` → **PASSA**
 
 **Apesar de todos os gates passarem, foram encontradas 83+ violações arquiteturais ativas** em produção:
 
@@ -239,8 +239,8 @@ O teste `TestOnlyCoordinationImportsModules` permite `cmd/` importar módulos, m
 
 | Script | O que Faz | O que Falta |
 |---|---|---|
-| `pre-commit.sh` | `go vet`, `go test ./tests/architecture/...`, `./scripts/verify-contracts.sh` | **Não chama** `./scripts/verify-module-structure.sh`; não chama `golangci-lint`; não verifica nada além dos testes de arquitetura existentes |
-| `lint.sh` | `go vet`, `go test ./tests/architecture/...`, `golangci-lint` | **Não chama** `./scripts/verify-module-structure.sh` |
+| `pre-commit.sh` | `go vet`, `go test ./tests/architecture/...`, `./scripts/go/verify-contracts.sh` | **Não chama** `./scripts/go/verify-module-structure.sh`; não chama `golangci-lint`; não verifica nada além dos testes de arquitetura existentes |
+| `lint.sh` | `go vet`, `go test ./tests/architecture/...`, `golangci-lint` | **Não chama** `./scripts/go/verify-module-structure.sh` |
 | `safe-commit.sh` | Cria branch, roda `pre-commit.sh` | Mesmas lacunas do `pre-commit.sh` |
 | `verify-contracts.sh` | Alias para `go test ./tests/architecture/...` | Nada além dos testes existentes |
 | `verify-module-structure.sh` | Verifica existência de arquivos obrigatórios | **Chamado no CI, mas NÃO no pre-commit**; não verifica conteúdo |
@@ -346,8 +346,8 @@ Isso pegaria `_ = ctx`, `_ = rows.Close()`, etc.
 
 | Script | Correção |
 |---|---|
-| `pre-commit.sh` | Adicionar `./scripts/verify-module-structure.sh` |
-| `lint.sh` | Adicionar `./scripts/verify-module-structure.sh`; adicionar execução de novos testes |
+| `pre-commit.sh` | Adicionar `./scripts/go/verify-module-structure.sh` |
+| `lint.sh` | Adicionar `./scripts/go/verify-module-structure.sh`; adicionar execução de novos testes |
 | `verify-contracts.sh` | Expandir para incluir novos testes de arquitetura |
 
 ### 5.7 CI/CD: Adicionar Jobs Explícitos

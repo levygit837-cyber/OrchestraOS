@@ -5,7 +5,7 @@ set -euo pipefail
 # Validates that all modules in internal/modules/* have the mandatory files
 # per ADR-0022 (Module Standardization).
 #
-# Usage: ./scripts/verify-module-structure.sh
+# Usage: ./scripts/go/verify-module-structure.sh
 # Exit code: 0 if all modules are valid, 1 otherwise.
 
 MODULES_DIR="internal/modules"

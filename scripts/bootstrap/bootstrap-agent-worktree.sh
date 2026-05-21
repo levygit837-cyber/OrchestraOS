@@ -2,8 +2,8 @@
 # Bootstrap Agent Worktree
 # Cria branch e worktree isolada para um agente executor
 #
-# Uso: ./scripts/bootstrap-agent-worktree.sh <AGENTE_ID> <NOME_TAREFA>
-# Exemplo: ./scripts/bootstrap-agent-worktree.sh A01 agentservice
+# Uso: ./scripts/bootstrap/bootstrap-agent-worktree.sh <AGENTE_ID> <NOME_TAREFA>
+# Exemplo: ./scripts/bootstrap/bootstrap-agent-worktree.sh A01 agentservice
 
 set -euo pipefail
 

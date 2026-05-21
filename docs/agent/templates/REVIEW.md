@@ -12,8 +12,8 @@ Breve descricao do que foi implementado.
 
 - [ ] `go vet`
 - [ ] `go test ./...`
-- [ ] `./scripts/verify-contracts.sh`
-- [ ] `./scripts/lint.sh`
+- [ ] `./scripts/go/verify-contracts.sh`
+- [ ] `./scripts/go/lint.sh`
 
 ## ADRs Impactados
 

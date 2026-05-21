@@ -3,8 +3,8 @@ set -euo pipefail
 
 # new-module.sh creates a new module from the template in docs/templates/module/.
 # Follows ADR-0025 (Module Standardization) structure.
-# Usage: ./scripts/new-module.sh <module-name>
-# Example: ./scripts/new-module.sh billing
+# Usage: ./scripts/scaffold/new-module.sh <module-name>
+# Example: ./scripts/scaffold/new-module.sh billing
 
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <module-name>"

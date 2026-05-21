@@ -8,7 +8,7 @@ set -euo pipefail
 #   - README.md Allowed Dependencies reflect actual imports
 #   - Module boundary rules are respected
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 echo "=== Running architecture and contract verification tests ==="
 go test ./tests/architecture/... -count=1

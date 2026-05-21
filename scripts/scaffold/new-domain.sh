@@ -3,7 +3,7 @@
 # new-domain.sh — Registra um novo domínio/contexto para agentes
 #
 # Uso:
-#   ./scripts/new-domain.sh <nome-do-dominio>
+#   ./scripts/scaffold/new-domain.sh <nome-do-dominio>
 #
 # Cria:
 #   docs/agent/domains/<nome>/
@@ -20,7 +20,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # ─── Validações ───
 if [[ $# -lt 1 ]]; then
   echo "Erro: nome do domínio é obrigatório." >&2
-  echo "Uso: ./scripts/new-domain.sh <nome>" >&2
+  echo "Uso: ./scripts/scaffold/new-domain.sh <nome>" >&2
   exit 1
 fi
 
@@ -120,5 +120,5 @@ echo ""
 if [[ -d "$MODULE_DIR" ]]; then
   echo "   Módulo existente: ${MODULE_DIR}/"
 else
-  echo "   Para criar o módulo, execute: ./scripts/new-module.sh ${DOMAIN}"
+  echo "   Para criar o módulo, execute: ./scripts/scaffold/new-module.sh ${DOMAIN}"
 fi

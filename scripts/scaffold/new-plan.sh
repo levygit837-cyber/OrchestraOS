@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # new-plan.sh — Scaffold a new plan + checklist from templates
-# Usage: ./scripts/new-plan.sh <plan-id> <task-name> [agent-id]
-# Example: ./scripts/new-plan.sh ORCH-F05-R01-A01 agentservice
+# Usage: ./scripts/scaffold/new-plan.sh <plan-id> <task-name> [agent-id]
+# Example: ./scripts/scaffold/new-plan.sh ORCH-F05-R01-A01 agentservice
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

@@ -2,7 +2,7 @@
 set -eu
 
 version="${GO_VERSION:-1.26.2}"
-repo_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+repo_root="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 tools_dir="$repo_root/.tools"
 archive="$tools_dir/go${version}.linux-amd64.tar.gz"
 url="https://go.dev/dl/go${version}.linux-amd64.tar.gz"

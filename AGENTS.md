@@ -51,7 +51,7 @@ Nenhum agente deve assumir autonomia maior que a aprovada explicitamente nos doc
 
 Sempre use o script controlado:
 ```bash
-./scripts/safe-commit.sh "mensagem do commit"
+./scripts/git/safe-commit.sh "mensagem do commit"
 ```
 
 Este script automaticamente:
@@ -63,15 +63,15 @@ Depois do commit, push a feature branch e abra um Pull Request. Aguarde o CI pas
 
 Para instalar os hooks localmente (proteção adicional):
 ```bash
-cp scripts/pre-commit.sh .git/hooks/pre-commit
-cp scripts/pre-push.sh .git/hooks/pre-push
+cp scripts/git/pre-commit.sh .git/hooks/pre-commit
+cp scripts/git/pre-push.sh .git/hooks/pre-push
 chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
 ## Novo Módulo
 
-Antes de criar um novo módulo, execute `./scripts/new-module.sh <nome>` para gerar a estrutura padronizada.
-Após implementar, execute `./scripts/verify-contracts.sh` e `./scripts/lint.sh` antes de commitar.
+Antes de criar um novo módulo, execute `./scripts/scaffold/new-module.sh <nome>` para gerar a estrutura padronizada.
+Após implementar, execute `./scripts/go/verify-contracts.sh` e `./scripts/go/lint.sh` antes de commitar.
 
 ## Padrões de Código
 

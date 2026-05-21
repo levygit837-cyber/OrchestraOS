@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # safe-commit.sh — wrapper that validates code, creates a feature branch, and commits.
-# Usage: ./scripts/safe-commit.sh "commit message"
+# Usage: ./scripts/git/safe-commit.sh "commit message"
 #
 # This script ensures you never commit to main accidentally.
 
@@ -23,7 +23,7 @@ if [ "$CURRENT_BRANCH" = "main" ]; then
 fi
 
 echo "=== Running pre-commit validations ==="
-./scripts/pre-commit.sh
+./scripts/git/pre-commit.sh
 
 echo "=== Committing ==="
 git add -A

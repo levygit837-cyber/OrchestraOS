@@ -404,8 +404,8 @@ Antes de qualquer PR que toque no WSM:
 - [ ] Merge com conflito gera relatório estruturado
 - [ ] Workspace suspenso retoma com contexto intacto
 - [ ] `go test ./...` passa
-- [ ] `./scripts/verify-contracts.sh` passa
-- [ ] `./scripts/lint.sh` passa
+- [ ] `./scripts/go/verify-contracts.sh` passa
+- [ ] `./scripts/go/lint.sh` passa
 - [ ] Architecture tests passam (boundaries, module deps)
 
 ---

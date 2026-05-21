@@ -20,7 +20,7 @@ Antes de iniciar qualquer trabalho:
 ### 1.1 Contexto (sempre)
 
 - Identificar se a task pertence a um domain (`internal/modules/`) ou e transversal.
-- Usar `./scripts/new-task.sh --title "..." --domain <domain> --type <simple|complex>` para criar a estrutura.
+- Usar `./scripts/scaffold/new-task.sh --title "..." --domain <domain> --type <simple|complex>` para criar a estrutura.
 - Preencher `briefing.md` com: motivacao, escopo (dentro e fora), estado atual e arquivos relevantes.
 
 ### 1.2 Especificacao (quando altera comportamento)
@@ -66,8 +66,8 @@ status: em-andamento | concluido | cancelado
 
 - Rodar `go vet` em todo codigo Go alterado.
 - Rodar `go test ./...` para os pacotes tocados.
-- Rodar `./scripts/verify-contracts.sh` se houver mudanca em contratos.
-- Rodar `./scripts/lint.sh` antes de considerar pronto.
+- Rodar `./scripts/go/verify-contracts.sh` se houver mudanca em contratos.
+- Rodar `./scripts/go/lint.sh` antes de considerar pronto.
 - **Nunca commitar se alguma validacao falhar.**
 
 ### 2.3 Escopo Minimo
@@ -85,7 +85,7 @@ status: em-andamento | concluido | cancelado
 
 ### 3.2 Commit e PR
 
-- Usar obrigatoriamente: `./scripts/safe-commit.sh "mensagem descritiva"`.
+- Usar obrigatoriamente: `./scripts/git/safe-commit.sh "mensagem descritiva"`.
 - O script cria feature branch automaticamente se voce estiver na `main`.
 - Push da branch e abertura de Pull Request.
 - Aguardar CI passar antes de solicitar merge.
@@ -106,7 +106,7 @@ status: em-andamento | concluido | cancelado
 [ ] AGENTS.md lido
 [ ] Canvas consultado
 [ ] ADRs relevantes verificados
-[ ] Task criada via `./scripts/new-task.sh`
+[ ] Task criada via `./scripts/scaffold/new-task.sh`
 [ ] BRIEFING.md preenchido
 [ ] SPEC.md preenchido (se aplica)
 [ ] PLAN.md preenchido (se aplica)

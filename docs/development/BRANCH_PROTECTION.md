@@ -13,7 +13,7 @@ The `pre-push` hook runs **before every `git push`** and aborts if you try to pu
 ### Install
 
 ```bash
-cp scripts/pre-push.sh .git/hooks/pre-push
+cp scripts/git/pre-push.sh .git/hooks/pre-push
 chmod +x .git/hooks/pre-push
 ```
 
@@ -43,7 +43,7 @@ Runs `go vet`, architecture tests, and contract verification before allowing any
 ### Install
 
 ```bash
-cp scripts/pre-commit.sh .git/hooks/pre-commit
+cp scripts/git/pre-commit.sh .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
@@ -51,7 +51,7 @@ chmod +x .git/hooks/pre-commit
 
 ## Defense Layer 3: Safe Commit Script (Prevents Commits on Main)
 
-`scripts/safe-commit.sh` is a wrapper that:
+`scripts/git/safe-commit.sh` is a wrapper that:
 1. Detects if you are on `main`
 2. Automatically creates a feature branch if so
 3. Runs all validations
@@ -60,7 +60,7 @@ chmod +x .git/hooks/pre-commit
 ### Usage
 
 ```bash
-./scripts/safe-commit.sh "feat: add billing module"
+./scripts/git/safe-commit.sh "feat: add billing module"
 ```
 
 ---
@@ -82,8 +82,8 @@ If the code is bad, CI fails. Without branch protection, CI failure is a **red f
 
 ```bash
 # Install all hooks and tools
-cp scripts/pre-commit.sh .git/hooks/pre-commit
-cp scripts/pre-push.sh .git/hooks/pre-push
+cp scripts/git/pre-commit.sh .git/hooks/pre-commit
+cp scripts/git/pre-push.sh .git/hooks/pre-push
 chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
@@ -95,6 +95,6 @@ Add to your LLM system prompt or `AGENTS.md`:
 
 > **NEVER commit or push directly to `main`.**
 > 
-> Before committing, run `./scripts/safe-commit.sh "message"`. This script will automatically create a feature branch if you are on `main`, run all validations, and commit safely.
+> Before committing, run `./scripts/git/safe-commit.sh "message"`. This script will automatically create a feature branch if you are on `main`, run all validations, and commit safely.
 > 
 > After committing, push the feature branch and open a Pull Request. Wait for CI to pass.

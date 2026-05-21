@@ -34,7 +34,7 @@ Cada template e um ponto de partida para artefatos que o agente gera durante o c
 3. Gerar artefatos necessarios (BRIEFING, SPEC, PLAN)
 4. Executar com PROGRESS
 5. Entregar com REVIEW
-6. Commit via ./scripts/safe-commit.sh
+6. Commit via ./scripts/git/safe-commit.sh
 ```
 
 ---

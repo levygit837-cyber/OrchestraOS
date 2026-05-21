@@ -3,8 +3,8 @@
 # new-task.sh — Cria estrutura de artefatos para uma nova task
 #
 # Uso:
-#   ./scripts/new-task.sh --title "Adicionar timeout em sessão de agente" --domain agentsession --type complex
-#   ./scripts/new-task.sh --title "Fix typo no README" --type simple
+#   ./scripts/scaffold/new-task.sh --title "Adicionar timeout em sessão de agente" --domain agentsession --type complex
+#   ./scripts/scaffold/new-task.sh --title "Fix typo no README" --type simple
 #
 # Opções:
 #   --title    Título descritivo da task (obrigatório)
@@ -150,8 +150,8 @@ Breve descricao do que foi implementado.
 
 - [ ] \`go vet\`
 - [ ] \`go test ./...\`
-- [ ] \`./scripts/verify-contracts.sh\`
-- [ ] \`./scripts/lint.sh\`
+- [ ] \`./scripts/go/verify-contracts.sh\`
+- [ ] \`./scripts/go/lint.sh\`
 
 ## ADRs Impactados
 

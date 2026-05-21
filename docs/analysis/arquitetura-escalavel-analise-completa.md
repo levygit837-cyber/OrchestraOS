@@ -393,7 +393,7 @@ flowchart TD
 
 1. **Criar novo módulo vertical:**
    ```bash
-   ./scripts/new-module.sh <nome>
+   ./scripts/scaffold/new-module.sh <nome>
    ```
    Isso gera estrutura padronizada em `internal/modules/<nome>/`
 

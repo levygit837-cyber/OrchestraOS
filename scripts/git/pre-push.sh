@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # pre-push.sh — install to .git/hooks/pre-push to block direct pushes to main.
-# Usage: cp scripts/pre-push.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+# Usage: cp scripts/git/pre-push.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push
 #
 # This hook is called with the following arguments:
 #   $1 Name of the remote to which the push is being done

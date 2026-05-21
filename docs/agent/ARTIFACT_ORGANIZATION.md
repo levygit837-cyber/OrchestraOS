@@ -82,10 +82,21 @@ Todos em **minúsculas**, sem prefixos:
 ### 4.1 Regra de Decisão
 
 ```
-A task toca um único módulo de domínio claro?
+A task toca APENAS um módulo de domínio E NÃO toca internal/core/ ?
 ├── Sim → docs/agent/domains/<modulo>/<task-id>/
 └── Não → docs/agent/tasks/<task-id>/
 ```
+
+**Critérios para transversal (`tasks/`):**
+
+| Situação | Motivo |
+|---|---|
+| Toca `internal/core/*` | `core/` é infraestrutura compartilhada — qualquer mudança aqui afeta todos os módulos |
+| Toca 2+ módulos de `internal/modules/` | Cross-module; nenhum domain é o "dono" exclusivo |
+| Refatoração global (naming, interfaces, etc) | Impacto difuso, não localizável em um módulo |
+| Infraestrutura pura (CI, migrations, docker) | Não é domain de negócio |
+
+**Task transversal com múltiplos módulos:** no `briefing.md` e `plan.md`, declare **todos** os módulos afetados no front matter e no corpo. Use um plano do tipo **"Por Domínio"** (`docs/development/plan-types.md`) quando os módulos puderem ser tratados em paralelo.
 
 ### 4.2 Domains (`docs/agent/domains/`)
 
@@ -119,17 +130,33 @@ docs/agent/domains/task/
 ### 4.3 Tasks Transversais (`docs/agent/tasks/`)
 
 Para tarefas que:
-- Tocam múltiplos módulos sem domínio claro (ex: refatoração global)
+- Tocam `internal/core/*` (infraestrutura compartilhada)
+- Tocam 2+ módulos de `internal/modules/`
+- São refatorações globais ou de infraestrutura pura
 - São pequenas demais para justificar um contexto de domain
-- São de infraestrutura/core (ex: atualizar `internal/core/eventstore/`)
 
 ```
 docs/agent/tasks/
 └── 2026-05-21_remove-coordination-package/
-    ├── briefing.md
-    ├── plan.md
-    └── review.md
+    ├── briefing.md    # lista todos os módulos afetados
+    ├── plan.md        # tipo: por-dominio se aplicável
+    └── review.md      # checklist de validação por módulo
 ```
+
+**Cross-module tasks — como estruturar:**
+
+1. **Front matter:** declare `domain: transversal` e use um campo `affects:`:
+   ```yaml
+   ---
+   domain: transversal
+   affects:
+     - agentsession
+     - orchestrator
+   ---
+   ```
+2. **Plan:** se os módulos são independentes, use plano **Por Domínio** com seções por módulo.
+3. **Review:** liste testes e validações executadas **por módulo afetado**.
+4. **Pós-entrega:** atualize o `README.md` de **cada domain afetado** para referenciar a task.
 
 ---
 
@@ -185,8 +212,8 @@ Use os scripts em `scripts/` para criar estruturas sem erro manual:
 
 | Script | Função |
 |---|---|
-| `./scripts/new-task.sh` | Cria estrutura de task com templates preenchidos |
-| `./scripts/new-domain.sh` | Registra novo domínio em `docs/agent/domains/` |
+| `./scripts/scaffold/new-task.sh` | Cria estrutura de task com templates preenchidos |
+| `./scripts/scaffold/new-domain.sh` | Registra novo domínio em `docs/agent/domains/` |
 
 Consulte `--help` em cada script para uso.
 
