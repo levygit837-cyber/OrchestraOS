@@ -9,42 +9,25 @@ import (
 	"testing"
 )
 
-// allowedModuleImports defines which cross-module type imports are legitimate
-// for DI (Dependency Injection) interfaces.
+// excludedFromModuleBoundaryCheck lists packages that are allowed to import
+// multiple modules. These are coordination/orchestration layers, not business
+// logic modules.
 //
-// Policy (ADR-0026):
-//   - Modules MAY import types (structs, enums) from another module ONLY for
-//     DI interface return types (e.g., TaskReader.GetByID() -> *task.Task).
-//   - Modules MUST NEVER import services, repositories, or business logic
-//     from another module.
-//   - This map tracks the ALLOWED compile-time dependencies.
-//   - When a migration adds a new DI interface that returns a type from module B,
-//     add the entry here and document it in the migration plan.
-//
-// Current allowed imports:
-//
-//	run -> task: run.TaskReader returns *task.Task
-//	run -> agentsession: run.SessionService interface returns *agentsession.AgentSession (ADR-0028 relay migration)
-//	workunit -> task: workunit.TaskReader returns *task.Task
-//	orchestrator -> review: orchestrator.ReviewManager returns *review.Review (ADR-0022 migration)
-//	orchestrator -> prompt: PreparedPrompt uses *prompt.PromptSnapshot and *prompt.ToolsetSnapshot
-var allowedModuleImports = map[string]map[string]bool{
-	"run":          {"task": true, "workunit": true, "agentsession": true},
-	"workunit":     {"task": true, "taskgraph": true},
-	"taskgraph":    {"task": true, "workunit": true},
-	"agentsession": {"agent": true},
-	"prompt":       {},
-	"orchestrator": {"review": true, "taskgraph": true, "workunit": true, "trigger": true, "prompt": true, "task": true, "run": true, "agent": true, "agentsession": true},
-	"trigger":      {"agentsession": true, "run": true, "workunit": true},
+// Per ADR-0030 Pilar 2:
+//   - Only orchestrator/ and bootstrap/ may import multiple modules.
+//   - All other modules MUST be independent.
+var excludedFromModuleBoundaryCheck = map[string]bool{
+	"orchestrator": true,
 }
 
-// leafModules must not import any other module under internal/modules/.
-// These modules have no DI dependencies on other domain modules.
-var leafModules = map[string]bool{
-	"agent": true,
-	"task":  true,
-}
-
+// TestModuleBoundaries verifies that no module under internal/modules/
+// imports another module, with the sole exceptions of orchestrator/ and
+// bootstrap/ (which act as composition roots).
+//
+// Per ADR-0030:
+//   "Módulos NÃO importam outros módulos. Ponto final."
+//   Any cross-module dependency must be resolved through the orchestrator
+//   or through shared types in internal/domain/.
 func TestModuleBoundaries(t *testing.T) {
 	modulesDir := "../../internal/modules"
 	entries, err := os.ReadDir(modulesDir)
@@ -57,8 +40,13 @@ func TestModuleBoundaries(t *testing.T) {
 			continue
 		}
 		modName := entry.Name()
-		modPath := filepath.Join(modulesDir, modName)
 
+		// orchestrator and bootstrap are exempt — they compose modules
+		if excludedFromModuleBoundaryCheck[modName] {
+			continue
+		}
+
+		modPath := filepath.Join(modulesDir, modName)
 		fset := token.NewFileSet()
 		pkgs, err := parser.ParseDir(fset, modPath, func(info os.FileInfo) bool {
 			return !strings.HasSuffix(info.Name(), "_test.go")
@@ -71,64 +59,28 @@ func TestModuleBoundaries(t *testing.T) {
 			for _, file := range pkg.Files {
 				for _, imp := range file.Imports {
 					path := strings.Trim(imp.Path.Value, `"`)
-					if !strings.HasPrefix(path, "github.com/levygit837-cyber/OrchestraOS/internal/modules/") {
-						continue
-					}
-					importedMod := filepath.Base(path)
 
-					if leafModules[modName] {
-						t.Errorf("leaf module %q must not import any other module, but imports %q", modName, importedMod)
-						continue
-					}
-
-					if modName == importedMod {
-						continue // self-import (should not happen, but harmless)
-					}
-
-					allowed, ok := allowedModuleImports[modName]
-					if !ok || !allowed[importedMod] {
+					// Check for cross-module imports
+					if strings.HasPrefix(path, "github.com/levygit837-cyber/OrchestraOS/internal/modules/") {
+						importedMod := filepath.Base(path)
+						if importedMod == modName {
+							continue // self-import (should not happen, but harmless)
+						}
 						t.Errorf(
-							"module %q imports %q, which is not in the allowed list. "+
-								"Cross-module imports are allowed ONLY for DI interface return types (ADR-0026). "+
-								"If this import is for a DI interface type, add it to allowedModuleImports and document in the migration plan. "+
-								"If this import is for a service/repository/business logic, refactor to use DI or move to the orchestrator module.",
+							"module %q imports %q — modules must NOT import other modules (ADR-0030). "+
+							"Only orchestrator/ and bootstrap/ may import multiple modules. "+
+							"Move shared types to internal/domain/ or resolve the dependency in the orchestrator.",
 							modName, importedMod,
 						)
 					}
-				}
-			}
-		}
-	}
-}
 
-func TestModulesDoNotImportCoordination(t *testing.T) {
-	modulesDir := "../../internal/modules"
-	entries, err := os.ReadDir(modulesDir)
-	if err != nil {
-		t.Fatalf("cannot read modules directory: %v", err)
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		modName := entry.Name()
-		modPath := filepath.Join(modulesDir, modName)
-
-		fset := token.NewFileSet()
-		pkgs, err := parser.ParseDir(fset, modPath, func(info os.FileInfo) bool {
-			return !strings.HasSuffix(info.Name(), "_test.go")
-		}, parser.ImportsOnly)
-		if err != nil {
-			t.Fatalf("cannot parse module %s: %v", modName, err)
-		}
-
-		for _, pkg := range pkgs {
-			for _, file := range pkg.Files {
-				for _, imp := range file.Imports {
-					path := strings.Trim(imp.Path.Value, `"`)
+					// Check for legacy coordination package imports
 					if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/coordination" {
-						t.Errorf("module %q imports internal/core/coordination. coordination was removed per ADR-0028. Use internal/core/transition/ for shared types.", modName)
+						t.Errorf(
+							"module %q imports internal/core/coordination — this package was removed per ADR-0028. "+
+							"Use internal/core/transition/ for shared types.",
+							modName,
+						)
 					}
 				}
 			}
