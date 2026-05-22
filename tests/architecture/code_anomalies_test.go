@@ -93,6 +93,9 @@ func TestCodeAnomalies(t *testing.T) {
 			// Check for _ = variable (not just calls) without documented reason
 			scanForIgnoredVariables(t, fset, f, path)
 
+			// Check for _, _ = someCall() without documented reason
+			scanForFullyIgnoredTuple(t, fset, f, path)
+
 			// Check for _ = call() inside defer func() without documented reason
 			scanForIgnoredErrorsInDefer(t, fset, f, path)
 
@@ -240,6 +243,44 @@ func scanForIgnoredVariables(t *testing.T, fset *token.FileSet, f *ast.File, pat
 		pos := fset.Position(assign.Pos())
 		if !hasIgnoreComment(fset, f, pos.Line) && !hasInlineIgnoreComment(path, pos.Line) {
 			t.Errorf("ignored value (_ = ...) at %s:%d without documented reason — add a comment explaining why it is safe to ignore (CODING_STANDARDS.md).", path, pos.Line)
+		}
+		return true
+	})
+}
+
+// scanForFullyIgnoredTuple detects `_, _ = someCall()` where both return values
+// are silently discarded without documentation.
+//
+// Per ADR-0030 / CODING_STANDARDS.md: all ignored values must be documented.
+func scanForFullyIgnoredTuple(t *testing.T, fset *token.FileSet, f *ast.File, path string) {
+	ast.Inspect(f, func(n ast.Node) bool {
+		assign, ok := n.(*ast.AssignStmt)
+		if !ok {
+			return true
+		}
+
+		// Must have exactly 2 LHS
+		if len(assign.Lhs) != 2 {
+			return true
+		}
+
+		// Both LHS must be "_"
+		lhs1, ok1 := assign.Lhs[0].(*ast.Ident)
+		lhs2, ok2 := assign.Lhs[1].(*ast.Ident)
+		if !ok1 || !ok2 || lhs1.Name != "_" || lhs2.Name != "_" {
+			return true
+		}
+
+		// Check if any RHS call is a known safe-to-ignore function
+		for _, rhs := range assign.Rhs {
+			if isSafeToIgnoreCall(rhs) {
+				return true
+			}
+		}
+
+		pos := fset.Position(assign.Pos())
+		if !hasIgnoreComment(fset, f, pos.Line) && !hasInlineIgnoreComment(path, pos.Line) {
+			t.Errorf("ignored tuple (_, _ = ...) at %s:%d without documented reason — add a comment explaining why both values are safe to ignore (CODING_STANDARDS.md).", path, pos.Line)
 		}
 		return true
 	})

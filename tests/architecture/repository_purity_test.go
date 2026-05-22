@@ -19,13 +19,11 @@ var repositoryPurityRoots = []string{"../../internal/modules", "../../internal/c
 //
 // Heuristics (per ADR-0030 Pilar 3: "repository.go é CRUD puro"):
 //   1. Status-based branching: if statements that compare variables with Status* constants.
-//   2. Upsert/dedup: ON CONFLICT clauses in SQL strings.
-//   3. Non-CRUD operations: methods that do more than basic CRUD.
-//
-// NOT flagged as violations (acceptable in repositories):
-//   - time.Now() / time.Now().UTC() for CreatedAt/UpdatedAt timestamps
-//   - scan* helpers for database row scanning
-//   - Validation of required fields (id == "")
+//   2. Deduplication logic: patterns like "if existing != nil" followed by comparison.
+//   3. Reference/upsert detection: returning booleans indicating if record was created or referenced.
+//   4. Hardcoded status strings: string literals like "active", "inactive", "running", etc.
+//   5. Field validation: checking ID == "", Sequence == 0, CreatedAt.IsZero() (beyond simple nil check).
+//   6. ON CONFLICT clauses in SQL strings.
 type repositoryPurityPattern struct {
 	name        string
 	regex       *regexp.Regexp
@@ -37,6 +35,26 @@ var repositoryPurityPatterns = []repositoryPurityPattern{
 		name:        "status-branching",
 		regex:       regexp.MustCompile(`(?i)if\s+.*Status[A-Z]`),
 		description: "status-based conditional logic — repositories must not branch on business state",
+	},
+	{
+		name:        "deduplication",
+		regex:       regexp.MustCompile(`(?i)if\s+existing\s*!=?\s*nil`),
+		description: "deduplication logic — repositories must not query existing records to decide insert/update",
+	},
+	{
+		name:        "reference-detection",
+		regex:       regexp.MustCompile(`(?i)return\s+.*!=\s*.*\|\|\s*.*>\s*1`),
+		description: "reference/upsert detection logic — returning boolean indicating if record was created or referenced",
+	},
+	{
+		name:        "hardcoded-status",
+		regex:       regexp.MustCompile(`"(active|inactive|running|completed|failed|cancelled|pending|validated|ready)"`),
+		description: "hardcoded status string — status values must be set by the service/state machine layer, not the repository",
+	},
+	{
+		name:        "field-validation",
+		regex:       regexp.MustCompile(`(?i)if\s+.*(Sequence\s*==?\s*0|CreatedAt\.IsZero\(\))`),
+		description: "field validation logic — validating Sequence or CreatedAt is business logic, not CRUD",
 	},
 	{
 		name:        "on-conflict",
