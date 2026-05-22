@@ -15,7 +15,9 @@ import (
 // sqlPattern detects raw SQL strings outside queries.go files.
 // It requires multiple SQL keywords in sequence to avoid false positives
 // from error messages like "failed to update heartbeat".
-var sqlPattern = regexp.MustCompile(`(?i)(SELECT\s+.*\s+FROM|INSERT\s+INTO|UPDATE\s+.*\s+SET|DELETE\s+FROM|CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE|JOIN\s+.*\s+ON)`)
+//
+// Updated per ADR-0030: also detects SELECT func(...) patterns (SQL without FROM).
+var sqlPattern = regexp.MustCompile(`(?i)(SELECT\s+.*\s+FROM|SELECT\s+\w+\s*\(|INSERT\s+INTO|UPDATE\s+.*\s+SET|DELETE\s+FROM|CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE|JOIN\s+.*\s+ON)`)
 
 // safeToIgnoreCalls lists function names where ignoring the error is common
 // and safe (e.g., SetDeadline, Close on read-only resources).
@@ -87,6 +89,15 @@ func TestCodeAnomalies(t *testing.T) {
 
 			// Check for _ = someCall() without documented reason
 			scanForIgnoredErrors(t, fset, f, path)
+
+			// Check for _ = variable (not just calls) without documented reason
+			scanForIgnoredVariables(t, fset, f, path)
+
+			// Check for _, _ = someCall() without documented reason
+			scanForFullyIgnoredTuple(t, fset, f, path)
+
+			// Check for _ = call() inside defer func() without documented reason
+			scanForIgnoredErrorsInDefer(t, fset, f, path)
 
 			return nil
 		})
@@ -189,6 +200,157 @@ func scanForIgnoredErrors(t *testing.T, fset *token.FileSet, f *ast.File, path s
 		if !hasIgnoreComment(fset, f, pos.Line) && !hasInlineIgnoreComment(path, pos.Line) {
 			t.Errorf("ignored error (_ = ...) at %s:%d without documented reason — add a comment explaining why the error is safe to ignore (CODING_STANDARDS.md).", path, pos.Line)
 		}
+		return true
+	})
+}
+
+// scanForIgnoredVariables detects `_ = variable` assignments where the error
+// (or other return value) is silently discarded without documentation.
+//
+// Per ADR-0030 / CODING_STANDARDS.md: all ignored values must be documented.
+func scanForIgnoredVariables(t *testing.T, fset *token.FileSet, f *ast.File, path string) {
+	ast.Inspect(f, func(n ast.Node) bool {
+		assign, ok := n.(*ast.AssignStmt)
+		if !ok {
+			return true
+		}
+
+		// Check if ALL LHS are "_"
+		allBlank := true
+		for _, lhs := range assign.Lhs {
+			ident, ok := lhs.(*ast.Ident)
+			if !ok || ident.Name != "_" {
+				allBlank = false
+				break
+			}
+		}
+		if !allBlank {
+			return true
+		}
+
+		// Check if ANY RHS is NOT a call (i.e., it's a variable, selector, etc.)
+		hasNonCall := false
+		for _, rhs := range assign.Rhs {
+			if _, isCall := rhs.(*ast.CallExpr); !isCall {
+				hasNonCall = true
+				break
+			}
+		}
+		if !hasNonCall {
+			return true // handled by scanForIgnoredErrors
+		}
+
+		pos := fset.Position(assign.Pos())
+		if !hasIgnoreComment(fset, f, pos.Line) && !hasInlineIgnoreComment(path, pos.Line) {
+			t.Errorf("ignored value (_ = ...) at %s:%d without documented reason — add a comment explaining why it is safe to ignore (CODING_STANDARDS.md).", path, pos.Line)
+		}
+		return true
+	})
+}
+
+// scanForFullyIgnoredTuple detects `_, _ = someCall()` where both return values
+// are silently discarded without documentation.
+//
+// Per ADR-0030 / CODING_STANDARDS.md: all ignored values must be documented.
+func scanForFullyIgnoredTuple(t *testing.T, fset *token.FileSet, f *ast.File, path string) {
+	ast.Inspect(f, func(n ast.Node) bool {
+		assign, ok := n.(*ast.AssignStmt)
+		if !ok {
+			return true
+		}
+
+		// Must have exactly 2 LHS
+		if len(assign.Lhs) != 2 {
+			return true
+		}
+
+		// Both LHS must be "_"
+		lhs1, ok1 := assign.Lhs[0].(*ast.Ident)
+		lhs2, ok2 := assign.Lhs[1].(*ast.Ident)
+		if !ok1 || !ok2 || lhs1.Name != "_" || lhs2.Name != "_" {
+			return true
+		}
+
+		// Check if any RHS call is a known safe-to-ignore function
+		for _, rhs := range assign.Rhs {
+			if isSafeToIgnoreCall(rhs) {
+				return true
+			}
+		}
+
+		pos := fset.Position(assign.Pos())
+		if !hasIgnoreComment(fset, f, pos.Line) && !hasInlineIgnoreComment(path, pos.Line) {
+			t.Errorf("ignored tuple (_, _ = ...) at %s:%d without documented reason — add a comment explaining why both values are safe to ignore (CODING_STANDARDS.md).", path, pos.Line)
+		}
+		return true
+	})
+}
+
+// scanForIgnoredErrorsInDefer detects `_ = call()` inside defer func() { ... }()
+// where errors are silently discarded. This is a common anti-pattern because
+// deferred errors are often important (e.g., rollback, close, cleanup).
+//
+// Per ADR-0030 / CODING_STANDARDS.md: all ignored errors must be documented,
+// especially in defer blocks where failures may indicate resource leaks.
+func scanForIgnoredErrorsInDefer(t *testing.T, fset *token.FileSet, f *ast.File, path string) {
+	ast.Inspect(f, func(n ast.Node) bool {
+		deferStmt, ok := n.(*ast.DeferStmt)
+		if !ok {
+			return true
+		}
+
+		// Only check defer func() { ... }()
+		funcLit, ok := deferStmt.Call.Fun.(*ast.FuncLit)
+		if !ok {
+			return true
+		}
+
+		// Walk the deferred function body
+		ast.Inspect(funcLit.Body, func(n ast.Node) bool {
+			assign, ok := n.(*ast.AssignStmt)
+			if !ok {
+				return true
+			}
+
+			// Check if ALL LHS are "_"
+			allBlank := true
+			for _, lhs := range assign.Lhs {
+				ident, ok := lhs.(*ast.Ident)
+				if !ok || ident.Name != "_" {
+					allBlank = false
+					break
+				}
+			}
+			if !allBlank {
+				return true
+			}
+
+			// Check if ALL RHS are calls
+			allCalls := true
+			for _, rhs := range assign.Rhs {
+				if _, isCall := rhs.(*ast.CallExpr); !isCall {
+					allCalls = false
+					break
+				}
+			}
+			if !allCalls {
+				return true
+			}
+
+			// Skip safe-to-ignore calls
+			for _, rhs := range assign.Rhs {
+				if isSafeToIgnoreCall(rhs) {
+					return true
+				}
+			}
+
+			pos := fset.Position(assign.Pos())
+			if !hasIgnoreComment(fset, f, pos.Line) && !hasInlineIgnoreComment(path, pos.Line) {
+				t.Errorf("ignored error in defer block at %s:%d — errors in defer are often critical (rollback, close, cleanup). Document why safe to ignore or handle the error (CODING_STANDARDS.md).", path, pos.Line)
+			}
+			return true
+		})
+
 		return true
 	})
 }
