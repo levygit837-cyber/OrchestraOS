@@ -132,5 +132,3 @@ type PlannerAdapter struct {
 func NewPlannerAdapter(p *Pipeline) *PlannerAdapter {
 	return &PlannerAdapter{pipeline: p}
 }
-
-
