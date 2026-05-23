@@ -155,7 +155,7 @@ func (g *Gemini) doRequest(ctx context.Context, body []byte) ([]byte, error) {
 	if err != nil {
 		return nil, classifyHTTPError("runtime.gemini", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

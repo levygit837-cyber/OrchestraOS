@@ -142,7 +142,7 @@ func (d *DeepSeek) doRequest(ctx context.Context, body []byte) ([]byte, error) {
 	if err != nil {
 		return nil, classifyHTTPError("runtime.deepseek", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
