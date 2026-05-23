@@ -5,17 +5,17 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 ## Estado
 
 - Nome final: em aberto
-- Fase atual: fundação do projeto
+- Fase atual: fundação e integração E2E
 - Fonte de verdade: este repositório
 - Comunicação operacional sugerida: CLI + GitHub
 - Execução técnica sugerida: Codex + GitHub + worktrees + automações futuras
-- Arquitetura inicial: Orchestrator central com agentes Codex/CLI em sandboxes isolados
+- Arquitetura: Arquitetura Modular Simplificada (ADR-0030) com Orchestrator central e agentes isolados
 
 ## Documentos Principais
 
 - [AGENTS.md](AGENTS.md): regras que agentes devem seguir ao trabalhar no repositório.
 - [docs/canvas/project-canvas.md](docs/canvas/project-canvas.md): canvas textual do produto, legível por humanos e por IA.
-- [docs/canvas/system-map.mmd](docs/canvas/system-map.mmd): mapa Mermaid da arquitetura atual (módulos verticais, orquestração híbrida, WSM, protocolo de intervenção).
+- [docs/canvas/system-map.mmd](docs/canvas/system-map.mmd): mapa Mermaid da arquitetura atual.
 - [docs/architecture/README.md](docs/architecture/README.md): visão geral da arquitetura do OrchestraOS.
 - [docs/architecture/core/stack.md](docs/architecture/core/stack.md): stack técnica recomendada e evolução.
 - [docs/architecture/orchestration.md](docs/architecture/orchestration.md): modelo de orquestração de agentes.
@@ -54,16 +54,17 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 - Stack inicial: Go, Postgres, Codex/CLI, Git worktree, Docker e GitHub.
 - Autonomia inicial aprovada: Nível 2.
 
-## Estrutura Inicial Planejada
+## Estrutura do Repositório
 
-- `cmd/orchestraos/`: entrada futura da CLI local.
-- `internal/domain/`: tipos centrais do domínio.
+- `cmd/orchestraos/`: entrada da CLI local.
+- `internal/domain/`: todos os entity types compartilhados (ADR-0030 Pilar 1).
+- `internal/modules/`: módulos autônomos (agent, agentsession, orchestrator, prompt, review, run, task, taskgraph, trigger, workunit).
+- `internal/core/`: infraestrutura compartilhada (apperrors, db, eventstore, statemachine, transition, validation).
+- `internal/bootstrap/`: injeção de dependências e wiring de serviços.
 - `contracts/schemas/`: JSON Schemas versionados.
-- `tests/`: validações de contrato sem serviços externos.
+- `tests/architecture/`: testes automáticos de regras de arquitetura.
 
-O primeiro esqueleto deve focar em `Task`, `Run`, `Event`, `WorkUnit`, `Agent` e `AgentSession`. `Orchestrator`, `CommunicationProtocol` e `Session` genérica permanecem como documentação arquitetural até haver necessidade operacional concreta.
-
-Essa decisão está registrada em [docs/adr/0013-m0-domain-contract-scope.md](docs/adr/0013-m0-domain-contract-scope.md).
+Para mais detalhes, consulte [docs/architecture/core/repo-structure.md](docs/architecture/core/repo-structure.md).
 
 ## Regra de Trabalho
 

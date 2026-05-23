@@ -1,6 +1,6 @@
 # Integração de Runtime com Serviços de Domínio
 
-> **Migrado de ADR 0019 em 2026-05-17.** Este documento descreve o padrão de integração entre runtimes de agente e serviços de domínio. Não é uma decisão arquitetural, mas uma especificação de implementação derivada das ADRs 0011, 0016, 0020 e 0022.
+> **Migrado de ADR 0019 em 2026-05-17.** Este documento descreve o padrão de integração entre runtimes de agente e serviços de domínio. Não é uma decisão arquitetural, mas uma especificação de implementação derivada das ADRs 0011, 0016, 0020 e 0030.
 
 ---
 
@@ -8,7 +8,7 @@
 
 O OrchestraOS possui dois componentes de inferência LLM implementados que operam de forma isolada:
 
-- `GeminiRuntime` (`internal/agent/gemini_runtime.go`): executa work units individuais via inference loop multi-turn com function calling. Emite eventos como `agent.started`, `agent.heartbeat`, `agent.checkpoint_reached`, `agent.tool_requested` e `agent.completed` em um canal interno.
+- `GeminiRuntime` (`internal/modules/agent/gemini_runtime.go`): executa work units individuais via inference loop multi-turn com function calling. Emite eventos como `agent.started`, `agent.heartbeat`, `agent.checkpoint_reached`, `agent.tool_requested` e `agent.completed` em um canal interno.
 
 - `GeminiPlanner` (`internal/modules/taskgraph/gemini_planner.go`): decompõe tasks em grafos de work units usando a API Gemini com structured generation. Implementa a interface `Planner` e produz `GraphPlan` validado.
 
@@ -64,7 +64,7 @@ Esse comportamento já existe em `TaskGraphService.buildPlan()` e deve ser prese
 
 ## Especificação: Unificação do Commander com Domain Services
 
-O pacote `internal/core/coordination/` contém helpers cross-module (como cancelamento em cascata e prompt orchestration). O antigo `Commander` em `internal/orchestration/commands.go` foi removido quando os serviços de domínio passaram a ser a fronteira obrigatória para transições de estado (ADR 0020). Serviços de domínio em `internal/modules/*/service.go` agora implementam:
+O antigo pacote `internal/core/coordination/` foi removido (ADR-0028). Helpers cross-module agora residem em `internal/core/transition/`. O antigo `Commander` foi removido quando os serviços de domínio passaram a ser a fronteira obrigatória para transições de estado (ADR 0020). Serviços de domínio em `internal/modules/*/service.go` agora implementam:
 
 - idempotência por `event_id`;
 - retry com backoff;

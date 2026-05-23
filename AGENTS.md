@@ -2,6 +2,33 @@
 
 Este arquivo deve ser lido por qualquer agente antes de editar o projeto.
 
+## O Projeto
+
+O OrchestraOS é um sistema de orquestração de agentes de IA. Ele transforma intenção humana em planejamento, execução, validação e operação contínua. O sistema é local-first, com desenho compatível para servidor. A fonte de verdade é este repositório.
+
+- **Fase atual:** fundação e integração E2E
+- **Autonomia aprovada:** Nível 2 (IA implementa com revisão humana)
+- **Stack:** Go, Postgres, WebSocket, Docker, GitHub
+
+## Arquitetura (ADR-0030)
+
+A arquitetura vigente é a **ADR-0030** (Arquitetura Modular Simplificada). Os 4 pilares são:
+
+1. **`internal/domain/`** centraliza todos os entity types compartilhados (Task, Run, WorkUnit, Agent, etc.).
+2. **Módulos em `internal/modules/`** não importam outros módulos. Zero exceções.
+3. **Apenas `internal/bootstrap/` e `internal/modules/orchestrator/`** importam múltiplos módulos.
+4. **`repository.go`** é CRUD puro — sem business logic, sem timestamps, sem deduplication.
+
+```text
+internal/
+  bootstrap/        # DI e wiring de serviços
+  core/             # Infraestrutura compartilhada (apperrors, db, eventstore, statemachine, transition, validation)
+  domain/           # Todos os entity types compartilhados
+  modules/          # Módulos verticais autônomos
+    agent/  agentsession/  orchestrator/  prompt/  review/
+    run/    task/           taskgraph/     trigger/ workunit/
+```
+
 ## Prioridades
 
 1. Preservar a intenção do usuário.
@@ -10,93 +37,37 @@ Este arquivo deve ser lido por qualquer agente antes de editar o projeto.
 4. Atualizar documentação quando a mudança alterar comportamento, arquitetura ou processo.
 5. Nunca tratar conversa solta, chat, comentários avulsos ou memória do agente como fonte definitiva.
 
-## Fluxo Obrigatório
+## Navegação
+
+| Para... | Consulte |
+|---------|----------|
+| Entender o produto e visão | `docs/canvas/project-canvas.md` |
+| Decisões arquiteturais | `docs/adr/` (vigente: `0030-simplified-modular-architecture.md`) |
+| Regras de código, naming, erros, testes | `docs/development/CODING_STANDARDS.md` |
+| Fluxo de trabalho do agente | `docs/agent/PLAYBOOK.md` |
+| Tipos de plano | `docs/development/plan-types.md` |
+| Estrutura do repositório | `docs/architecture/core/repo-structure.md` |
+| Visão geral da arquitetura | `docs/architecture/README.md` |
+
+## Fluxo de Trabalho
 
 1. Entender o item de trabalho.
-2. Consultar o canvas em `docs/canvas/project-canvas.md`.
-3. Consultar decisões arquiteturais em `docs/adr/`.
-4. Seguir o `docs/agent/PLAYBOOK.md` para gerar artefatos necessários (BRIEFING, SPEC, PLAN quando aplicável).
-5. Implementar a menor mudança suficiente.
-6. Rodar validações relevantes.
-7. Registrar o que mudou e qualquer risco restante.
+2. Consultar o canvas e as ADRs relevantes.
+3. Seguir o `docs/agent/PLAYBOOK.md` para gerar artefatos necessários (BRIEFING, SPEC, PLAN quando aplicável).
+4. Implementar a menor mudança suficiente.
+5. Rodar validações (`go vet`, testes de arquitetura, contracts).
+6. Registrar o que mudou e qualquer risco restante.
 
-## Boas Práticas de Código
+## Regras de Commit
 
-- Preferir código simples, explícito e testável.
-- Usar tipagem estática quando a linguagem permitir.
-- Separar regras de negócio, integrações externas e interface de usuário.
-- Validar entradas nas bordas do sistema.
-- Tratar erros com contexto suficiente para diagnóstico.
-- Evitar dependências novas sem justificativa.
-- Criar testes para lógica de orquestração, permissões, automações e integrações.
-- Nunca colocar segredos em arquivos versionados.
-- Documentar contratos entre agentes, ferramentas e serviços usando schemas ou OpenAPI quando aplicável.
-
-## Política de Autonomia
-
-O projeto deve ganhar autonomia por níveis:
-
-- Nível 0: humano decide e executa.
-- Nível 1: IA sugere planos e documentos.
-- Nível 2: IA implementa com revisão humana.
-- Nível 3: IA abre PRs com testes e evidências.
-- Nível 4: IA executa tarefas operacionais de baixo risco dentro de políticas definidas.
-- Nível 5: IA opera domínios aprovados com monitoramento, trilha de auditoria e rollback.
-
-Nenhum agente deve assumir autonomia maior que a aprovada explicitamente nos documentos do projeto.
-
-## Commits e Branches
-
-**NUNCA commit ou push diretamente na branch `master`.**
-
-Sempre use o script controlado:
-```bash
-./scripts/git/safe-commit.sh "mensagem do commit"
-```
-
-Este script automaticamente:
-- Cria uma feature branch se você estiver na `master`
-- Roda todas as validações (`go vet`, architecture tests, contracts)
-- Só commita se tudo passar
-
-Depois do commit, push a feature branch e abra um Pull Request. Aguarde o CI passar antes de mergear.
-
-Para instalar os hooks localmente (proteção adicional):
-```bash
-cp scripts/git/pre-commit.sh .git/hooks/pre-commit
-cp scripts/git/pre-push.sh .git/hooks/pre-push
-chmod +x .git/hooks/pre-commit .git/hooks/pre-push
-```
-
-## Novo Módulo
-
-Antes de criar um novo módulo, execute `./scripts/scaffold/new-module.sh <nome>` para gerar a estrutura padronizada.
-Após implementar, execute `./scripts/go/verify-contracts.sh` e `./scripts/go/lint.sh` antes de commitar.
-
-## Padrões de Código
-
-Consulte `docs/development/CODING_STANDARDS.md` para regras detalhadas de estilo, naming, error handling e testes.
+- **Nunca** commit ou push diretamente na branch `master`.
+- Usar feature branch e abrir Pull Request.
+- Rodar validações antes de commitar. Consulte `docs/development/CODING_STANDARDS.md` para detalhes.
 
 ## Decisões
 
-Decisões relevantes devem virar ADR em `docs/adr/`. Use o formato:
+Decisões arquiteturais relevantes devem virar ADR em `docs/adr/` com: Contexto, Decisão, Consequências e Alternativas consideradas.
 
-- Contexto
-- Decisão
-- Consequências
-- Alternativas consideradas
+## Política de Autonomia
 
-## Tipos de Plano
-
-O projeto suporta 4 tipos de plano. O tipo é metadado que orienta o executor:
-
-| Tipo | Quando Usar |
-|---|---|
-| **Faseado** | Fluxo sequencial com dependências temporais |
-| **Por Domínio** | Módulos independentes evoluem separadamente |
-| **Árvore de Decisões** | Problema técnico aberto com múltiplos caminhos |
-| **Cenário-Based** | Feature user-facing com múltiplos fluxos de usuário |
-
-Consulte `docs/development/plan-types.md` para detalhes e templates.
-
-Todo plano deve declarar seu tipo no front matter ou cabeçalho.
+O projeto ganha autonomia por níveis (0 a 5). Nenhum agente deve assumir autonomia maior que a aprovada nos documentos do projeto. Atualmente: **Nível 2**.
