@@ -9,9 +9,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
@@ -27,10 +25,6 @@ func NewRepository(db db.DBTX) *Repository {
 
 // Create inserts a new task
 func (r *Repository) Create(task *Task) error {
-	if task.ID == "" {
-		task.ID = uuid.New().String()
-	}
-
 	acceptanceCriteria, err := json.Marshal(task.AcceptanceCriteria)
 	if err != nil {
 		return fmt.Errorf("failed to marshal acceptance criteria: %w", err)
@@ -85,8 +79,6 @@ func (r *Repository) List() ([]Task, error) {
 
 // Update updates a task
 func (r *Repository) Update(task *Task) error {
-	task.UpdatedAt = time.Now()
-
 	acceptanceCriteria, err := json.Marshal(task.AcceptanceCriteria)
 	if err != nil {
 		return fmt.Errorf("failed to marshal acceptance criteria: %w", err)

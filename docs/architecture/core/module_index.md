@@ -29,7 +29,7 @@
 ## Regras de Navegação para LLMs
 
 - Todo módulo deve ter no mínimo: `doc.go`, `README.md`, `models.go`, `repository.go`, `service.go`
-- **Regra de Isolamento (ADR-0030):** Módulos NUNCA importam outros módulos diretamente. Apenas `orchestrator/` e `bootstrap/` importam múltiplos módulos.
+- **Regra de Isolamento (ADR-0019):** Módulos NUNCA importam outros módulos diretamente. Apenas `orchestrator/` e `bootstrap/` importam múltiplos módulos.
 - Dependências cross-module são resolvidas via interfaces DI com adapters em `internal/bootstrap/services.go`
 - Helpers transacionais: `internal/core/db/` + `BeginTx/CommitTx/RollbackTx/EnsureRowsAffected/AcquireAdvisoryTxLock`
 - Validadores genéricos: `internal/core/validation/`

@@ -2,13 +2,13 @@
 
 **Status:** Accepted  
 **Data:** 2026-05-21  
-**Supersedes:** ADR-0022
+**Supersedes:** ADR-0015
 
 ---
 
 ## 1. Contexto
 
-A ADR-0022 introduziu uma Arquitetura de Módulos Verticais (Vertical Slice) com regras rigorosas:
+A ADR-0015 introduziu uma Arquitetura de Módulos Verticais (Vertical Slice) com regras rigorosas:
 - Cada módulo define seus próprios tipos em `models.go`
 - `internal/domain/` contém apenas infraestrutura (EventEnvelope, checkpoints)
 - Uma whitelist de 44 imports cross-module permitidos via DI
@@ -60,9 +60,9 @@ Simplificaremos a arquitetura para um **Modular Monolith** com regras mínimas:
 > **Pilar 3:** Apenas `internal/bootstrap/` e `internal/modules/orchestrator/` importam múltiplos módulos.  
 > **Pilar 4:** `repository.go` é CRUD puro — sem business logic, sem timestamps, sem deduplication.
 
-### 2.2 O que muda em relação à ADR-0022
+### 2.2 O que muda em relação à ADR-0015
 
-| Aspecto | ADR-0022 (Antigo) | ADR-0030 (Novo) |
+| Aspecto | ADR-0015 (Antigo) | ADR-0019 (Novo) |
 |---------|-------------------|-----------------|
 | `internal/domain/` | Apenas infraestrutura (EventEnvelope) | **Todos os entity types** (Task, Run, WorkUnit, etc.) |
 | Imports cross-module | 44 permitidos via whitelist | **Zero permitidos** |
@@ -137,7 +137,7 @@ func (r *Repository) GetByID(id string) (*domain.Task, error) { ... }
 
 NENHUM módulo em `internal/modules/X/` pode importar `internal/modules/Y/` (onde X ≠ Y).
 
-**ANTES (violando ADR-0030):**
+**ANTES (violando ADR-0019):**
 ```go
 // internal/modules/run/service.go
 import taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
@@ -145,7 +145,7 @@ import taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 func (s *Service) requireTaskByID(id string) (*taskmod.Task, error) { ... }
 ```
 
-**DEPOIS (correto ADR-0030):**
+**DEPOIS (correto ADR-0019):**
 ```go
 // internal/modules/run/service.go
 import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
@@ -225,7 +225,7 @@ Cada módulo deve ter:
 1. **`internal/domain/` vira um pacote grande:** ~30+ structs e enums. Isso é aceitável para um monolith; se o projeto crescer para microsserviços, `domain/` pode ser extraído como um módulo Go separado.
 2. **Mudança massiva de imports:** ~75 imports precisam ser atualizados. Isso é trabalho de uma task dedicada (T5).
 3. **`orchestrator` continua complexo:** Como único módulo que importa outros, ele concentra a complexidade de coordenação. Isso é intencional — melhor um módulo complexo do que 10 módulos com acoplamento escondido.
-4. **Perda de "Feature Cohesion":** A premissa da ADR-0022 (contexto isolado por feature) é parcialmente abandonada. Isso é aceitável porque a premissa não se materializou na prática — LLMs ainda precisavam ler múltiplos arquivos para entender um tipo.
+4. **Perda de "Feature Cohesion":** A premissa da ADR-0015 (contexto isolado por feature) é parcialmente abandonada. Isso é aceitável porque a premissa não se materializou na prática — LLMs ainda precisavam ler múltiplos arquivos para entender um tipo.
 
 ---
 
@@ -237,7 +237,7 @@ Cada módulo define seus próprios tipos. O `orchestrator` faz tradução entre 
 
 **Rejeitada:** Criaria um "Deus Orchestrator" com 100+ funções de tradução. Duplicação massiva de structs idênticos.
 
-### Alternativa B: Manter ADR-0022 e "Endurecer" Testes
+### Alternativa B: Manter ADR-0015 e "Endurecer" Testes
 
 Adicionar mais testes de comportamento (AST inspection) sem mudar a arquitetura.
 
@@ -254,8 +254,8 @@ Introduzir interfaces de porta, adapters, domain services, application services.
 ## 5. Plano de Migração
 
 ### Fase 1: Documentação (Task T1-T3)
-- Criar esta ADR-0030
-- Atualizar ADR-0022 (marcar como superseded)
+- Criar esta ADR-0019
+- Atualizar ADR-0015 (marcar como superseded)
 - Simplificar testes de arquitetura
 - Atualizar scripts e CI/CD
 
@@ -281,7 +281,7 @@ Introduzir interfaces de porta, adapters, domain services, application services.
 
 ## 6. Referências
 
-- ADR-0022 (superseded): Arquitetura de Módulos Verticais
+- ADR-0015 (superseded): Arquitetura de Módulos Verticais
 - `docs/audit/architecture-reliability-audit-2026-05-21.md`
 - `docs/agent/tasks/2026-05-21_architecture-test-suite-hardening/`
 - `docs/agent/tasks/2026-05-21_code-refactor-for-architecture-violations/`

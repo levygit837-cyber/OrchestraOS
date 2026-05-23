@@ -63,7 +63,7 @@ created → running → validating → completed
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
 - DI interface types: `task.Task` (for `TaskReader`), `workunit.WorkUnit` (for `WorkUnitReader`)
-  — see ADR-0026: types may be imported ONLY for DI interface return types.
+  — see ADR-0019: types may be imported ONLY for DI interface return types.
 
 Forbidden:
 - `internal/modules/*` services, repositories, or business logic imports

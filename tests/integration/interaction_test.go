@@ -185,7 +185,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 
 		// Update run to running
 		now := time.Now()
-		if err := runRepo.UpdateStatus(run.ID, runmod.StatusRunning, &now, nil, nil, nil); err != nil {
+		if err := runRepo.UpdateStatus(run.ID, runmod.StatusRunning, &now, nil, nil, nil, now); err != nil {
 			t.Fatalf("Failed to update run status: %v", err)
 		}
 
@@ -214,7 +214,7 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		// Complete run
 		result := runmod.ResultSucceeded
 		now = time.Now()
-		if err := runRepo.UpdateStatus(run.ID, runmod.StatusCompleted, nil, &now, &result, nil); err != nil {
+		if err := runRepo.UpdateStatus(run.ID, runmod.StatusCompleted, nil, &now, &result, nil, now); err != nil {
 			t.Fatalf("Failed to complete run: %v", err)
 		}
 
@@ -291,19 +291,22 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Create agent session
+		now := time.Now()
 		session := &agentsessionmod.AgentSession{
-			ID:      uuid.New().String(),
-			AgentID: "agent-test-001",
-			RunID:   run.ID,
-			Status:  agentsessionmod.StatusStarting,
+			ID:        uuid.New().String(),
+			AgentID:   "agent-test-001",
+			RunID:     run.ID,
+			Status:    agentsessionmod.StatusStarting,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		if err := sessionRepo.Create(session); err != nil {
 			t.Fatalf("Failed to create agent session: %v", err)
 		}
 
 		// Transition to running
-		now := time.Now()
-		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusRunning, &now, nil); err != nil {
+		now = time.Now()
+		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusRunning, &now, nil, now); err != nil {
 			t.Fatalf("Failed to update session to running: %v", err)
 		}
 
@@ -327,7 +330,7 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Transition to stopped
-		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusStopped, nil, nil); err != nil {
+		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusStopped, nil, nil, time.Now()); err != nil {
 			t.Fatalf("Failed to update session to stopped: %v", err)
 		}
 

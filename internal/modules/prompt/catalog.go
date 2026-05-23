@@ -2,17 +2,15 @@ package prompt
 
 import (
 	"crypto/sha256"
-	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/fs"
 	"sort"
 	"strings"
-)
 
-//go:embed catalog/manifest.json catalog/fragments
-var catalogFS embed.FS
+	"github.com/levygit837-cyber/OrchestraOS/configs/prompts"
+)
 
 type fragmentManifestEntry struct {
 	ID               string           `json:"id"`
@@ -38,11 +36,11 @@ type Catalog struct {
 }
 
 func LoadCatalog() (*Catalog, error) {
-	return loadCatalog(catalogFS)
+	return loadCatalog(prompts.FS)
 }
 
 func loadCatalog(source fs.FS) (*Catalog, error) {
-	raw, err := fs.ReadFile(source, "catalog/manifest.json")
+	raw, err := fs.ReadFile(source, "manifest.json")
 	if err != nil {
 		return nil, fmt.Errorf("read prompt fragment manifest: %w", err)
 	}
@@ -67,7 +65,7 @@ func loadCatalog(source fs.FS) (*Catalog, error) {
 		}
 		seen[key] = struct{}{}
 
-		bodyBytes, err := fs.ReadFile(source, "catalog/"+entry.BodyPath)
+		bodyBytes, err := fs.ReadFile(source, entry.BodyPath)
 		if err != nil {
 			return nil, fmt.Errorf("read prompt fragment %s: %w", entry.ID, err)
 		}

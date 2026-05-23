@@ -18,7 +18,7 @@
 // # What does NOT belong here
 // Entity structs (Task, WorkUnit, Run, Agent, AgentSession, etc.) and their
 // status enums live in their respective vertical modules under internal/modules/.
-// See ADR-0022 Section 4 (Pilar 1).
+// See ADR-0015 Section 4 (Pilar 1).
 //
 // # Dependencies
 //   - None (this is the innermost layer)

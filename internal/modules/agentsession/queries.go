@@ -3,7 +3,7 @@ package agentsession
 const (
 	QueryInsert = `
 		INSERT INTO agent_sessions (id, agent_id, run_id, task_id, work_unit_id, sandbox_id, connection_id, status, last_heartbeat_at, last_checkpoint_at, last_seen_event_id, recoverable_state, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id`
 
 	QueryGetByID = `

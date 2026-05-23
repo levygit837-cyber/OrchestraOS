@@ -12,10 +12,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/serialization"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // Dependencies holds all services required by the OrchestratorService.
@@ -26,11 +22,11 @@ type Dependencies struct {
 	RunService          RunLifecycleManager
 	AgentService        AgentManager
 	AgentSessionService SessionManager
-	PromptService       PromptPersistence
+	PromptService       PromptComposer
 	ReviewService       ReviewManager
 	TriggerService      TriggerEvaluator
 	WorkUnitLister      WorkUnitLister
-	RuntimeEventRelay   func(db *sql.DB) *runmod.RuntimeEventRelay
+	RuntimeEventRelay   EventRelay
 	NewFakeRuntime      func() Runtime
 	NewGeminiRuntime    func() Runtime
 }
@@ -168,7 +164,7 @@ func (s *Service) RunTask(ctx context.Context, taskID string, options RunTaskOpt
 }
 
 // executeWorkUnit executes a single work unit.
-func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit, task *taskmod.Task, options RunTaskOptions) (*WorkUnitExecutionResult, error) {
+func (s *Service) executeWorkUnit(ctx context.Context, wu *domain.WorkUnit, task *domain.Task, options RunTaskOptions) (*WorkUnitExecutionResult, error) {
 	result := &WorkUnitExecutionResult{
 		WorkUnitID: wu.ID,
 	}
@@ -266,19 +262,8 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 		return result, nil
 	}
 
-	// Compose prompt
-	toolset, err := promptmod.SelectToolset(wu.AssignedAgentProfile)
-	if err != nil {
-		if err := s.emitOrchestratorEvent(ctx, EventWorkUnitFailed, task.ID, wu.ID, result.RunID, map[string]interface{}{
-			"reason": "failed to select toolset",
-			"error":  err.Error(),
-		}); err != nil {
-			return result, err
-		}
-		result.Error = fmt.Sprintf("failed to select toolset: %v", err)
-		return result, nil
-	}
-	taskContext := promptmod.TaskContext{
+	// Prepare prompt (select toolset, compose, and persist)
+	preparedPrompt, err := s.deps.PromptService.PreparePrompt(ctx, domain.PromptComposeInput{
 		TaskID:             task.ID,
 		TaskTitle:          task.Title,
 		TaskDescription:    task.Description,
@@ -293,22 +278,7 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 		DependsOn:          wu.DependsOn,
 		AcceptanceCriteria: wu.AcceptanceCriteria,
 		ValidationPlan:     wu.ValidationPlan,
-		Toolset:            toolset,
-	}
-	composed, err := promptmod.Compose(taskContext)
-	if err != nil {
-		if err := s.emitOrchestratorEvent(ctx, EventWorkUnitFailed, task.ID, wu.ID, result.RunID, map[string]interface{}{
-			"reason": "failed to compose prompt",
-			"error":  err.Error(),
-		}); err != nil {
-			return result, err
-		}
-		result.Error = fmt.Sprintf("failed to compose prompt: %v", err)
-		return result, nil
-	}
-
-	// Persist prompt
-	preparedPrompt, err := s.deps.PromptService.PersistComposedPrompt(ctx, composed, promptmod.PersistMetadata{
+	}, domain.PersistMetadata{
 		RunID:          result.RunID,
 		WorkUnitID:     wu.ID,
 		TaskID:         task.ID,
@@ -372,8 +342,7 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 	}()
 
 	// Start event relay
-	relay := s.deps.RuntimeEventRelay(s.deps.DB)
-	finalStatus, relayErr := relay.Run(timeoutCtx, runtime, runmod.RelayConfig{
+	finalStatus, relayErr := s.deps.RuntimeEventRelay.Run(timeoutCtx, runtime, domain.RelayConfig{
 		SessionID:   sessionCreateResult.Value.ID,
 		RunID:       result.RunID,
 		RuntimeType: options.RuntimeType,
@@ -432,7 +401,7 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 	// Wait for goroutine to complete to prevent leaks
 	<-routineDone
 
-	result.Success = finalStatus == runmod.StatusCompleted
+	result.Success = finalStatus == domain.RunStatusCompleted
 
 	// Note: Review creation for validation gates is deferred to future iteration
 	// as WorkUnit does not currently have a ValidationGate field.
@@ -461,9 +430,9 @@ func (s *Service) executeWorkUnit(ctx context.Context, wu *workunitmod.WorkUnit,
 }
 
 // topologicalSort sorts work units respecting their dependencies.
-func (s *Service) topologicalSort(workUnits []workunitmod.WorkUnit) ([]workunitmod.WorkUnit, error) {
+func (s *Service) topologicalSort(workUnits []domain.WorkUnit) ([]domain.WorkUnit, error) {
 	// Build adjacency list and in-degree count
-	wuMap := make(map[string]*workunitmod.WorkUnit)
+	wuMap := make(map[string]*domain.WorkUnit)
 	inDegree := make(map[string]int)
 	adj := make(map[string][]string)
 
@@ -492,7 +461,7 @@ func (s *Service) topologicalSort(workUnits []workunitmod.WorkUnit) ([]workunitm
 		}
 	}
 
-	result := make([]workunitmod.WorkUnit, 0)
+	result := make([]domain.WorkUnit, 0)
 	for len(queue) > 0 {
 		currentID := queue[0]
 		queue = queue[1:]
@@ -514,7 +483,7 @@ func (s *Service) topologicalSort(workUnits []workunitmod.WorkUnit) ([]workunitm
 }
 
 // listWorkUnitsByGraph lists all work units for a task graph.
-func (s *Service) listWorkUnitsByGraph(ctx context.Context, graphID string) ([]workunitmod.WorkUnit, error) {
+func (s *Service) listWorkUnitsByGraph(ctx context.Context, graphID string) ([]domain.WorkUnit, error) {
 	return s.deps.WorkUnitLister.ListByTaskGraph(graphID)
 }
 

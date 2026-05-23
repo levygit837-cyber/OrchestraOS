@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
@@ -28,23 +27,23 @@ func NewRepository(db db.DBTX) *Repository {
 
 func (r *Repository) CreateOrVerifyFragment(fragment *PromptFragment) error {
 	appliesWhen := jsonOrEmptyObject(fragment.AppliesWhen)
-	requires, err := marshalStringList(fragment.Requires)
+	requires, err := json.Marshal(fragment.Requires)
 	if err != nil {
 		return fmt.Errorf("marshal fragment requires: %w", err)
 	}
-	conflictsWith, err := marshalStringList(fragment.ConflictsWith)
+	conflictsWith, err := json.Marshal(fragment.ConflictsWith)
 	if err != nil {
 		return fmt.Errorf("marshal fragment conflicts: %w", err)
 	}
-	allows, err := marshalStringList(fragment.Allows)
+	allows, err := json.Marshal(fragment.Allows)
 	if err != nil {
 		return fmt.Errorf("marshal fragment allows: %w", err)
 	}
-	denies, err := marshalStringList(fragment.Denies)
+	denies, err := json.Marshal(fragment.Denies)
 	if err != nil {
 		return fmt.Errorf("marshal fragment denies: %w", err)
 	}
-	approvalRequired, err := marshalStringList(fragment.ApprovalRequired)
+	approvalRequired, err := json.Marshal(fragment.ApprovalRequired)
 	if err != nil {
 		return fmt.Errorf("marshal fragment approval required: %w", err)
 	}
@@ -143,29 +142,11 @@ func (r *Repository) CreatePromptSnapshot(snapshot *PromptSnapshot) error {
 }
 
 func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *PromptSnapshot) error {
-	if snapshot.ID == "" {
-		snapshot.ID = uuid.New().String()
-	}
-	if snapshot.FirstUsedAt.IsZero() {
-		snapshot.FirstUsedAt = snapshot.CreatedAt
-	}
-	if snapshot.LastUsedAt.IsZero() {
-		snapshot.LastUsedAt = snapshot.CreatedAt
-	}
-
-	fragmentRefs := snapshot.FragmentRefs
-	if fragmentRefs == nil {
-		fragmentRefs = []PromptFragmentRef{}
-	}
-	fragmentRefsJSON, err := json.Marshal(fragmentRefs)
+	fragmentRefsJSON, err := json.Marshal(snapshot.FragmentRefs)
 	if err != nil {
 		return fmt.Errorf("marshal prompt snapshot fragment refs: %w", err)
 	}
-	assemblyOrder := snapshot.AssemblyOrder
-	if assemblyOrder == nil {
-		assemblyOrder = []string{}
-	}
-	assemblyOrderJSON, err := json.Marshal(assemblyOrder)
+	assemblyOrderJSON, err := json.Marshal(snapshot.AssemblyOrder)
 	if err != nil {
 		return fmt.Errorf("marshal prompt snapshot assembly order: %w", err)
 	}
@@ -255,15 +236,7 @@ func (r *Repository) scanPromptSnapshot(scanner interface {
 // ============================================================================
 
 func (r *Repository) CreateToolsetSnapshot(snapshot *ToolsetSnapshot) error {
-	if snapshot.ID == "" {
-		snapshot.ID = uuid.New().String()
-	}
-
-	tools := snapshot.Tools
-	if tools == nil {
-		tools = []ToolsetTool{}
-	}
-	toolsJSON, err := json.Marshal(tools)
+	toolsJSON, err := json.Marshal(snapshot.Tools)
 	if err != nil {
 		return fmt.Errorf("marshal toolset snapshot tools: %w", err)
 	}
@@ -326,11 +299,4 @@ func jsonOrEmptyObject(raw json.RawMessage) json.RawMessage {
 		return json.RawMessage(`{}`)
 	}
 	return raw
-}
-
-func marshalStringList(values []string) ([]byte, error) {
-	if values == nil {
-		values = []string{}
-	}
-	return json.Marshal(values)
 }

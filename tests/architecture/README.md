@@ -1,7 +1,7 @@
 # Architecture Tests
 
 This directory contains architectural guard tests that enforce the rules defined
-in [ADR-0030: Simplified Modular Architecture](../../docs/adr/0030-simplified-modular-architecture.md).
+in [ADR-0019: Simplified Modular Architecture](../../docs/adr/0019-simplified-modular-architecture.md).
 
 ## Test Suite
 
@@ -12,7 +12,7 @@ in [ADR-0030: Simplified Modular Architecture](../../docs/adr/0030-simplified-mo
 | `domain_import_integrity_test.go` | **Pilar 1** — Domain-centralized types | Verifies that all shared entity types are defined in `internal/domain/` and that modules import `internal/domain/` to use them. |
 | `code_anomalies_test.go` | **CODING_STANDARDS.md** | Detects anti-patterns: `panic()`, `fmt.Println`, inline SQL, ignored errors/values/tuples without documentation, and ignored errors in `defer` blocks. |
 | `service_decomposition_test.go` | **CODING_STANDARDS.md** | Verifies that `service_<sub>.go` only exists when `service.go` has > 300 lines. |
-| `cmd_bootstrap_di_test.go` | **ADR-0030** | Verifies that `cmd/` does not import modules directly (must use `internal/bootstrap/` for DI). |
+| `cmd_bootstrap_di_test.go` | **ADR-0019** | Verifies that `cmd/` does not import modules directly (must use `internal/bootstrap/` for DI). |
 
 ## Running the Tests
 

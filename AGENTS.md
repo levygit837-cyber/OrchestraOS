@@ -10,9 +10,9 @@ O OrchestraOS é um sistema de orquestração de agentes de IA. Ele transforma i
 - **Autonomia aprovada:** Nível 2 (IA implementa com revisão humana)
 - **Stack:** Go, Postgres, WebSocket, Docker, GitHub
 
-## Arquitetura (ADR-0030)
+## Arquitetura (ADR-0019)
 
-A arquitetura vigente é a **ADR-0030** (Arquitetura Modular Simplificada). Os 4 pilares são:
+A arquitetura vigente é a **ADR-0019** (Arquitetura Modular Simplificada). Os 4 pilares são:
 
 1. **`internal/domain/`** centraliza todos os entity types compartilhados (Task, Run, WorkUnit, Agent, etc.).
 2. **Módulos em `internal/modules/`** não importam outros módulos. Zero exceções.
@@ -42,7 +42,7 @@ internal/
 | Para... | Consulte |
 |---------|----------|
 | Entender o produto e visão | `docs/canvas/project-canvas.md` |
-| Decisões arquiteturais | `docs/adr/` (vigente: `0030-simplified-modular-architecture.md`) |
+| Decisões arquiteturais | `docs/adr/` (vigente: `0019-simplified-modular-architecture.md`) |
 | Regras de código, naming, erros, testes | `docs/development/CODING_STANDARDS.md` |
 | Fluxo de trabalho do agente | `docs/agent/PLAYBOOK.md` |
 | Tipos de plano | `docs/development/plan-types.md` |

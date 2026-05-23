@@ -1,6 +1,6 @@
 # Migração para Vertical Slice Architecture
 
-> **Nota histórica:** Este documento descreve a migração original para Vertical Slice (ADR-0022). A ADR-0022 foi posteriormente substituída pela **ADR-0030** (Arquitetura Modular Simplificada). Para a arquitetura vigente, consulte `docs/adr/0030-simplified-modular-architecture.md`.
+> **Nota histórica:** Este documento descreve a migração original para Vertical Slice (ADR-0015). A ADR-0015 foi posteriormente substituída pela **ADR-0019** (Arquitetura Modular Simplificada). Para a arquitetura vigente, consulte `docs/adr/0019-simplified-modular-architecture.md`.
 
 Este documento descreve a migração da arquitetura do OrchestraOS de uma arquitetura em camadas com `internal/services/` para uma arquitetura de **Módulos Verticais (Vertical Slice Architecture)** conforme ADR 0022.
 

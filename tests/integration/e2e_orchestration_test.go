@@ -15,7 +15,6 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
 	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
@@ -113,11 +112,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	toolset, err := promptmod.SelectToolset(wu.AssignedAgentProfile)
-	if err != nil {
-		t.Fatalf("Failed to select toolset: %v", err)
-	}
-	taskContext := promptmod.TaskContext{
+	preparedPrompt, err := promptService.PreparePrompt(ctx, domain.PromptComposeInput{
 		TaskID:             task.ID,
 		TaskTitle:          task.Title,
 		TaskDescription:    task.Description,
@@ -132,13 +127,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 		DependsOn:          wu.DependsOn,
 		AcceptanceCriteria: wu.AcceptanceCriteria,
 		ValidationPlan:     wu.ValidationPlan,
-		Toolset:            toolset,
-	}
-	composed, err := promptmod.Compose(taskContext)
-	if err != nil {
-		t.Fatalf("Failed to compose prompt: %v", err)
-	}
-	preparedPrompt, err := promptService.PersistComposedPrompt(ctx, composed, promptmod.PersistMetadata{
+	}, domain.PersistMetadata{
 		RunID:          run.ID,
 		WorkUnitID:     wu.ID,
 		TaskID:         task.ID,
@@ -146,7 +135,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 		AgentID:        agentID,
 	})
 	if err != nil {
-		t.Fatalf("Failed to persist prompt: %v", err)
+		t.Fatalf("Failed to prepare prompt: %v", err)
 	}
 
 	// 6. Start FakeRuntime
@@ -175,7 +164,7 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := runmod.RelayConfig{
+	relayConfig := domain.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,
@@ -186,8 +175,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Relay failed: %v", err)
 	}
-	if string(finalStatus) != string(runmod.StatusCompleted) {
-		t.Fatalf("Expected run status %s, got %s", runmod.StatusCompleted, finalStatus)
+	if string(finalStatus) != string(domain.RunStatusCompleted) {
+		t.Fatalf("Expected run status %s, got %s", domain.RunStatusCompleted, finalStatus)
 	}
 
 	// 8. Assertions
@@ -197,8 +186,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final run: %v", err)
 	}
-	if finalRun.Status != runmod.StatusCompleted {
-		t.Errorf("Expected run status %s, got %s", runmod.StatusCompleted, finalRun.Status)
+	if finalRun.Status != domain.RunStatusCompleted {
+		t.Errorf("Expected run status %s, got %s", domain.RunStatusCompleted, finalRun.Status)
 	}
 
 	// Work unit status
@@ -272,8 +261,8 @@ func TestE2EFakeRuntimeTaskToComplete(t *testing.T) {
 	if replayState == nil {
 		t.Fatal("Expected replay state to be non-nil")
 	}
-	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(runmod.StatusCompleted) {
-		t.Errorf("Expected replay run status %s, got %v", runmod.StatusCompleted, runStatus)
+	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(domain.RunStatusCompleted) {
+		t.Errorf("Expected replay run status %s, got %v", domain.RunStatusCompleted, runStatus)
 	}
 
 	t.Logf("E2E flow completed: task=%s run=%s session=%s events=%d", task.ID, run.ID, session.ID, len(events))
@@ -372,11 +361,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 5. Prepare prompt
-	toolset, err := promptmod.SelectToolset(wu.AssignedAgentProfile)
-	if err != nil {
-		t.Fatalf("Failed to select toolset: %v", err)
-	}
-	taskContext := promptmod.TaskContext{
+	preparedPrompt, err := promptService.PreparePrompt(ctx, domain.PromptComposeInput{
 		TaskID:             task.ID,
 		TaskTitle:          task.Title,
 		TaskDescription:    task.Description,
@@ -391,13 +376,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 		DependsOn:          wu.DependsOn,
 		AcceptanceCriteria: wu.AcceptanceCriteria,
 		ValidationPlan:     wu.ValidationPlan,
-		Toolset:            toolset,
-	}
-	composed, err := promptmod.Compose(taskContext)
-	if err != nil {
-		t.Fatalf("Failed to compose prompt: %v", err)
-	}
-	preparedPrompt, err := promptService.PersistComposedPrompt(ctx, composed, promptmod.PersistMetadata{
+	}, domain.PersistMetadata{
 		RunID:          run.ID,
 		WorkUnitID:     wu.ID,
 		TaskID:         task.ID,
@@ -405,7 +384,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 		AgentID:        agentID,
 	})
 	if err != nil {
-		t.Fatalf("Failed to persist prompt: %v", err)
+		t.Fatalf("Failed to prepare prompt: %v", err)
 	}
 
 	// 6. Start GeminiRuntime with an empty toolset to avoid blocking
@@ -435,7 +414,7 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	}
 
 	// 7. Run relay
-	relayConfig := runmod.RelayConfig{
+	relayConfig := domain.RelayConfig{
 		SessionID:   session.ID,
 		RunID:       run.ID,
 		RuntimeType: runtimeType,
@@ -449,8 +428,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Relay failed: %v", err)
 	}
-	if string(finalStatus) != string(runmod.StatusCompleted) {
-		t.Fatalf("Expected run status %s, got %s", runmod.StatusCompleted, finalStatus)
+	if string(finalStatus) != string(domain.RunStatusCompleted) {
+		t.Fatalf("Expected run status %s, got %s", domain.RunStatusCompleted, finalStatus)
 	}
 
 	// 8. Assertions
@@ -459,8 +438,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get final run: %v", err)
 	}
-	if finalRun.Status != runmod.StatusCompleted {
-		t.Errorf("Expected run status %s, got %s", runmod.StatusCompleted, finalRun.Status)
+	if finalRun.Status != domain.RunStatusCompleted {
+		t.Errorf("Expected run status %s, got %s", domain.RunStatusCompleted, finalRun.Status)
 	}
 
 	wuRepo := workunitmod.NewRepository(db)
@@ -530,8 +509,8 @@ func TestE2EGeminiRuntimeTaskToComplete(t *testing.T) {
 	if replayState == nil {
 		t.Fatal("Expected replay state to be non-nil")
 	}
-	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(runmod.StatusCompleted) {
-		t.Errorf("Expected replay run status %s, got %v", runmod.StatusCompleted, runStatus)
+	if runStatus, ok := replayState.RunStatuses[run.ID]; !ok || string(runStatus) != string(domain.RunStatusCompleted) {
+		t.Errorf("Expected replay run status %s, got %v", domain.RunStatusCompleted, runStatus)
 	}
 
 	t.Logf("Gemini E2E flow completed: task=%s run=%s session=%s events=%d", task.ID, run.ID, session.ID, len(events))

@@ -415,6 +415,6 @@ Antes de qualquer PR que toque no WSM:
 | ADR | Relação |
 |-----|---------|
 | ADR-0004 | WSM substitui worktree como mecanismo de sandbox; containers continuam válidos para isolamento de processo |
-| ADR-0022 | WSM será um módulo vertical em `internal/modules/workspace/` |
-| ADR-0023 | Orchestrator Inteligente usará WSM para spawnar e gerenciar workspaces |
-| ADR-0028 | WSM segue padrões de nomenclatura — nenhum `helpers.go` ou `utils.go` |
+| ADR-0015 | WSM será um módulo vertical em `internal/modules/workspace/` |
+| ADR-0016 | Orchestrator Inteligente usará WSM para spawnar e gerenciar workspaces |
+| ADR-0017 | WSM segue padrões de nomenclatura — nenhum `helpers.go` ou `utils.go` |

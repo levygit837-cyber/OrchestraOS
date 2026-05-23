@@ -2,7 +2,7 @@
 
 > Este documento descreve a arquitetura do **Workspace Manager**, componente responsável por permitir que múltiplos Agentes de IA trabalhem paralelamente na mesma codebase com isolamento, rastreabilidade e controle de merge.
 >
-> Para a decisão arquitetural que aprovou esta solução, consulte [ADR-0029: Workspace Manager Nativo para Paralelização de Agentes](/docs/adr/0029-workspace-manager-for-agents.md).
+> Para a decisão arquitetural que aprovou esta solução, consulte [ADR-0018: Workspace Manager Nativo para Paralelização de Agentes](/docs/adr/0018-workspace-manager-for-agents.md).
 
 ---
 

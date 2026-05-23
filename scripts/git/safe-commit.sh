@@ -4,7 +4,7 @@ set -euo pipefail
 # safe-commit.sh — wrapper that validates code, creates a feature branch, and commits.
 # Usage: ./scripts/git/safe-commit.sh "commit message"
 #
-# This script ensures you never commit to main accidentally.
+# This script ensures you never commit to main or master accidentally.
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 \"commit message\""
@@ -14,8 +14,8 @@ fi
 MSG="$1"
 CURRENT_BRANCH=$(git branch --show-current)
 
-if [ "$CURRENT_BRANCH" = "main" ]; then
-    echo "❌ You are on 'main'. Creating a feature branch instead..."
+if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
+    echo "❌ You are on '${CURRENT_BRANCH}'. Creating a feature branch instead..."
     TIMESTAMP=$(date +%s)
     BRANCH_NAME="auto/change-${TIMESTAMP}"
     git checkout -b "$BRANCH_NAME"

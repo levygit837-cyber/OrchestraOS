@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document codifies the rules that every contributor (human or LLM) must follow when modifying the codebase. The architecture follows **ADR-0030** (Arquitetura Modular Simplificada). Violations caught by automated tools (`golangci-lint`, architecture tests) will block CI. Violations not caught by tools should still be treated as blockers during review.
+This document codifies the rules that every contributor (human or LLM) must follow when modifying the codebase. The architecture follows **ADR-0019** (Arquitetura Modular Simplificada). Violations caught by automated tools (`golangci-lint`, architecture tests) will block CI. Violations not caught by tools should still be treated as blockers during review.
 
 ---
 
@@ -12,17 +12,17 @@ Every module under `internal/modules/` MUST contain:
 
 1. `doc.go` — package documentation and context briefing
 2. `README.md` — operational map, responsibilities, file map, allowed dependencies
-3. `models.go` — local type aliases to `internal/domain/` types and module-specific constants
-4. `repository.go` — pure CRUD, no business logic (see Repository Rules below)
+3. `models.go` — local module types (DTOs, input/output structs). **Shared entity types belong to `internal/domain/`**
+4. `repository.go` — pure CRUD, no business logic, no timestamps, no deduplication (see Repository Rules below)
 5. `service.go` — domain logic, state transitions, event emission
 
-Optional files (include when needed):
+### Optional Files (create only when needed)
 
-- `CONTRACTS.md` — invariants, state machine, boundary rules
-- `queries.go` — SQL constants (recommended when there are many queries)
-- `validation.go` — input validation rules
-- `contract.go` — gateway for README.md/CONTRACTS.md
-- `events.go` — event types and payloads
+- `queries.go` — SQL constants only (omit if the module has no DB table)
+- `contract.go` — gateway to README.md/CONTRACTS.md, module rules for architecture tests
+- `CONTRACTS.md` — invariants, state machine, boundary rules, error rules
+- `events.go` — event types and payloads emitted by this module
+- `validation.go` — syntactic input validation rules
 - `fetch.go` — `RequireByID` and DI query helpers
 - `service_<verb>.go` — decomposition of `service.go` when > 300 lines
 
@@ -30,11 +30,18 @@ Optional files (include when needed):
 
 - `helpers.go` or `utils.go` — move reusable code to `internal/core/`
 - Inline SQL strings outside `queries.go`
-- Business logic inside `repository.go` (including `time.Now()`, status branching, deduplication)
+- Business logic inside `repository.go` (including `time.Now()`, status branching, deduplication, `ON CONFLICT`)
 - Direct mutation of another module's tables
-- Calling another module's `Service` methods — use DI interfaces or `core/transition` helpers (only `orchestrator/` and `bootstrap/` may import multiple modules per ADR-0030)
+- Calling another module's `Service` methods — use DI interfaces or `core/transition` helpers (only `orchestrator/` and `bootstrap/` may import multiple modules per ADR-0019)
 - `panic()` — always return `apperrors.Error`
 - `fmt.Println` / `fmt.Printf` — use structured logging or return errors
+
+### Cross-Module Imports
+
+- **Zero cross-module imports** in `internal/modules/*` except `internal/modules/orchestrator/`.
+- `orchestrator/` is the **only** module allowed to import other modules for coordination.
+- All shared entity types (`Task`, `Run`, `WorkUnit`, `Agent`, etc.) live in `internal/domain/`.
+- Modules import `internal/domain/` for shared types, never another module's `models.go`.
 
 ---
 
@@ -58,7 +65,7 @@ Optional files (include when needed):
 
 ---
 
-## Repository Rules (ADR-0030 Pilar 4)
+## Repository Rules (ADR-0019 Pilar 4)
 
 `repository.go` is CRUD only. It MUST NOT contain:
 
@@ -106,9 +113,10 @@ Optional files (include when needed):
 ## Adding a New Module
 
 1. Run `./scripts/scaffold/new-module.sh <name>`.
-2. Fill in `README.md` and `CONTRACTS.md`.
-3. Implement `models.go`, `queries.go`, `repository.go`, `service.go`.
-4. Add the service factory to `internal/bootstrap/services.go`.
-5. Run `go test ./internal/modules/<name>`.
-6. Run `./scripts/go/verify-contracts.sh`.
-7. Run `./scripts/go/lint.sh`.
+2. Run `./scripts/scaffold/new-module.sh <name> --with-optional` if you also need `queries.go`, `contract.go`, `CONTRACTS.md`, `events.go`, and `validation.go`.
+3. Fill in `README.md`.
+4. Implement `models.go`, `repository.go`, `service.go`.
+5. Add the service factory to `internal/bootstrap/services.go`.
+6. Run `go test ./internal/modules/<name>`.
+7. Run `./scripts/go/verify-contracts.sh`.
+8. Run `./scripts/go/lint.sh`.

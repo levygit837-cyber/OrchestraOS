@@ -91,6 +91,6 @@ Um sistema operacional de projeto onde agentes entendem contexto, propõem próx
 
 **Foco imediato (Fase 4):** Integrar os componentes existentes em um fluxo end-to-end funcional. O sistema já possui Event Store, Task Graph, Prompt Composer e Runtimes isolados, mas eles não se comunicam. A próxima fronteira é fazer o caminho Task → Graph → Run → AgentSession → Runtime → Complete funcionar de forma automatizada, com relay de eventos, testes E2E e depreciação do Commander legado.
 
-**Depois disso (Fases 5-12):** Orquestração automatizada (OrchestratorService), sandbox com Workspace Manager (WSM), policy engine, comunicação em tempo real (WebSocket), runtime real (Codex/CLI), review/merge gate, GitHub integration e memória recursiva. A migração para a arquitetura modular (ADR-0030) já foi realizada.
+**Depois disso (Fases 5-12):** Orquestração automatizada (OrchestratorService), sandbox com Workspace Manager (WSM), policy engine, comunicação em tempo real (WebSocket), runtime real (Codex/CLI), review/merge gate, GitHub integration e memória recursiva. A migração para a arquitetura modular (ADR-0019) já foi realizada.
 
 O MVP completo será validado quando uma task puder ser criada pela CLI, decomposta em work units, executada em sandbox com agente, revisada e mergeada, tudo com trilha de auditoria persistida.

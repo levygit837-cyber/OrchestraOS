@@ -9,7 +9,7 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 - Fonte de verdade: este repositório
 - Comunicação operacional sugerida: CLI + GitHub
 - Execução técnica sugerida: Codex + GitHub + worktrees + automações futuras
-- Arquitetura: Arquitetura Modular Simplificada (ADR-0030) com Orchestrator central e agentes isolados
+- Arquitetura: Arquitetura Modular Simplificada (ADR-0019) com Orchestrator central e agentes isolados
 
 ## Documentos Principais
 
@@ -57,7 +57,7 @@ Projeto inicial para construir um sistema em que ideias, decisões, execução d
 ## Estrutura do Repositório
 
 - `cmd/orchestraos/`: entrada da CLI local.
-- `internal/domain/`: todos os entity types compartilhados (ADR-0030 Pilar 1).
+- `internal/domain/`: todos os entity types compartilhados (ADR-0019 Pilar 1).
 - `internal/modules/`: módulos autônomos (agent, agentsession, orchestrator, prompt, review, run, task, taskgraph, trigger, workunit).
 - `internal/core/`: infraestrutura compartilhada (apperrors, db, eventstore, statemachine, transition, validation).
 - `internal/bootstrap/`: injeção de dependências e wiring de serviços.

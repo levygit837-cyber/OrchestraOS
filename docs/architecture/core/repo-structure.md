@@ -1,10 +1,10 @@
 # Estrutura do Repositorio
 
-Este documento define a estrutura atual do repositório do OrchestraOS, refletindo a **Arquitetura Modular Simplificada** conforme ADR-0030.
+Este documento define a estrutura atual do repositório do OrchestraOS, refletindo a **Arquitetura Modular Simplificada** conforme ADR-0019.
 
 ## Decisao
 
-O repositório adota uma **Arquitetura Modular Simplificada** (ADR-0030) para otimizar o sistema para operação por agentes de IA (LLMs), com regras mínimas e verificáveis.
+O repositório adota uma **Arquitetura Modular Simplificada** (ADR-0019) para otimizar o sistema para operação por agentes de IA (LLMs), com regras mínimas e verificáveis.
 
 ```text
 cmd/orchestraos/
@@ -73,13 +73,13 @@ Componentes compartilhados usados por todos os módulos verticais. Não contém 
 - `validation/`: Validadores genéricos (UUID, texto, priority, risk, runtime)
 
 ### internal/domain/
-Todos os entity types compartilhados entre módulos (conforme ADR-0030 Pilar 1). Contém structs como Task, Run, WorkUnit, Agent, AgentSession, TaskGraph, Trigger, Review, Prompt, além de checkpoint types e event payloads.
+Todos os entity types compartilhados entre módulos (conforme ADR-0019 Pilar 1). Contém structs como Task, Run, WorkUnit, Agent, AgentSession, TaskGraph, Trigger, Review, Prompt, além de checkpoint types e event payloads.
 
 ### internal/migrations/
 Migrations do banco de dados usando goose.
 
 ### internal/modules/
-**Módulos autônomos** conforme ADR-0030. Cada módulo representa uma entidade de domínio e contém sua lógica de negócio, repositório e serviço.
+**Módulos autônomos** conforme ADR-0019. Cada módulo representa uma entidade de domínio e contém sua lógica de negócio, repositório e serviço.
 
 - `agent/`: Agent entities, Runtimes (Fake, Gemini, Codex), GeminiPlanner
 - `agentsession/`: Ciclo de vida de sessões de agente, heartbeat, checkpoint, timeout
@@ -92,7 +92,7 @@ Migrations do banco de dados usando goose.
 - `trigger/`: Detecção de anomalias (stalls, loops)
 - `workunit/`: Work units, dependências, ownership, paths
 
-**Regra de Isolamento (ADR-0030 Pilar 2):** Módulos NUNCA importam outros módulos diretamente. Apenas `orchestrator/` e `bootstrap/` podem importar múltiplos módulos. Dependências cross-module são resolvidas via interfaces DI com adapters em `internal/bootstrap/services.go`.
+**Regra de Isolamento (ADR-0019 Pilar 2):** Módulos NUNCA importam outros módulos diretamente. Apenas `orchestrator/` e `bootstrap/` podem importar múltiplos módulos. Dependências cross-module são resolvidas via interfaces DI com adapters em `internal/bootstrap/services.go`.
 
 ### contracts/
 Contratos JSON versionados como artefatos independentes.
@@ -115,15 +115,15 @@ Fonte de verdade para arquitetura, canvas, ADRs, contratos narrativos e operaç�
 
 ## Regras
 
-- **Isolamento de Módulos (ADR-0030):** Módulos não se importam diretamente. Apenas `orchestrator/` e `bootstrap/` importam múltiplos módulos.
+- **Isolamento de Módulos (ADR-0019):** Módulos não se importam diretamente. Apenas `orchestrator/` e `bootstrap/` importam múltiplos módulos.
 - **O dominio (internal/domain/) não deve depender de banco, WebSocket, GitHub, Docker ou CLI.**
 - JSON Schemas são contratos de borda; tipos Go são o modelo interno.
 - Schemas devem rejeitar campos desconhecidos por padrão.
 - Novas dependências só devem entrar quando a validação com biblioteca padrão não for suficiente.
 - Mudanças arquiteturais relevantes continuam exigindo ADR.
 - Mudanças de contrato devem atualizar schemas JSON correspondentes.
-- Cada módulo deve ter no mínimo: `doc.go`, `README.md`, `models.go`, `repository.go`, `service.go`. Arquivos como `queries.go`, `validation.go`, `contract.go` e `CONTRACTS.md` são opcionais (ADR-0030).
-- `repository.go` é CRUD puro: sem `time.Now()`, sem lógica de status, sem deduplication (ADR-0030 Pilar 4).
+- Cada módulo deve ter no mínimo: `doc.go`, `README.md`, `models.go`, `repository.go`, `service.go`. Arquivos como `queries.go`, `validation.go`, `contract.go` e `CONTRACTS.md` são opcionais (ADR-0019).
+- `repository.go` é CRUD puro: sem `time.Now()`, sem lógica de status, sem deduplication (ADR-0019 Pilar 4).
 
 ## Escopo Atual
 
@@ -142,7 +142,7 @@ O código atual implementa os seguintes módulos verticais:
 
 ## Referências
 
-- ADR-0030: Arquitetura Modular Simplificada (vigente)
-- ADR-0022: LLM-Optimized Module Architecture (superseded by ADR-0030)
+- ADR-0019: Arquitetura Modular Simplificada (vigente)
+- ADR-0015: LLM-Optimized Module Architecture (superseded by ADR-0019)
 - docs/architecture/core/module_index.md
 - docs/development/CODING_STANDARDS.md

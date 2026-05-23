@@ -288,6 +288,7 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	repo := NewRepository(tx)
 	results := make([]*transition.OperationResult[*WorkUnit], 0, len(inputs))
 	for _, input := range inputs {
+		now := time.Now().UTC()
 		wu := &WorkUnit{
 			ID:                   input.ID,
 			TaskID:               input.TaskID,
@@ -301,6 +302,8 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 			AcceptanceCriteria:   input.AcceptanceCriteria,
 			ValidationPlan:       input.ValidationPlan,
 			DependsOn:            input.DependsOn,
+			CreatedAt:            now,
+			UpdatedAt:            now,
 		}
 		if err := repo.Create(wu); err != nil {
 			return nil, apperrors.Wrap(apperrors.CodePersistence, "work_unit_service.create_projection", err)

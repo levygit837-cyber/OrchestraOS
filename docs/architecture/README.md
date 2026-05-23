@@ -1,6 +1,6 @@
 # Arquitetura do OrchestraOS
 
-Este documento registra a arquitetura do OrchestraOS, refletindo a **Arquitetura Modular Simplificada** conforme ADR-0030.
+Este documento registra a arquitetura do OrchestraOS, refletindo a **Arquitetura Modular Simplificada** conforme ADR-0019.
 
 ## Contexto
 
@@ -8,9 +8,9 @@ O OrchestraOS é um sistema de orquestração de agentes capaz de executar múlt
 
 O produto é local-first para desenvolvimento, com desenho pronto para rodar em servidor. A interface inicial é CLI fina, com GitHub como superfície externa principal. O primeiro runtime de agente é Codex/CLI em sandbox.
 
-## Arquitetura Modular Simplificada (ADR-0030)
+## Arquitetura Modular Simplificada (ADR-0019)
 
-O OrchestraOS adota uma **Arquitetura Modular Simplificada** conforme ADR-0030, que substituiu a ADR-0022 (Vertical Slice). A arquitetura é organizada em 4 pilares:
+O OrchestraOS adota uma **Arquitetura Modular Simplificada** conforme ADR-0019, que substituiu a ADR-0015 (Vertical Slice). A arquitetura é organizada em 4 pilares:
 
 ### Os 4 Pilares
 
@@ -136,9 +136,9 @@ flowchart TD
 - [ADR 0014: Persistencia M0, CLI minima e testes](../adr/0014-m0-cli-persistence-and-integration-tests.md)
 - [ADR 0015: TUI como interface local primaria](../adr/0015-tui-as-primary-local-interface.md)
 - [ADR 0016: State Machine event-sourced](../adr/0016-event-sourced-state-machine.md)
-- [ADR 0022: LLM-Optimized Module Architecture (superseded)](../adr/0022-vertical-module-architecture.md)
-- [ADR 0023: Hybrid Intelligent Orchestrator Architecture](../adr/0023-hybrid-intelligent-orchestrator.md)
-- [ADR 0030: Arquitetura Modular Simplificada (vigente)](../adr/0030-simplified-modular-architecture.md)
+- [ADR 0015: LLM-Optimized Module Architecture (superseded)](../adr/0015-vertical-module-architecture.md)
+- [ADR 0016: Hybrid Intelligent Orchestrator Architecture](../adr/0016-hybrid-intelligent-orchestrator.md)
+- [ADR 0019: Arquitetura Modular Simplificada (vigente)](../adr/0019-simplified-modular-architecture.md)
 
 ## Referencias Tecnicas
 

@@ -6,7 +6,7 @@ import _ "embed"
 // GLOBAL RULES — apply to ALL modules in internal/modules/*
 // ============================================================================
 //   1. NEVER import internal/modules/* directly.
-//   2. NEVER import internal/domain for entity structs (ADR-0022).
+//   2. NEVER import internal/domain for entity structs (ADR-0019).
 //   3. NEVER write SQL strings outside queries.go.
 //   4. NEVER call panic() — always return apperrors.Error.
 //   5. NEVER put business logic inside repository.go.

@@ -1,6 +1,6 @@
 # Integração de Runtime com Serviços de Domínio
 
-> **Migrado de ADR 0019 em 2026-05-17.** Este documento descreve o padrão de integração entre runtimes de agente e serviços de domínio. Não é uma decisão arquitetural, mas uma especificação de implementação derivada das ADRs 0011, 0016, 0020 e 0030.
+> **Migrado de ADR 0019 em 2026-05-17.** Este documento descreve o padrão de integração entre runtimes de agente e serviços de domínio. Não é uma decisão arquitetural, mas uma especificação de implementação derivada das ADRs 0007, 0011, 0014 e 0019.
 
 ---
 
@@ -64,7 +64,7 @@ Esse comportamento já existe em `TaskGraphService.buildPlan()` e deve ser prese
 
 ## Especificação: Unificação do Commander com Domain Services
 
-O antigo pacote `internal/core/coordination/` foi removido (ADR-0028). Helpers cross-module agora residem em `internal/core/transition/`. O antigo `Commander` foi removido quando os serviços de domínio passaram a ser a fronteira obrigatória para transições de estado (ADR 0020). Serviços de domínio em `internal/modules/*/service.go` agora implementam:
+O antigo pacote `internal/core/coordination/` foi removido (ADR-0017). Helpers cross-module agora residem em `internal/core/transition/`. O antigo `Commander` foi removido quando os serviços de domínio passaram a ser a fronteira obrigatória para transições de estado (ADR 0014). Serviços de domínio em `internal/modules/*/service.go` agora implementam:
 
 - idempotência por `event_id`;
 - retry com backoff;
@@ -89,7 +89,7 @@ Transições de estado devem usar exclusivamente os serviços de domínio nos m�
 ## Referências
 
 - ADR 0007 — Ciclo Operacional do Agente (Prompts, Ledger, Checkpoints)
-- ADR 0013 — Fundação Técnica M0
-- ADR 0016 — State Machine Event-Sourced
-- ADR 0020 — Serviços de Orquestração
-- ADR 0022 — Arquitetura de Módulos Verticais
+- ADR 0010 — Fundação Técnica M0
+- ADR 0011 — State Machine Event-Sourced
+- ADR 0014 — Serviços de Orquestração
+- ADR 0015 — Arquitetura de Módulos Verticais

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
@@ -27,12 +26,6 @@ func NewRepository(db db.DBTX) *Repository {
 
 // Create inserts a new work unit
 func (r *Repository) Create(wu *WorkUnit) error {
-	if wu.ID == "" {
-		wu.ID = uuid.New().String()
-	}
-
-	now := time.Now()
-
 	ownedPaths, err := json.Marshal(wu.OwnedPaths)
 	if err != nil {
 		return fmt.Errorf("failed to marshal owned paths: %w", err)
@@ -72,8 +65,8 @@ func (r *Repository) Create(wu *WorkUnit) error {
 		acceptanceCriteria,
 		validationPlan,
 		dependsOn,
-		now,
-		now,
+		wu.CreatedAt,
+		wu.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create work unit: %w", err)
@@ -142,8 +135,6 @@ func (r *Repository) scanWorkUnit(scanner interface {
 }) (*WorkUnit, error) {
 	var wu WorkUnit
 	var ownedPathsJSON, readPathsJSON, acceptanceCriteriaJSON, validationPlanJSON, dependsOnJSON []byte
-	var createdAt, updatedAt time.Time
-
 	err := scanner.Scan(
 		&wu.ID,
 		&wu.TaskID,
@@ -157,8 +148,8 @@ func (r *Repository) scanWorkUnit(scanner interface {
 		&acceptanceCriteriaJSON,
 		&validationPlanJSON,
 		&dependsOnJSON,
-		&createdAt,
-		&updatedAt,
+		&wu.CreatedAt,
+		&wu.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
