@@ -218,12 +218,14 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *dom
 			MetadataHash:     fragment.MetadataHash,
 			Body:             fragment.Body,
 			AppliesWhen:      appliesWhen,
-			Requires:         fragment.Requires,
-			ConflictsWith:    fragment.ConflictsWith,
-			Allows:           fragment.Allows,
-			Denies:           fragment.Denies,
-			ApprovalRequired: fragment.ApprovalRequired,
+			Requires:         nonNilStrings(fragment.Requires),
+			ConflictsWith:    nonNilStrings(fragment.ConflictsWith),
+			Allows:           nonNilStrings(fragment.Allows),
+			Denies:           nonNilStrings(fragment.Denies),
+			ApprovalRequired: nonNilStrings(fragment.ApprovalRequired),
 			AutonomyLevel:    fragment.AutonomyLevel,
+			CreatedAt:        time.Now().UTC(),
+			UpdatedAt:        time.Now().UTC(),
 		}
 		existing, err := repo.GetFragment(localFragment.ID, localFragment.Version)
 		if err != nil {
@@ -258,6 +260,7 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *dom
 			Title:        ref.Title,
 		})
 	}
+	now := time.Now().UTC()
 	promptSnapshot := &PromptSnapshot{
 		ID:                 valueOrNewUUID(metadata.PromptSnapshotID),
 		RunID:              metadata.RunID,
@@ -274,7 +277,9 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *dom
 		FragmentRefs:       fragmentRefs,
 		AssemblyOrder:      composed.AssemblyOrder,
 		VariablesApplied:   variablesApplied,
-		CreatedAt:          time.Now().UTC(),
+		FirstUsedAt:        now,
+		LastUsedAt:         now,
+		CreatedAt:          now,
 	}
 	if err := repo.CreateOrReferencePromptSnapshot(promptSnapshot); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "prompt_service.create_prompt_snapshot", err)
@@ -441,4 +446,11 @@ func valueOrNewUUID(value string) string {
 		return value
 	}
 	return uuid.New().String()
+}
+
+func nonNilStrings(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
