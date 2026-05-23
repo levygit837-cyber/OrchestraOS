@@ -2,12 +2,12 @@ package runtime
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
-// Config holds provider configuration for LLM runtimes.
 type Config struct {
 	Provider    string
 	Model       string
@@ -18,7 +18,6 @@ type Config struct {
 	Timeout     time.Duration
 }
 
-// Prompt represents the structured input sent to an LLM provider.
 type Prompt struct {
 	SystemMessage string
 	UserMessage   string
@@ -26,7 +25,6 @@ type Prompt struct {
 	TaskID        string
 }
 
-// Result holds the outcome of a work unit execution.
 type Result struct {
 	Status        domain.RunResult
 	Output        string
@@ -37,7 +35,61 @@ type Result struct {
 	Latency       time.Duration
 }
 
-// Runtime executes a single work unit and returns the result.
+type StreamChunk struct {
+	Delta         string
+	ThinkingDelta string
+	TokensUsed    int
+	IsThinking    bool
+	IsFinal       bool
+	Provider      string
+	Model         string
+}
+
 type Runtime interface {
 	Execute(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (*Result, error)
+}
+
+type StreamRuntime interface {
+	Runtime
+	ExecuteStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (<-chan StreamChunk, <-chan error)
+}
+
+type resolvedConfig struct {
+	apiKey, model, endpoint string
+	maxTok                  int
+	temp                    float64
+	client                  *http.Client
+}
+
+func resolveConfig(cfg Config, defModel, defEndpoint string, defTok int, defTemp float64, defTimeout time.Duration) resolvedConfig {
+	timeout := cfg.Timeout
+	if timeout == 0 {
+		timeout = defTimeout
+	}
+	return resolvedConfig{
+		apiKey: cfg.APIKey, model: strOr(cfg.Model, defModel),
+		endpoint: strOr(cfg.BaseURL, defEndpoint), maxTok: intOr(cfg.MaxTokens, defTok),
+		temp: floatOr(cfg.Temperature, defTemp), client: &http.Client{Timeout: timeout},
+	}
+}
+
+func strOr(v, d string) string {
+	if v != "" {
+		return v
+	}
+	return d
+}
+
+func intOr(v, d int) int {
+	if v != 0 {
+		return v
+	}
+	return d
+}
+
+func floatOr(v, d float64) float64 {
+	if v != 0 {
+		return v
+	}
+	return d
 }
