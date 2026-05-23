@@ -208,7 +208,7 @@ func TestNoGlobalState(t *testing.T) {
 
 	mutableTypes := map[string]bool{
 		"map":       true,
-		"chan":       true,
+		"chan":      true,
 		"sync.":     true,
 		"[]":        true,
 		"*":         true,
