@@ -79,6 +79,7 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 		reviewerAgentID = &input.ReviewerAgentID
 	}
 
+	now := time.Now().UTC()
 	review := &Review{
 		ID:              input.ID,
 		RunID:           runID,
@@ -90,6 +91,8 @@ func (s *ReviewService) Create(ctx context.Context, input CreateReviewInput) (*t
 		Status:          StatusPending,
 		EvidenceRefs:    input.EvidenceRefs,
 		CriteriaChecked: input.CriteriaChecked,
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
 
 	tx, err := dbcore.BeginTx(ctx, s.db, "review_service.begin_create")
@@ -189,6 +192,7 @@ func (s *ReviewService) Start(ctx context.Context, reviewID string, input StartR
 	}
 
 	review.Status = StatusInProgress
+	review.UpdatedAt = time.Now().UTC()
 	if err := NewRepository(tx).UpdateStatus(review); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.update_start", err)
 	}
@@ -255,6 +259,7 @@ func (s *ReviewService) SubmitVerdict(ctx context.Context, reviewID string, inpu
 	review.EvidenceRefs = input.EvidenceRefs
 	review.CriteriaChecked = input.CriteriaChecked
 	review.CompletedAt = &now
+	review.UpdatedAt = now
 
 	if err := NewRepository(tx).UpdateStatus(review); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "review_service.update_verdict", err)

@@ -5,15 +5,6 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
-	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
-	reviewmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/review"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
-	triggermod "github.com/levygit837-cyber/OrchestraOS/internal/modules/trigger"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 type RunTaskOptions struct {
@@ -45,8 +36,8 @@ type DecomposeInput struct {
 }
 
 type DecomposeResult struct {
-	Graph     *taskgraphmod.TaskGraph
-	WorkUnits []workunitmod.WorkUnit
+	Graph     *domain.TaskGraph
+	WorkUnits []domain.WorkUnit
 }
 
 type CreateRunInput struct {
@@ -67,8 +58,8 @@ type PreparedPrompt struct {
 	CombinedPrompt  string
 	PromptHash      string
 	Toolset         []string
-	PromptSnapshot  *promptmod.PromptSnapshot
-	ToolsetSnapshot *promptmod.ToolsetSnapshot
+	PromptSnapshot  *domain.PromptSnapshot
+	ToolsetSnapshot *domain.ToolsetSnapshot
 }
 
 type Runtime interface {
@@ -104,43 +95,47 @@ type RuntimeStatus struct {
 }
 
 type TaskServiceReader interface {
-	GetByID(ctx context.Context, id string) (*taskmod.Task, error)
-	Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error)
-	Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error)
+	GetByID(ctx context.Context, id string) (*domain.Task, error)
+	Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error)
+	Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error)
 }
 
 type TaskGraphManager interface {
-	GetActiveByTask(taskID string) (*taskgraphmod.TaskGraph, error)
+	GetActiveByTask(taskID string) (*domain.TaskGraph, error)
 	Decompose(ctx context.Context, input DecomposeInput) (*DecomposeResult, error)
 }
 
 type RunLifecycleManager interface {
-	Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*runmod.Run], error)
-	Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error)
+	Create(ctx context.Context, input CreateRunInput) (*transition.OperationResult[*domain.Run], error)
+	Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
 }
 
 type AgentManager interface {
-	FindOrCreate(ctx context.Context, profile string, runtimeType agentmod.RuntimeType) (*agentmod.Agent, error)
+	FindOrCreate(ctx context.Context, profile string, runtimeType domain.AgentRuntimeType) (*domain.Agent, error)
 }
 
 type SessionManager interface {
-	Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
-	Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
-	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
+	Create(ctx context.Context, input CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
 }
 
-type PromptPersistence interface {
-	PersistComposedPrompt(ctx context.Context, composed *promptmod.ComposedPrompt, metadata promptmod.PersistMetadata) (*promptmod.PreparedRunPrompt, error)
+type PromptComposer interface {
+	PreparePrompt(ctx context.Context, input domain.PromptComposeInput, metadata domain.PersistMetadata) (*domain.PreparedRunPrompt, error)
 }
 
 type ReviewManager interface {
-	Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType reviewmod.ValidationGate) (*transition.OperationResult[*reviewmod.Review], error)
+	Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType domain.ReviewValidationGate) (*transition.OperationResult[*domain.Review], error)
 }
 
 type TriggerEvaluator interface {
-	EvaluateRun(ctx context.Context, runID string) ([]*triggermod.Trigger, error)
+	EvaluateRun(ctx context.Context, runID string) ([]*domain.Trigger, error)
 }
 
 type WorkUnitLister interface {
-	ListByTaskGraph(graphID string) ([]workunitmod.WorkUnit, error)
+	ListByTaskGraph(graphID string) ([]domain.WorkUnit, error)
+}
+
+type EventRelay interface {
+	Run(ctx context.Context, runtime domain.EventSource, config domain.RelayConfig) (domain.RunStatus, error)
 }

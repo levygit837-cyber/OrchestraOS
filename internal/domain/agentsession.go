@@ -35,4 +35,6 @@ type AgentSession struct {
 	LastCheckpointAt *time.Time         `json:"last_checkpoint_at,omitempty"`
 	LastSeenEventID  string             `json:"last_seen_event_id,omitempty"`
 	RecoverableState json.RawMessage    `json:"recoverable_state,omitempty"`
+	CreatedAt        time.Time          `json:"created_at"`
+	UpdatedAt        time.Time          `json:"updated_at"`
 }

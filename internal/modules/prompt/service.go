@@ -24,33 +24,174 @@ type PromptService struct {
 	db *sql.DB
 }
 
-type PersistMetadata struct {
-	RunID                  string
-	WorkUnitID             string
-	TaskID                 string
-	AgentSessionID         string
-	AgentID                string
-	PromptSnapshotID       string
-	ToolsetSnapshotID      string
-	PromptSnapshotEventID  string
-	ToolsetSnapshotEventID string
-}
-
-type PreparedRunPrompt struct {
-	PromptSnapshot  *PromptSnapshot
-	ToolsetSnapshot *ToolsetSnapshot
-	SystemPrompt    string
-	TaskPrompt      string
-	CombinedPrompt  string
-	PromptHash      string
-	Toolset         []string
-}
-
 func NewPromptService(database *sql.DB) *PromptService {
 	return &PromptService{db: database}
 }
 
-func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *ComposedPrompt, metadata PersistMetadata) (*PreparedRunPrompt, error) {
+// SelectToolset selects the minimum toolset for a given agent profile.
+func (s *PromptService) SelectToolset(profile string) (domain.ToolsetSelection, error) {
+	selection, err := SelectToolset(profile)
+	if err != nil {
+		return domain.ToolsetSelection{}, err
+	}
+	tools := make([]domain.ToolsetTool, 0, len(selection.Tools))
+	for _, t := range selection.Tools {
+		tools = append(tools, domain.ToolsetTool{
+			Name:   t.Name,
+			Scope:  t.Scope,
+			Risk:   string(t.Risk),
+			Reason: t.Reason,
+		})
+	}
+	return domain.ToolsetSelection{
+		Profile:       selection.Profile,
+		Tools:         tools,
+		CreatedReason: selection.CreatedReason,
+	}, nil
+}
+
+// PreparePrompt selects a toolset, composes a prompt, and persists it in one operation.
+func (s *PromptService) PreparePrompt(ctx context.Context, input domain.PromptComposeInput, metadata domain.PersistMetadata) (*domain.PreparedRunPrompt, error) {
+	composed, err := s.Compose(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+	return s.PersistComposedPrompt(ctx, composed, metadata)
+}
+
+// Compose builds a composed prompt from the given input.
+func (s *PromptService) Compose(ctx context.Context, input domain.PromptComposeInput) (*domain.ComposedPrompt, error) {
+	composed, err := Compose(TaskContext{
+		TaskID:             input.TaskID,
+		TaskTitle:          input.TaskTitle,
+		TaskDescription:    input.TaskDescription,
+		RunID:              input.RunID,
+		WorkUnitID:         input.WorkUnitID,
+		TaskGraphID:        input.TaskGraphID,
+		WorkUnitTitle:      input.WorkUnitTitle,
+		WorkUnitObjective:  input.WorkUnitObjective,
+		AgentProfile:       input.AgentProfile,
+		OwnedPaths:         input.OwnedPaths,
+		ReadPaths:          input.ReadPaths,
+		DependsOn:          input.DependsOn,
+		AcceptanceCriteria: input.AcceptanceCriteria,
+		ValidationPlan:     input.ValidationPlan,
+		Toolset: func() ToolsetSelection {
+			tools := make([]Tool, 0, len(input.Toolset.Tools))
+			for _, t := range input.Toolset.Tools {
+				tools = append(tools, Tool{
+					Name:   t.Name,
+					Scope:  t.Scope,
+					Risk:   ToolRisk(t.Risk),
+					Reason: t.Reason,
+				})
+			}
+			return ToolsetSelection{
+				Profile:       input.Toolset.Profile,
+				Tools:         tools,
+				CreatedReason: input.Toolset.CreatedReason,
+			}
+		}(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	fragments := make([]domain.PromptFragment, 0, len(composed.Fragments))
+	for _, f := range composed.Fragments {
+		fragments = append(fragments, domain.PromptFragment{
+			ID:               f.ID,
+			Version:          f.Version,
+			Category:         string(f.Category),
+			Kind:             string(f.Kind),
+			Title:            f.Title,
+			Priority:         f.Priority,
+			ExclusiveGroup:   f.ExclusiveGroup,
+			BodyHash:         f.BodyHash,
+			MetadataHash:     f.MetadataHash,
+			Body:             f.Body,
+			Requires:         f.Requires,
+			ConflictsWith:    f.ConflictsWith,
+			Allows:           f.Allows,
+			Denies:           f.Denies,
+			ApprovalRequired: f.ApprovalRequired,
+			AutonomyLevel:    f.AutonomyLevel,
+		})
+	}
+	fragmentRefs := make([]domain.PromptFragmentRef, 0, len(composed.FragmentRefs))
+	for _, ref := range composed.FragmentRefs {
+		fragmentRefs = append(fragmentRefs, domain.PromptFragmentRef{
+			ID:           ref.ID,
+			Version:      ref.Version,
+			Category:     string(ref.Category),
+			Kind:         string(ref.Kind),
+			Order:        ref.Order,
+			BodyHash:     ref.BodyHash,
+			MetadataHash: ref.MetadataHash,
+			Title:        ref.Title,
+		})
+	}
+	return &domain.ComposedPrompt{
+		SystemPrompt:       composed.SystemPrompt,
+		TaskPrompt:         composed.TaskPrompt,
+		CombinedPrompt:     composed.CombinedPrompt,
+		SystemPromptHash:   composed.SystemPromptHash,
+		TaskPromptHash:     composed.TaskPromptHash,
+		CombinedPromptHash: composed.CombinedPromptHash,
+		CompositionHash:    composed.CompositionHash,
+		CategorySignature:  composed.CategorySignature,
+		SystemProfile: func() domain.SystemProfile {
+			categories := make(map[string]domain.PromptFragmentRef, len(composed.SystemProfile.Categories))
+			for k, v := range composed.SystemProfile.Categories {
+				categories[k] = domain.PromptFragmentRef{
+					ID:           v.ID,
+					Version:      v.Version,
+					Category:     string(v.Category),
+					Kind:         string(v.Kind),
+					Order:        v.Order,
+					BodyHash:     v.BodyHash,
+					MetadataHash: v.MetadataHash,
+					Title:        v.Title,
+				}
+			}
+			return domain.SystemProfile{
+				Persona:               composed.SystemProfile.Persona,
+				OperatingMode:         composed.SystemProfile.OperatingMode,
+				TechnicalDomain:       composed.SystemProfile.TechnicalDomain,
+				OutputContract:        composed.SystemProfile.OutputContract,
+				ToolNames:             composed.SystemProfile.ToolNames,
+				Allows:                composed.SystemProfile.Allows,
+				Denies:                composed.SystemProfile.Denies,
+				ApprovalRequired:      composed.SystemProfile.ApprovalRequired,
+				Categories:            categories,
+				CategorySignature:     composed.SystemProfile.CategorySignature,
+				TaskExecutionFocus:    composed.SystemProfile.TaskExecutionFocus,
+				CanonicalAgentProfile: composed.SystemProfile.CanonicalAgentProfile,
+			}
+		}(),
+		Fragments:        fragments,
+		FragmentRefs:     fragmentRefs,
+		AssemblyOrder:    composed.AssemblyOrder,
+		VariablesApplied: composed.VariablesApplied,
+		Toolset: func() domain.ToolsetSelection {
+			tools := make([]domain.ToolsetTool, 0, len(composed.Toolset.Tools))
+			for _, t := range composed.Toolset.Tools {
+				tools = append(tools, domain.ToolsetTool{
+					Name:   t.Name,
+					Scope:  t.Scope,
+					Risk:   string(t.Risk),
+					Reason: t.Reason,
+				})
+			}
+			return domain.ToolsetSelection{
+				Profile:       composed.Toolset.Profile,
+				Tools:         tools,
+				CreatedReason: composed.Toolset.CreatedReason,
+			}
+		}(),
+	}, nil
+}
+
+func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *domain.ComposedPrompt, metadata domain.PersistMetadata) (*domain.PreparedRunPrompt, error) {
 	const op = "prompt_service.persist_composed"
 
 	tx, err := dbcore.BeginTx(ctx, s.db, "prompt_service.persist_composed")
@@ -77,12 +218,14 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *Com
 			MetadataHash:     fragment.MetadataHash,
 			Body:             fragment.Body,
 			AppliesWhen:      appliesWhen,
-			Requires:         fragment.Requires,
-			ConflictsWith:    fragment.ConflictsWith,
-			Allows:           fragment.Allows,
-			Denies:           fragment.Denies,
-			ApprovalRequired: fragment.ApprovalRequired,
+			Requires:         nonNilStrings(fragment.Requires),
+			ConflictsWith:    nonNilStrings(fragment.ConflictsWith),
+			Allows:           nonNilStrings(fragment.Allows),
+			Denies:           nonNilStrings(fragment.Denies),
+			ApprovalRequired: nonNilStrings(fragment.ApprovalRequired),
 			AutonomyLevel:    fragment.AutonomyLevel,
+			CreatedAt:        time.Now().UTC(),
+			UpdatedAt:        time.Now().UTC(),
 		}
 		existing, err := repo.GetFragment(localFragment.ID, localFragment.Version)
 		if err != nil {
@@ -117,6 +260,7 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *Com
 			Title:        ref.Title,
 		})
 	}
+	now := time.Now().UTC()
 	promptSnapshot := &PromptSnapshot{
 		ID:                 valueOrNewUUID(metadata.PromptSnapshotID),
 		RunID:              metadata.RunID,
@@ -133,7 +277,9 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *Com
 		FragmentRefs:       fragmentRefs,
 		AssemblyOrder:      composed.AssemblyOrder,
 		VariablesApplied:   variablesApplied,
-		CreatedAt:          time.Now().UTC(),
+		FirstUsedAt:        now,
+		LastUsedAt:         now,
+		CreatedAt:          now,
 	}
 	if err := repo.CreateOrReferencePromptSnapshot(promptSnapshot); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "prompt_service.create_prompt_snapshot", err)
@@ -221,15 +367,78 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *Com
 		return nil, err
 	}
 
-	return &PreparedRunPrompt{
-		PromptSnapshot:  promptSnapshot,
-		ToolsetSnapshot: toolsetSnapshot,
-		SystemPrompt:    composed.SystemPrompt,
-		TaskPrompt:      composed.TaskPrompt,
-		CombinedPrompt:  composed.CombinedPrompt,
-		PromptHash:      composed.CombinedPromptHash,
-		Toolset:         ToolNames(toolset.Tools),
+	return &domain.PreparedRunPrompt{
+		PromptSnapshot: &domain.PromptSnapshot{
+			ID:                 promptSnapshot.ID,
+			RunID:              promptSnapshot.RunID,
+			WorkUnitID:         promptSnapshot.WorkUnitID,
+			AgentSessionID:     promptSnapshot.AgentSessionID,
+			SystemPrompt:       promptSnapshot.SystemPrompt,
+			TaskPrompt:         promptSnapshot.TaskPrompt,
+			CombinedPrompt:     promptSnapshot.CombinedPrompt,
+			SystemPromptHash:   promptSnapshot.SystemPromptHash,
+			TaskPromptHash:     promptSnapshot.TaskPromptHash,
+			CombinedPromptHash: promptSnapshot.CombinedPromptHash,
+			CompositionHash:    promptSnapshot.CompositionHash,
+			CategorySignature:  promptSnapshot.CategorySignature,
+			FragmentRefs:       toDomainFragmentRefs(promptSnapshot.FragmentRefs),
+			AssemblyOrder:      promptSnapshot.AssemblyOrder,
+			VariablesApplied:   promptSnapshot.VariablesApplied,
+			CountUsed:          promptSnapshot.CountUsed,
+			FirstUsedAt:        promptSnapshot.FirstUsedAt,
+			LastUsedAt:         promptSnapshot.LastUsedAt,
+			CreatedAt:          promptSnapshot.CreatedAt,
+		},
+		ToolsetSnapshot: &domain.ToolsetSnapshot{
+			ID:             toolsetSnapshot.ID,
+			RunID:          toolsetSnapshot.RunID,
+			AgentSessionID: toolsetSnapshot.AgentSessionID,
+			Tools: func() []domain.ToolsetTool {
+				out := make([]domain.ToolsetTool, 0, len(toolsetSnapshot.Tools))
+				for _, t := range toolsetSnapshot.Tools {
+					out = append(out, domain.ToolsetTool{
+						Name:   t.Name,
+						Scope:  t.Scope,
+						Risk:   string(t.Risk),
+						Reason: t.Reason,
+					})
+				}
+				return out
+			}(),
+			CreatedReason: toolsetSnapshot.CreatedReason,
+			CreatedAt:     toolsetSnapshot.CreatedAt,
+		},
+		SystemPrompt:   composed.SystemPrompt,
+		TaskPrompt:     composed.TaskPrompt,
+		CombinedPrompt: composed.CombinedPrompt,
+		PromptHash:     composed.CombinedPromptHash,
+		Toolset:        toolNamesFromDomain(toolset.Tools),
 	}, nil
+}
+
+func toDomainFragmentRefs(refs []PromptFragmentRef) []domain.PromptFragmentRef {
+	out := make([]domain.PromptFragmentRef, 0, len(refs))
+	for _, ref := range refs {
+		out = append(out, domain.PromptFragmentRef{
+			ID:           ref.ID,
+			Version:      ref.Version,
+			Category:     string(ref.Category),
+			Kind:         string(ref.Kind),
+			Order:        ref.Order,
+			BodyHash:     ref.BodyHash,
+			MetadataHash: ref.MetadataHash,
+			Title:        ref.Title,
+		})
+	}
+	return out
+}
+
+func toolNamesFromDomain(tools []domain.ToolsetTool) []string {
+	names := make([]string, 0, len(tools))
+	for _, t := range tools {
+		names = append(names, t.Name)
+	}
+	return names
 }
 
 func valueOrNewUUID(value string) string {
@@ -237,4 +446,11 @@ func valueOrNewUUID(value string) string {
 		return value
 	}
 	return uuid.New().String()
+}
+
+func nonNilStrings(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }

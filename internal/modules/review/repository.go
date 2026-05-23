@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
@@ -23,14 +22,6 @@ func NewRepository(database db.DBTX) *Repository {
 
 // Create inserts a new review
 func (r *Repository) Create(review *Review) error {
-	if review.ID == "" {
-		review.ID = uuid.New().String()
-	}
-
-	now := time.Now().UTC()
-	review.CreatedAt = now
-	review.UpdatedAt = now
-
 	criteriaChecked, err := json.Marshal(review.CriteriaChecked)
 	if err != nil {
 		return fmt.Errorf("failed to marshal criteria_checked: %w", err)
@@ -137,9 +128,6 @@ func (r *Repository) ExistsActiveByTaskAndGate(taskID string, gate ValidationGat
 
 // UpdateStatus updates the status and optional fields of a review
 func (r *Repository) UpdateStatus(review *Review) error {
-	now := time.Now().UTC()
-	review.UpdatedAt = now
-
 	criteriaChecked, err := json.Marshal(review.CriteriaChecked)
 	if err != nil {
 		return fmt.Errorf("failed to marshal criteria_checked: %w", err)

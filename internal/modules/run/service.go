@@ -78,12 +78,21 @@ func (s *RunService) Create(ctx context.Context, input CreateRunInput) (*transit
 		return nil, apperrors.New(apperrors.CodeInvalidInput, "run_service.validate_refs", "work_unit_id does not belong to task_id")
 	}
 
+	if input.ID == "" {
+		input.ID = uuid.New().String()
+	}
+	if input.Attempt == 0 {
+		input.Attempt = 1
+	}
+	now := time.Now().UTC()
 	run := &Run{
 		ID:         input.ID,
 		TaskID:     task.ID,
 		WorkUnitID: wu.ID,
 		Status:     StatusCreated,
 		Attempt:    input.Attempt,
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	}
 	if err := NewRepository(tx).Create(run); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "run_service.create_projection", err)

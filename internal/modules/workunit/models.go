@@ -2,7 +2,7 @@ package workunit
 
 import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
-// Aliases to shared domain types per ADR-0030.
+// Aliases to shared domain types per ADR-0019.
 
 type Status = domain.WorkUnitStatus
 type WorkUnit = domain.WorkUnit

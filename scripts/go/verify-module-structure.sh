@@ -3,23 +3,25 @@ set -euo pipefail
 
 # verify-module-structure.sh
 # Validates that all modules in internal/modules/* have the mandatory files
-# per ADR-0022 (Module Standardization).
+# per ADR-0019 (Simplified Modular Architecture).
 #
 # Usage: ./scripts/go/verify-module-structure.sh
 # Exit code: 0 if all modules are valid, 1 otherwise.
 
 MODULES_DIR="internal/modules"
+
+# ADR-0019: 5 mandatory files for every module
 MANDATORY_FILES=(
     doc.go
-    contract.go
     README.md
-    CONTRACTS.md
     models.go
-    events.go
-    queries.go
     repository.go
     service.go
-    validation.go
+)
+
+# Modules that are coordination-only and do not own a database table
+NO_TABLE_MODULES=(
+    orchestrator
 )
 
 EXIT_CODE=0
@@ -31,11 +33,26 @@ if [ ! -d "$MODULES_DIR" ]; then
     exit 1
 fi
 
+is_no_table_module() {
+    local mod="$1"
+    for nt in "${NO_TABLE_MODULES[@]}"; do
+        if [ "$nt" = "$mod" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 for module_path in "$MODULES_DIR"/*/; do
     module_name=$(basename "$module_path")
     MODULE_COUNT=$((MODULE_COUNT + 1))
 
     for file in "${MANDATORY_FILES[@]}"; do
+        # orchestrator is allowed to skip repository.go and queries.go
+        if [ "$file" = "repository.go" ] && is_no_table_module "$module_name"; then
+            continue
+        fi
+
         if [ ! -f "$module_path/$file" ]; then
             echo "ERROR: $module_name missing mandatory file: $file"
             EXIT_CODE=1

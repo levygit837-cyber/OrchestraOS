@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 // ============================================================================
 // Workunit Domain
 // ============================================================================
@@ -33,4 +35,6 @@ type WorkUnit struct {
 	AcceptanceCriteria   []string       `json:"acceptance_criteria"`
 	ValidationPlan       []string       `json:"validation_plan"`
 	DependsOn            []string       `json:"depends_on"`
+	CreatedAt            time.Time      `json:"created_at"`
+	UpdatedAt            time.Time      `json:"updated_at"`
 }

@@ -10,7 +10,7 @@
 
 ## 1. Contexto
 
-Após a consolidação da Arquitetura de Módulos Verticais (ADR-0022), o projeto possui uma estrutura de módulos (`internal/modules/*`) altamente padronizada e previsível. Cada módulo segue um template rígido de arquivos (`models.go`, `service.go`, `repository.go`, `queries.go`, etc.), o que torna o código extremamente navegável por agentes de IA.
+Após a consolidação da Arquitetura de Módulos Verticais (ADR-0015), o projeto possui uma estrutura de módulos (`internal/modules/*`) altamente padronizada e previsível. Cada módulo segue um template rígido de arquivos (`models.go`, `service.go`, `repository.go`, `queries.go`, etc.), o que torna o código extremamente navegável por agentes de IA.
 
 No entanto, a camada de infraestrutura compartilhada (`internal/core/*`) e a camada de coordenação cross-module (`internal/core/coordination/`) acumularam inconsistências estruturais e nomes genéricos que quebram a previsibilidade do sistema:
 
@@ -183,7 +183,7 @@ package <nome>
 
 ### Fase 3: Atualização de Documentação
 
-- Atualizar ADR-0022 para remover referências a `core/coordination` como camada de orquestração.
+- Atualizar ADR-0015 para remover referências a `core/coordination` como camada de orquestração.
 - Atualizar `module_index.md` para refletir nova estrutura.
 - Atualizar `AGENTS.md` com regra de "nomes proibidos de arquivos".
 

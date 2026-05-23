@@ -10,7 +10,7 @@ import (
 // TestServiceDecomposition verifies that service_<sub>.go files only exist
 // when the main service.go file exceeds 300 lines.
 //
-// Per ADR-0030 / CODING_STANDARDS.md:
+// Per ADR-0019 / CODING_STANDARDS.md:
 //
 //	"service_<sub>.go só é permitido se service.go tiver > 300 linhas."
 //

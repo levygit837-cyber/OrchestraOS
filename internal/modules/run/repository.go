@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
@@ -26,15 +25,6 @@ func NewRepository(db db.DBTX) *Repository {
 
 // Create inserts a new run
 func (r *Repository) Create(run *Run) error {
-	if run.ID == "" {
-		run.ID = uuid.New().String()
-	}
-	if run.Attempt == 0 {
-		run.Attempt = 1
-	}
-
-	now := time.Now()
-
 	var result *string
 	if run.Result != nil {
 		r := string(*run.Result)
@@ -56,8 +46,8 @@ func (r *Repository) Create(run *Run) error {
 		run.FinishedAt,
 		result,
 		run.FailureReason,
-		now,
-		now,
+		run.CreatedAt,
+		run.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create run: %w", err)
@@ -113,9 +103,7 @@ func (r *Repository) ListByTask(taskID string) ([]Run, error) {
 }
 
 // UpdateStatus updates run status and result
-func (r *Repository) UpdateStatus(id string, status Status, startedAt, finishedAt *time.Time, result *Result, failureReason *string) error {
-	now := time.Now()
-
+func (r *Repository) UpdateStatus(id string, status Status, startedAt, finishedAt *time.Time, result *Result, failureReason *string, updatedAt time.Time) error {
 	var resultStr *string
 	if result != nil {
 		r := string(*result)
@@ -130,7 +118,7 @@ func (r *Repository) UpdateStatus(id string, status Status, startedAt, finishedA
 		finishedAt,
 		resultStr,
 		failureReason,
-		now,
+		updatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update run status: %w", err)
@@ -145,8 +133,6 @@ func (r *Repository) scanRun(scanner interface {
 	var run Run
 	var result *string
 	var startedAt sql.NullTime
-	var createdAt, updatedAt time.Time
-
 	err := scanner.Scan(
 		&run.ID,
 		&run.TaskID,
@@ -157,8 +143,8 @@ func (r *Repository) scanRun(scanner interface {
 		&run.FinishedAt,
 		&result,
 		&run.FailureReason,
-		&createdAt,
-		&updatedAt,
+		&run.CreatedAt,
+		&run.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

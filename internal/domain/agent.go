@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 // ============================================================================
 // Agent Domain
 // ============================================================================
@@ -29,4 +31,6 @@ type Agent struct {
 	DefaultPromptFragments []string         `json:"default_prompt_fragments"`
 	RuntimeType            AgentRuntimeType `json:"runtime_type"`
 	Status                 AgentStatus      `json:"status"`
+	CreatedAt              time.Time        `json:"created_at"`
+	UpdatedAt              time.Time        `json:"updated_at"`
 }

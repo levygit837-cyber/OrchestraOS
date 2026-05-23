@@ -68,6 +68,7 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 		return nil, err
 	}
 
+	now := time.Now().UTC()
 	session := &AgentSession{
 		ID:               input.ID,
 		AgentID:          input.AgentID,
@@ -79,6 +80,8 @@ func (s *AgentSessionService) Create(ctx context.Context, input CreateAgentSessi
 		Status:           StatusStarting,
 		LastSeenEventID:  input.LastSeenEventID,
 		RecoverableState: input.RecoverableState,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 	if err := NewRepository(tx).Create(session); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "agent_session_service.create_projection", err)
@@ -206,7 +209,7 @@ func (s *AgentSessionService) Timeout(ctx context.Context, sessionID string, rec
 	input.Extra["recoverable"] = true
 	return s.transition(ctx, sessionID, StatusDisconnected, input, func(ctx context.Context, tx *sql.Tx, session *AgentSession) error {
 		if len(recoverableState) > 0 {
-			if err := NewRepository(tx).UpdateRecoverableState(session.ID, recoverableState); err != nil {
+			if err := NewRepository(tx).UpdateRecoverableState(session.ID, recoverableState, time.Now().UTC()); err != nil {
 				return apperrors.Wrap(apperrors.CodePersistence, "agent_session_service.update_recoverable_state", err)
 			}
 			session.RecoverableState = recoverableState

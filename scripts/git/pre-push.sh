@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# pre-push.sh — install to .git/hooks/pre-push to block direct pushes to main.
+# pre-push.sh — install to .git/hooks/pre-push to block direct pushes to main/master.
 # Usage: cp scripts/git/pre-push.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push
 #
 # This hook is called with the following arguments:
@@ -11,9 +11,9 @@
 # receives lines of the form: <local ref> <local sha1> <remote ref> <remote sha1>
 
 while read local_ref local_sha remote_ref remote_sha; do
-    if [ "$remote_ref" = "refs/heads/main" ]; then
+    if [ "$remote_ref" = "refs/heads/main" ] || [ "$remote_ref" = "refs/heads/master" ]; then
         echo ""
-        echo "❌ PUSH BLOCKED: direct push to 'main' is forbidden."
+        echo "❌ PUSH BLOCKED: direct push to '${remote_ref#refs/heads/}' is forbidden."
         echo ""
         echo "Required workflow:"
         echo "   1. git checkout -b feature/your-change"

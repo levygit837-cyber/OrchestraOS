@@ -10,4 +10,4 @@ Os principios de "servicos como fronteira de comando" continuam validos, mas a i
 
 Para a definicao atual da arquitetura de modulos, consulte:
 
-- [ADR 0022: Arquitetura de Módulos Verticais](/docs/adr/0022-vertical-module-architecture.md)
+- [ADR 0022: Arquitetura de Módulos Verticais](0015-vertical-module-architecture.md)

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
@@ -27,12 +26,6 @@ func NewRepository(db db.DBTX) *Repository {
 
 // Create inserts a new agent session
 func (r *Repository) Create(session *AgentSession) error {
-	if session.ID == "" {
-		session.ID = uuid.New().String()
-	}
-
-	now := time.Now()
-
 	_, err := r.db.Exec(
 		QueryInsert,
 		session.ID,
@@ -47,8 +40,8 @@ func (r *Repository) Create(session *AgentSession) error {
 		session.LastCheckpointAt,
 		nullString(session.LastSeenEventID),
 		nullableRawJSON(session.RecoverableState),
-		now,
-		now,
+		session.CreatedAt,
+		session.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create agent session: %w", err)
@@ -70,16 +63,14 @@ func (r *Repository) GetByRunID(runID string) (*AgentSession, error) {
 }
 
 // UpdateStatus updates agent session status and timestamps
-func (r *Repository) UpdateStatus(id string, status Status, heartbeatAt, checkpointAt *time.Time) error {
-	now := time.Now()
-
+func (r *Repository) UpdateStatus(id string, status Status, heartbeatAt, checkpointAt *time.Time, updatedAt time.Time) error {
 	_, err := r.db.Exec(
 		QueryUpdateStatus,
 		id,
 		status,
 		heartbeatAt,
 		checkpointAt,
-		now,
+		updatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update agent session status: %w", err)
@@ -89,13 +80,12 @@ func (r *Repository) UpdateStatus(id string, status Status, heartbeatAt, checkpo
 }
 
 // UpdateHeartbeat updates the last heartbeat timestamp
-func (r *Repository) UpdateHeartbeat(id string) error {
-	now := time.Now()
+func (r *Repository) UpdateHeartbeat(id string, heartbeatAt, updatedAt time.Time) error {
 	_, err := r.db.Exec(
 		QueryUpdateHeartbeat,
 		id,
-		now,
-		now,
+		heartbeatAt,
+		updatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update heartbeat: %w", err)
@@ -103,15 +93,14 @@ func (r *Repository) UpdateHeartbeat(id string) error {
 	return nil
 }
 
-// UpdateHeartbeat updates the last heartbeat timestamp and optional last seen event.
-func (r *Repository) UpdateHeartbeatWithEvent(id, lastSeenEventID string) error {
-	now := time.Now().UTC()
+// UpdateHeartbeatWithEvent updates the last heartbeat timestamp and optional last seen event.
+func (r *Repository) UpdateHeartbeatWithEvent(id, lastSeenEventID string, heartbeatAt, updatedAt time.Time) error {
 	_, err := r.db.Exec(
 		QueryUpdateHeartbeatWithEvent,
 		id,
-		now,
+		heartbeatAt,
 		nullString(lastSeenEventID),
-		now,
+		updatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update heartbeat: %w", err)
@@ -120,13 +109,12 @@ func (r *Repository) UpdateHeartbeatWithEvent(id, lastSeenEventID string) error 
 }
 
 // UpdateCheckpoint updates the last checkpoint timestamp
-func (r *Repository) UpdateCheckpoint(id string) error {
-	now := time.Now()
+func (r *Repository) UpdateCheckpoint(id string, checkpointAt, updatedAt time.Time) error {
 	_, err := r.db.Exec(
 		QueryUpdateCheckpoint,
 		id,
-		now,
-		now,
+		checkpointAt,
+		updatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update checkpoint: %w", err)
@@ -135,14 +123,13 @@ func (r *Repository) UpdateCheckpoint(id string) error {
 }
 
 // UpdateCheckpointWithEvent updates the last checkpoint timestamp and optional last seen event.
-func (r *Repository) UpdateCheckpointWithEvent(id, lastSeenEventID string) error {
-	now := time.Now().UTC()
+func (r *Repository) UpdateCheckpointWithEvent(id, lastSeenEventID string, checkpointAt, updatedAt time.Time) error {
 	_, err := r.db.Exec(
 		QueryUpdateCheckpointWithEvent,
 		id,
-		now,
+		checkpointAt,
 		nullString(lastSeenEventID),
-		now,
+		updatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update checkpoint: %w", err)
@@ -151,13 +138,12 @@ func (r *Repository) UpdateCheckpointWithEvent(id, lastSeenEventID string) error
 }
 
 // UpdateRecoverableState stores resume context for a disconnected or timed-out session.
-func (r *Repository) UpdateRecoverableState(id string, state json.RawMessage) error {
-	now := time.Now().UTC()
+func (r *Repository) UpdateRecoverableState(id string, state json.RawMessage, updatedAt time.Time) error {
 	_, err := r.db.Exec(
 		QueryUpdateRecoverableState,
 		id,
 		nullableRawJSON(state),
-		now,
+		updatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update recoverable state: %w", err)
@@ -171,8 +157,6 @@ func (r *Repository) scanAgentSession(scanner interface {
 	var session AgentSession
 	var sandboxID, connectionID, lastSeenEventID sql.NullString
 	var recoverableState []byte
-	var createdAt, updatedAt time.Time
-
 	var taskID, workUnitID sql.NullString
 	err := scanner.Scan(
 		&session.ID,
@@ -187,8 +171,8 @@ func (r *Repository) scanAgentSession(scanner interface {
 		&session.LastCheckpointAt,
 		&lastSeenEventID,
 		&recoverableState,
-		&createdAt,
-		&updatedAt,
+		&session.CreatedAt,
+		&session.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

@@ -117,3 +117,46 @@ type ToolsetSelection struct {
 	Tools         []ToolsetTool `json:"tools"`
 	CreatedReason string        `json:"created_reason"`
 }
+
+// PersistMetadata holds identifiers for persisting a composed prompt snapshot.
+type PersistMetadata struct {
+	RunID                  string
+	WorkUnitID             string
+	TaskID                 string
+	AgentSessionID         string
+	AgentID                string
+	PromptSnapshotID       string
+	ToolsetSnapshotID      string
+	PromptSnapshotEventID  string
+	ToolsetSnapshotEventID string
+}
+
+// PreparedRunPrompt is the result of composing and persisting a prompt for a run.
+type PreparedRunPrompt struct {
+	PromptSnapshot  *PromptSnapshot
+	ToolsetSnapshot *ToolsetSnapshot
+	SystemPrompt    string
+	TaskPrompt      string
+	CombinedPrompt  string
+	PromptHash      string
+	Toolset         []string
+}
+
+// PromptComposeInput holds the data needed to compose a prompt for a work unit.
+type PromptComposeInput struct {
+	TaskID             string
+	TaskTitle          string
+	TaskDescription    string
+	RunID              string
+	WorkUnitID         string
+	TaskGraphID        string
+	WorkUnitTitle      string
+	WorkUnitObjective  string
+	AgentProfile       string
+	OwnedPaths         []string
+	ReadPaths          []string
+	DependsOn          []string
+	AcceptanceCriteria []string
+	ValidationPlan     []string
+	Toolset            ToolsetSelection
+}

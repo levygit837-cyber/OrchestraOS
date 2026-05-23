@@ -11,7 +11,7 @@ import (
 )
 
 // sharedEntityTypes lists the entity types that MUST be defined in
-// internal/domain/ per ADR-0030 Pilar 1.
+// internal/domain/ per ADR-0019 Pilar 1.
 //
 // These types are shared across multiple modules and must not be duplicated
 // or defined inside individual modules.
@@ -57,7 +57,7 @@ var sharedEntityTypes = []string{
 //  1. All shared entity types are defined in internal/domain/.
 //  2. Modules import internal/domain/ to use these types (not define their own).
 //
-// Per ADR-0030 Pilar 1:
+// Per ADR-0019 Pilar 1:
 //
 //	"internal/domain/ centraliza TODOS os tipos compartilhados."
 //	Modules must NOT define their own versions of these types.
@@ -112,7 +112,7 @@ func TestDomainImportIntegrity(t *testing.T) {
 	}
 	if len(missing) > 0 {
 		t.Errorf(
-			"%d shared entity type(s) missing from internal/domain/ — they must be defined there per ADR-0030: %v",
+			"%d shared entity type(s) missing from internal/domain/ — they must be defined there per ADR-0019: %v",
 			len(missing), missing,
 		)
 	}
@@ -156,7 +156,7 @@ func TestDomainImportIntegrity(t *testing.T) {
 			// Only flag if the module has models (it likely needs domain types)
 			modelsPath := filepath.Join(modPath, "models.go")
 			if _, err := os.Stat(modelsPath); err == nil {
-				t.Logf("module %q does not import internal/domain/ — it should import domain types once migrated (ADR-0030)", modName)
+				t.Logf("module %q does not import internal/domain/ — it should import domain types once migrated (ADR-0019)", modName)
 			}
 		}
 	}

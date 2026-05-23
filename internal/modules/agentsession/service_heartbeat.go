@@ -65,7 +65,7 @@ func (s *AgentSessionService) Heartbeat(ctx context.Context, sessionID string, i
 		return nil, err
 	}
 	if !appendResult.Duplicate {
-		if err := NewRepository(tx).UpdateHeartbeatWithEvent(session.ID, appendResult.Event.ID); err != nil {
+		if err := NewRepository(tx).UpdateHeartbeatWithEvent(session.ID, appendResult.Event.ID, appendResult.Event.CreatedAt, appendResult.Event.CreatedAt); err != nil {
 			return nil, apperrors.Wrap(apperrors.CodePersistence, "agent_session_service.update_heartbeat", err)
 		}
 		session.LastSeenEventID = appendResult.Event.ID

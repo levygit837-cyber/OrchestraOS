@@ -67,11 +67,11 @@ RunTask → GetTask → DecomposeGraph → ForEachWU:
 - `internal/core/apperrors`, `core/db`, `core/validation`, `core/event`
 - `internal/core/statemachine`, `core/transition`, `core/serialization`
 - `internal/domain`: ONLY `EventEnvelope` and generic types (never entity structs)
-- `internal/modules/review`: DI interface return type `*review.Review` in ReviewManager (ADR-0026)
-- `internal/modules/taskgraph`: DI interface return type `*taskgraph.TaskGraph` in TaskGraphManager (ADR-0026)
-- `internal/modules/workunit`: DI interface return type `[]workunit.WorkUnit` in WorkUnitLister (ADR-0026)
-- `internal/modules/trigger`: DI interface return type `[]*trigger.Trigger` in TriggerEvaluator (ADR-0026)
-- `internal/modules/prompt`: DI interface return type `*prompt.PromptSnapshot` and `*prompt.ToolsetSnapshot` in PreparedPrompt (ADR-0026)
+- `internal/modules/review`: DI interface return type `*review.Review` in ReviewManager (ADR-0019)
+- `internal/modules/taskgraph`: DI interface return type `*taskgraph.TaskGraph` in TaskGraphManager (ADR-0019)
+- `internal/modules/workunit`: DI interface return type `[]workunit.WorkUnit` in WorkUnitLister (ADR-0019)
+- `internal/modules/trigger`: DI interface return type `[]*trigger.Trigger` in TriggerEvaluator (ADR-0019)
+- `internal/modules/prompt`: DI interface return type `*prompt.PromptSnapshot` and `*prompt.ToolsetSnapshot` in PreparedPrompt (ADR-0019)
 - `internal/modules/*` services (via DI interfaces, never direct repository imports)
 
 Forbidden:
