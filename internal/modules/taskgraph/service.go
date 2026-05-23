@@ -20,14 +20,13 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
 )
 
 const localHeuristicPlanner = "local_heuristic_v1"
 
 // TaskReader abstracts task reads to avoid importing the task module.
 type TaskReader interface {
-	GetByID(id string) (*task.Task, error)
+	GetByID(id string) (*domain.Task, error)
 }
 
 // WorkUnitCreator abstracts work-unit writes to avoid importing the workunit module.
@@ -143,13 +142,13 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 	if active != nil && !input.ReplaceActive {
 		return nil, apperrors.New(apperrors.CodeConflict, "task_graph_service.active_graph_exists", "active task graph already exists")
 	}
-	version, err := graphRepo.NextVersion(task.ID)
+	version, err := graphRepo.GetNextVersion(task.ID)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "task_graph_service.next_version", err)
 	}
 	now := time.Now().UTC()
 	if active != nil {
-		if err := graphRepo.SupersedeActiveByTask(task.ID, now); err != nil {
+		if err := graphRepo.UpdateActiveToSupersededByTask(task.ID, now); err != nil {
 			return nil, apperrors.Wrap(apperrors.CodePersistence, "task_graph_service.supersede_active", err)
 		}
 	}
@@ -247,7 +246,7 @@ func (s *TaskGraphService) Decompose(ctx context.Context, input DecomposeTaskGra
 }
 
 // buildPlan selects and executes the appropriate planner, with automatic fallback to heuristic on failure.
-func (s *TaskGraphService) buildPlan(ctx context.Context, task *task.Task, strategy string) (*GraphPlan, string, string) {
+func (s *TaskGraphService) buildPlan(ctx context.Context, task *domain.Task, strategy string) (*GraphPlan, string, string) {
 	if strategy == localHeuristicPlanner {
 		plan, err := BuildLocalHeuristicGraphPlan(task)
 		if err != nil {
@@ -291,7 +290,7 @@ func (s *TaskGraphService) buildPlan(ctx context.Context, task *task.Task, strat
 }
 
 // buildFallbackPlan creates a minimal valid plan when everything else fails.
-func (s *TaskGraphService) buildFallbackPlan(task *task.Task, reason string) (*GraphPlan, string, string) {
+func (s *TaskGraphService) buildFallbackPlan(task *domain.Task, reason string) (*GraphPlan, string, string) {
 	graphID := uuid.New().String()
 	wu := PlanWorkUnit{
 		ID:                   uuid.New().String(),
@@ -325,7 +324,8 @@ func (s *TaskGraphService) buildFallbackPlan(task *task.Task, reason string) (*G
 }
 
 func (s *TaskGraphService) ListByTask(ctx context.Context, taskID string) ([]TaskGraph, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if err := validation.RequiredUUID(taskID, "task_id", "task_graph_service.list_by_task"); err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (s *TaskGraphService) duplicateResultInTx(ctx context.Context, tx *sql.Tx, 
 }
 
 func (s *TaskGraphService) duplicateResultWithExecutor(ctx context.Context, executor dbcore.DBTX, input DecomposeTaskGraphInput) (*TaskGraphDecomposeResult, bool, error) {
-	_ = ctx
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	store, err := eventstore.NewStoreWithExecutor(executor)
 	if err != nil {
 		return nil, false, err

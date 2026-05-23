@@ -25,9 +25,10 @@ var excludedFromModuleBoundaryCheck = map[string]bool{
 // bootstrap/ (which act as composition roots).
 //
 // Per ADR-0030:
-//   "Módulos NÃO importam outros módulos. Ponto final."
-//   Any cross-module dependency must be resolved through the orchestrator
-//   or through shared types in internal/domain/.
+//
+//	"Módulos NÃO importam outros módulos. Ponto final."
+//	Any cross-module dependency must be resolved through the orchestrator
+//	or through shared types in internal/domain/.
 func TestModuleBoundaries(t *testing.T) {
 	modulesDir := "../../internal/modules"
 	entries, err := os.ReadDir(modulesDir)
@@ -68,8 +69,8 @@ func TestModuleBoundaries(t *testing.T) {
 						}
 						t.Errorf(
 							"module %q imports %q — modules must NOT import other modules (ADR-0030). "+
-							"Only orchestrator/ and bootstrap/ may import multiple modules. "+
-							"Move shared types to internal/domain/ or resolve the dependency in the orchestrator.",
+								"Only orchestrator/ and bootstrap/ may import multiple modules. "+
+								"Move shared types to internal/domain/ or resolve the dependency in the orchestrator.",
 							modName, importedMod,
 						)
 					}
@@ -78,7 +79,7 @@ func TestModuleBoundaries(t *testing.T) {
 					if path == "github.com/levygit837-cyber/OrchestraOS/internal/core/coordination" {
 						t.Errorf(
 							"module %q imports internal/core/coordination — this package was removed per ADR-0028. "+
-							"Use internal/core/transition/ for shared types.",
+								"Use internal/core/transition/ for shared types.",
 							modName,
 						)
 					}

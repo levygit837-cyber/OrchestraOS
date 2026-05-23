@@ -209,7 +209,7 @@ func TestEventIdempotencyAndCheckpointLookup(t *testing.T) {
 		t.Fatalf("Expected one persisted event after duplicate append, got %d", len(events))
 	}
 
-	checkpoint, err := store.LastCheckpointByRun(runID)
+	checkpoint, err := store.GetLastCheckpointByRun(runID)
 	if err != nil {
 		t.Fatalf("Failed to get latest checkpoint: %v", err)
 	}

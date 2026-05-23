@@ -129,12 +129,12 @@ func (r *Repository) ListByTaskGraph(taskGraphID string) ([]WorkUnit, error) {
 }
 
 // UpdateStatus updates the status of a work unit
-func (r *Repository) UpdateStatus(id string, status Status) error {
-	_, err := r.db.Exec(QueryUpdateStatus, id, status, time.Now())
+func (r *Repository) UpdateStatus(id string, status Status, updatedAt time.Time) (sql.Result, error) {
+	res, err := r.db.Exec(QueryUpdateStatus, id, status, updatedAt)
 	if err != nil {
-		return fmt.Errorf("failed to update work unit status: %w", err)
+		return nil, fmt.Errorf("failed to update work unit status: %w", err)
 	}
-	return nil
+	return res, nil
 }
 
 func (r *Repository) scanWorkUnit(scanner interface {

@@ -1,28 +1,18 @@
 package taskgraph
 
-import "time"
+import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
-type Status string
+// Aliases to shared domain types per ADR-0030.
+
+type Status = domain.TaskGraphStatus
+type TaskGraph = domain.TaskGraph
 
 const (
-	StatusActive     Status = "active"
-	StatusSuperseded Status = "superseded"
+	StatusActive     = domain.TaskGraphStatusActive
+	StatusSuperseded = domain.TaskGraphStatusSuperseded
 )
 
-type TaskGraph struct {
-	ID              string    `json:"id"`
-	TaskID          string    `json:"task_id"`
-	Version         int       `json:"version"`
-	Status          Status    `json:"status"`
-	PlannerStrategy string    `json:"planner_strategy"`
-	Rationale       string    `json:"rationale"`
-	CreatedBy       string    `json:"created_by"`
-	NodeCount       int       `json:"node_count"`
-	EdgeCount       int       `json:"edge_count"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-}
-
+// TaskGraphNodeInfo is a local type describing a node in a task graph.
 type TaskGraphNodeInfo struct {
 	ID                 string   `json:"id"`
 	Title              string   `json:"title"`
@@ -34,6 +24,7 @@ type TaskGraphNodeInfo struct {
 	ValidationPlan     []string `json:"validation_plan"`
 }
 
+// TaskGraphEdgeInfo is a local type describing an edge in a task graph.
 type TaskGraphEdgeInfo struct {
 	From   string `json:"from"`
 	To     string `json:"to"`
@@ -41,6 +32,7 @@ type TaskGraphEdgeInfo struct {
 	Reason string `json:"reason,omitempty"`
 }
 
+// TaskGraphCreatedPayload is the payload for a task graph created event.
 type TaskGraphCreatedPayload struct {
 	TaskID          string              `json:"task_id"`
 	GraphID         string              `json:"graph_id"`
@@ -53,7 +45,7 @@ type TaskGraphCreatedPayload struct {
 }
 
 // PlanWorkUnit represents a work unit within a decomposition plan.
-// It mirrors workunit.WorkUnit but lives in the taskgraph package to avoid import cycles.
+// Deprecated: Use domain.WorkUnit directly once all cross-module imports are resolved.
 type PlanWorkUnit struct {
 	ID                   string   `json:"id"`
 	TaskID               string   `json:"task_id"`

@@ -58,8 +58,9 @@ var sharedEntityTypes = []string{
 //  2. Modules import internal/domain/ to use these types (not define their own).
 //
 // Per ADR-0030 Pilar 1:
-//   "internal/domain/ centraliza TODOS os tipos compartilhados."
-//   Modules must NOT define their own versions of these types.
+//
+//	"internal/domain/ centraliza TODOS os tipos compartilhados."
+//	Modules must NOT define their own versions of these types.
 func TestDomainImportIntegrity(t *testing.T) {
 	// Phase 1: Verify all shared types exist in internal/domain/
 	domainDir := "../../internal/domain"

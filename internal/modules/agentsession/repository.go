@@ -70,13 +70,8 @@ func (r *Repository) GetByRunID(runID string) (*AgentSession, error) {
 }
 
 // UpdateStatus updates agent session status and timestamps
-func (r *Repository) UpdateStatus(id string, status Status) error {
-	var heartbeatAt, checkpointAt *time.Time
+func (r *Repository) UpdateStatus(id string, status Status, heartbeatAt, checkpointAt *time.Time) error {
 	now := time.Now()
-
-	if status == StatusRunning {
-		heartbeatAt = &now
-	}
 
 	_, err := r.db.Exec(
 		QueryUpdateStatus,

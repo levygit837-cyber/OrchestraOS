@@ -17,7 +17,7 @@ func TestStallDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected stall detection")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyStall {
+		if tr.AnomalyType == nil || *tr.AnomalyType != string(trigger.AnomalyStall) {
 			t.Fatalf("expected anomaly stall, got %v", tr.AnomalyType)
 		}
 	})
@@ -42,7 +42,7 @@ func TestLoopDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected loop detection")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyLoop {
+		if tr.AnomalyType == nil || *tr.AnomalyType != string(trigger.AnomalyLoop) {
 			t.Fatalf("expected anomaly loop, got %v", tr.AnomalyType)
 		}
 	})
@@ -80,7 +80,7 @@ func TestDriftDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected drift detection")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyDrift {
+		if tr.AnomalyType == nil || *tr.AnomalyType != string(trigger.AnomalyDrift) {
 			t.Fatalf("expected anomaly drift, got %v", tr.AnomalyType)
 		}
 	})
@@ -125,7 +125,7 @@ func TestPathViolationDetector(t *testing.T) {
 		if tr == nil {
 			t.Fatal("expected path violation")
 		}
-		if tr.AnomalyType == nil || *tr.AnomalyType != trigger.AnomalyPathViolation {
+		if tr.AnomalyType == nil || *tr.AnomalyType != string(trigger.AnomalyPathViolation) {
 			t.Fatalf("expected anomaly path_violation, got %v", tr.AnomalyType)
 		}
 	})

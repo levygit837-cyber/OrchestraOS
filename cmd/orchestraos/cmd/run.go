@@ -12,12 +12,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
-	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	promptmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/prompt"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +29,7 @@ var runStartCmd = &cobra.Command{
 		runtimeType, _ := cmd.Flags().GetString("runtime")
 
 		// Get work unit to find task ID
-		wuRepo := workunitmod.NewRepository(getDB())
+		wuRepo := bootstrap.WorkUnitRepository(getDB())
 		wu, err := wuRepo.GetByID(workUnitID)
 		if err != nil {
 			return fmt.Errorf("failed to get work unit: %w", err)
@@ -45,7 +39,7 @@ var runStartCmd = &cobra.Command{
 		}
 
 		runService := bootstrap.RunService(getDB())
-		runResult, err := runService.Create(cmd.Context(), runmod.CreateRunInput{
+		runResult, err := runService.Create(cmd.Context(), bootstrap.CreateRunInput{
 			TaskID:     wu.TaskID,
 			WorkUnitID: workUnitID,
 			Attempt:    1,
@@ -67,7 +61,7 @@ var runStartCmd = &cobra.Command{
 		}
 
 		agentService := bootstrap.AgentService(getDB())
-		agentEntity, err := agentService.FindOrCreate(cmd.Context(), agentProfile, agent.RuntimeType(runtimeType))
+		agentEntity, err := agentService.FindOrCreate(cmd.Context(), agentProfile, bootstrap.RuntimeType(runtimeType))
 		if err != nil {
 			_ = failStartedRun(context.Background(), runService, nil, run.ID, "", runtimeType, "", err)
 			return fmt.Errorf("failed to find or create agent: %w", err)
@@ -75,7 +69,7 @@ var runStartCmd = &cobra.Command{
 		agentID := agentEntity.ID
 
 		sessionService := bootstrap.AgentSessionService(getDB())
-		sessionResult, err := sessionService.Create(cmd.Context(), agentsessionmod.CreateAgentSessionInput{
+		sessionResult, err := sessionService.Create(cmd.Context(), bootstrap.CreateAgentSessionInput{
 			AgentID:    agentID,
 			RunID:      run.ID,
 			TaskID:     run.TaskID,
@@ -95,12 +89,12 @@ var runStartCmd = &cobra.Command{
 		}
 
 		promptService := bootstrap.PromptService(getDB())
-		toolset, err := promptmod.SelectToolset(agentProfile)
+		toolset, err := bootstrap.SelectToolset(agentProfile)
 		if err != nil {
 			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
 			return fmt.Errorf("failed to select toolset: %w", err)
 		}
-		taskContext := promptmod.TaskContext{
+		taskContext := bootstrap.TaskContext{
 			TaskID:             wu.TaskID,
 			TaskTitle:          wu.Title,
 			TaskDescription:    wu.Objective,
@@ -117,12 +111,12 @@ var runStartCmd = &cobra.Command{
 			ValidationPlan:     wu.ValidationPlan,
 			Toolset:            toolset,
 		}
-		composed, err := promptmod.Compose(taskContext)
+		composed, err := bootstrap.ComposeTaskPrompt(taskContext)
 		if err != nil {
 			_ = failStartedRun(context.Background(), runService, sessionService, run.ID, session.ID, runtimeType, agentID, err)
 			return fmt.Errorf("failed to compose prompt: %w", err)
 		}
-		preparedPrompt, err := promptService.PersistComposedPrompt(cmd.Context(), composed, promptmod.PersistMetadata{
+		preparedPrompt, err := promptService.PersistComposedPrompt(cmd.Context(), composed, bootstrap.PersistMetadata{
 			RunID:          run.ID,
 			WorkUnitID:     wu.ID,
 			TaskID:         wu.TaskID,
@@ -138,14 +132,14 @@ var runStartCmd = &cobra.Command{
 		if runtimeType == "fake" || runtimeType == "gemini" {
 			fmt.Printf("Starting %s runtime for run %s...\n", runtimeType, run.ID)
 
-			var runtime agent.Runtime
+			var runtime bootstrap.Runtime
 			if runtimeType == "fake" {
-				runtime = agent.NewFakeRuntime()
+				runtime = bootstrap.NewFakeRuntime()
 			} else {
-				runtime = agent.NewGeminiRuntime()
+				runtime = bootstrap.NewGeminiRuntime()
 			}
 
-			config := agent.RuntimeConfig{
+			config := bootstrap.RuntimeConfig{
 				RunID:             run.ID,
 				WorkUnitID:        workUnitID,
 				TaskID:            wu.TaskID,
@@ -169,7 +163,7 @@ var runStartCmd = &cobra.Command{
 			}
 
 			relay := bootstrap.RuntimeEventRelay(getDB())
-			relayConfig := runmod.RelayConfig{
+			relayConfig := bootstrap.RelayConfig{
 				SessionID:   session.ID,
 				RunID:       run.ID,
 				RuntimeType: runtimeType,
@@ -183,7 +177,7 @@ var runStartCmd = &cobra.Command{
 			if err != nil {
 				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("runtime relay failed: %w", err))
 			}
-			if finalStatus != runmod.StatusCompleted {
+			if finalStatus != domain.RunStatusCompleted {
 				return failStartedRun(ctx, runService, sessionService, run.ID, session.ID, runtimeType, agentID, fmt.Errorf("runtime finished with unexpected status: %s", finalStatus))
 			}
 		}
@@ -199,7 +193,17 @@ var runStartCmd = &cobra.Command{
 	},
 }
 
-func failStartedRun(ctx context.Context, runService *runmod.RunService, sessionService *agentsessionmod.AgentSessionService, runID, sessionID, runtimeType, agentID string, cause error) error {
+type runFailer interface {
+	Timeout(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+	Fail(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error)
+}
+
+type sessionFailer interface {
+	Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+}
+
+func failStartedRun(ctx context.Context, runService runFailer, sessionService sessionFailer, runID, sessionID, runtimeType, agentID string, cause error) error {
 	if cause == nil {
 		return nil
 	}
@@ -259,9 +263,9 @@ var runListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID, _ := cmd.Flags().GetString("task-id")
 
-		repo := runmod.NewRepository(getDB())
+		repo := bootstrap.RunRepository(getDB())
 
-		var runs []runmod.Run
+		var runs []domain.Run
 		var err error
 
 		if taskID != "" {
@@ -302,7 +306,7 @@ var runGetCmd = &cobra.Command{
 	Short: "Get run details",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := runmod.NewRepository(getDB())
+		repo := bootstrap.RunRepository(getDB())
 		run, err := repo.GetByID(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to get run: %w", err)

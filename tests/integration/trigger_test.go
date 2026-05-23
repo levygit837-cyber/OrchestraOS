@@ -173,7 +173,7 @@ func TestTriggerServiceEvaluateRun(t *testing.T) {
 	// Should detect time exceeded at minimum
 	foundTime := false
 	for _, tr := range detected {
-		if tr.AnomalyType != nil && *tr.AnomalyType == triggermod.AnomalyTimeExceeded {
+		if tr.AnomalyType != nil && *tr.AnomalyType == string(triggermod.AnomalyTimeExceeded) {
 			foundTime = true
 		}
 	}

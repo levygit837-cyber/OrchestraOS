@@ -30,12 +30,6 @@ func (r *Repository) Create(task *Task) error {
 	if task.ID == "" {
 		task.ID = uuid.New().String()
 	}
-	if task.CreatedAt.IsZero() {
-		task.CreatedAt = time.Now()
-	}
-	if task.UpdatedAt.IsZero() {
-		task.UpdatedAt = task.CreatedAt
-	}
 
 	acceptanceCriteria, err := json.Marshal(task.AcceptanceCriteria)
 	if err != nil {

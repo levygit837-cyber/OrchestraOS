@@ -22,9 +22,6 @@ func (r *Repository) Create(event *domain.EventEnvelope) (bool, error) {
 	if event == nil {
 		return false, apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope is required")
 	}
-	if event.ID == "" || event.Sequence == 0 || event.CreatedAt.IsZero() {
-		return false, apperrors.New(apperrors.CodeInvalidInput, "event_repository.create", "event envelope must be completed before persistence")
-	}
 
 	payloadJSON, err := json.Marshal(event.Payload)
 	if err != nil {
@@ -150,8 +147,8 @@ func (r *Repository) ListByWorkUnit(workUnitID string) ([]domain.EventEnvelope, 
 	return events, rows.Err()
 }
 
-func (r *Repository) LastCheckpointByRun(runID string) (*domain.EventEnvelope, error) {
-	row := r.db.QueryRow(QueryLastCheckpointByRun, runID)
+func (r *Repository) GetLastCheckpointByRun(runID string) (*domain.EventEnvelope, error) {
+	row := r.db.QueryRow(QueryGetLastCheckpointByRun, runID)
 	return r.scanEvent(row)
 }
 

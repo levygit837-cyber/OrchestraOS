@@ -9,7 +9,8 @@ import (
 
 // RequireByID retrieves an agent session by ID within a transaction, returning a not-found error if absent.
 func RequireByID(ctx context.Context, tx *sql.Tx, id string) (*AgentSession, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	session, err := NewRepository(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "agentsession.get", err)

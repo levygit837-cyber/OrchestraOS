@@ -18,18 +18,16 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // TaskReader abstracts task reads to avoid cyclic imports.
 type TaskReader interface {
-	GetByID(id string) (*taskmod.Task, error)
+	GetByID(id string) (*domain.Task, error)
 }
 
 // WorkUnitReader abstracts work-unit reads to avoid cyclic imports.
 type WorkUnitReader interface {
-	GetByID(id string) (*workunitmod.WorkUnit, error)
+	GetByID(id string) (*domain.WorkUnit, error)
 }
 
 type RunService struct {
@@ -276,8 +274,8 @@ func validateCreateRunInput(input CreateRunInput) error {
 	return nil
 }
 
-func validateRunStartPolicy(task *taskmod.Task, input transition.TransitionInput) error {
-	if task.RiskLevel == taskmod.RiskLevelHigh || task.RiskLevel == taskmod.RiskLevelCritical {
+func validateRunStartPolicy(task *domain.Task, input transition.TransitionInput) error {
+	if task.RiskLevel == domain.TaskRiskLevelHigh || task.RiskLevel == domain.TaskRiskLevelCritical {
 		if input.Justification == "" {
 			return apperrors.New(apperrors.CodePolicy, "run_service.policy", "starting high or critical risk tasks requires explicit justification")
 		}
@@ -285,7 +283,7 @@ func validateRunStartPolicy(task *taskmod.Task, input transition.TransitionInput
 	return nil
 }
 
-func (s *RunService) requireTaskByID(tx *sql.Tx, id string) (*taskmod.Task, error) {
+func (s *RunService) requireTaskByID(tx *sql.Tx, id string) (*domain.Task, error) {
 	task, err := s.newTaskReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "task.get", err)
@@ -296,7 +294,7 @@ func (s *RunService) requireTaskByID(tx *sql.Tx, id string) (*taskmod.Task, erro
 	return task, nil
 }
 
-func (s *RunService) requireWorkUnitByID(tx *sql.Tx, id string) (*workunitmod.WorkUnit, error) {
+func (s *RunService) requireWorkUnitByID(tx *sql.Tx, id string) (*domain.WorkUnit, error) {
 	wu, err := s.newWorkUnitReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "workunit.get", err)

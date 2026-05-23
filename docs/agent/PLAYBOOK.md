@@ -86,7 +86,7 @@ status: em-andamento | concluido | cancelado
 ### 3.2 Commit e PR
 
 - Usar obrigatoriamente: `./scripts/git/safe-commit.sh "mensagem descritiva"`.
-- O script cria feature branch automaticamente se voce estiver na `main`.
+- O script cria feature branch automaticamente se voce estiver na `master`.
 - Push da branch e abertura de Pull Request.
 - Aguardar CI passar antes de solicitar merge.
 

@@ -13,7 +13,6 @@ import (
 	eventmod "github.com/levygit837-cyber/OrchestraOS/internal/core/event"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
 )
 
 // EventSource abstracts a runtime that produces events.
@@ -23,12 +22,12 @@ type EventSource interface {
 
 // RelaySessionService abstracts agent-session operations needed by the relay.
 type RelaySessionService interface {
-	Heartbeat(ctx context.Context, sessionID string, input domain.HeartbeatInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
-	CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
-	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
-	Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
-	Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error)
-	AutomaticCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*transition.OperationResult[*agentsessionmod.AgentSession], *domain.CheckpointSuggestion, error)
+	Heartbeat(ctx context.Context, sessionID string, input domain.HeartbeatInput) (*transition.OperationResult[*domain.AgentSession], error)
+	CheckpointFromEvent(ctx context.Context, sessionID string, event *domain.EventEnvelope) (*transition.OperationResult[*domain.AgentSession], error)
+	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Timeout(ctx context.Context, sessionID string, recoverableState json.RawMessage, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	AutomaticCheckpoint(ctx context.Context, sessionID string, input domain.AutoCheckpointInput) (*transition.OperationResult[*domain.AgentSession], *domain.CheckpointSuggestion, error)
 }
 
 // RelayRunService abstracts run operations needed by the relay.

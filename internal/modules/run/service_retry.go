@@ -119,7 +119,8 @@ func (s *RunService) Retry(ctx context.Context, runID string, input transition.T
 }
 
 func existingRetryResult(ctx context.Context, tx *sql.Tx, eventID, previousRunID string) (*transition.OperationResult[*Run], bool, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	store, err := eventstore.NewStoreWithExecutor(tx)
 	if err != nil {
 		return nil, false, err

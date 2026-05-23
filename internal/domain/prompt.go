@@ -1,0 +1,119 @@
+package domain
+
+import (
+	"encoding/json"
+	"time"
+)
+
+// ============================================================================
+// Prompt Domain
+// ============================================================================
+
+type PromptSnapshot struct {
+	ID                 string              `json:"id"`
+	RunID              string              `json:"run_id"`
+	WorkUnitID         string              `json:"work_unit_id"`
+	AgentSessionID     string              `json:"agent_session_id"`
+	SystemPrompt       string              `json:"system_prompt"`
+	TaskPrompt         string              `json:"task_prompt"`
+	CombinedPrompt     string              `json:"combined_prompt"`
+	SystemPromptHash   string              `json:"system_prompt_hash"`
+	TaskPromptHash     string              `json:"task_prompt_hash"`
+	CombinedPromptHash string              `json:"combined_prompt_hash"`
+	CompositionHash    string              `json:"composition_hash"`
+	CategorySignature  string              `json:"category_signature"`
+	FragmentRefs       []PromptFragmentRef `json:"fragment_refs"`
+	AssemblyOrder      []string            `json:"assembly_order"`
+	VariablesApplied   json.RawMessage     `json:"variables_applied"`
+	CountUsed          int                 `json:"count_used"`
+	FirstUsedAt        time.Time           `json:"first_used_at"`
+	LastUsedAt         time.Time           `json:"last_used_at"`
+	CreatedAt          time.Time           `json:"created_at"`
+}
+
+type PromptFragment struct {
+	ID               string          `json:"id"`
+	Version          string          `json:"version"`
+	Category         string          `json:"category"`
+	Kind             string          `json:"kind"`
+	Title            string          `json:"title"`
+	Priority         int             `json:"priority"`
+	ExclusiveGroup   string          `json:"exclusive_group"`
+	BodyHash         string          `json:"body_hash"`
+	MetadataHash     string          `json:"metadata_hash"`
+	Body             string          `json:"body"`
+	AppliesWhen      json.RawMessage `json:"applies_when,omitempty"`
+	Requires         []string        `json:"requires,omitempty"`
+	ConflictsWith    []string        `json:"conflicts_with,omitempty"`
+	Allows           []string        `json:"allows,omitempty"`
+	Denies           []string        `json:"denies,omitempty"`
+	ApprovalRequired []string        `json:"approval_required,omitempty"`
+	AutonomyLevel    int             `json:"autonomy_level,omitempty"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
+}
+
+type PromptFragmentRef struct {
+	ID           string `json:"id"`
+	Version      string `json:"version"`
+	Category     string `json:"category"`
+	Kind         string `json:"kind"`
+	Order        int    `json:"order"`
+	BodyHash     string `json:"body_hash"`
+	MetadataHash string `json:"metadata_hash"`
+	Title        string `json:"title"`
+}
+
+type ToolsetSnapshot struct {
+	ID             string        `json:"id"`
+	RunID          string        `json:"run_id"`
+	AgentSessionID string        `json:"agent_session_id"`
+	Tools          []ToolsetTool `json:"tools"`
+	CreatedReason  string        `json:"created_reason"`
+	CreatedAt      time.Time     `json:"created_at"`
+}
+
+type ToolsetTool struct {
+	Name   string `json:"name"`
+	Scope  string `json:"scope"`
+	Risk   string `json:"risk"`
+	Reason string `json:"reason,omitempty"`
+}
+
+type ComposedPrompt struct {
+	SystemPrompt       string                 `json:"system_prompt"`
+	TaskPrompt         string                 `json:"task_prompt"`
+	CombinedPrompt     string                 `json:"combined_prompt"`
+	SystemPromptHash   string                 `json:"system_prompt_hash"`
+	TaskPromptHash     string                 `json:"task_prompt_hash"`
+	CombinedPromptHash string                 `json:"combined_prompt_hash"`
+	CompositionHash    string                 `json:"composition_hash"`
+	CategorySignature  string                 `json:"category_signature"`
+	SystemProfile      SystemProfile          `json:"system_profile"`
+	Fragments          []PromptFragment       `json:"fragments"`
+	FragmentRefs       []PromptFragmentRef    `json:"fragment_refs"`
+	AssemblyOrder      []string               `json:"assembly_order"`
+	VariablesApplied   map[string]interface{} `json:"variables_applied"`
+	Toolset            ToolsetSelection       `json:"toolset"`
+}
+
+type SystemProfile struct {
+	Persona               string                       `json:"persona"`
+	OperatingMode         string                       `json:"operating_mode"`
+	TechnicalDomain       string                       `json:"technical_domain"`
+	OutputContract        string                       `json:"output_contract"`
+	ToolNames             []string                     `json:"tool_names"`
+	Allows                []string                     `json:"allows"`
+	Denies                []string                     `json:"denies"`
+	ApprovalRequired      []string                     `json:"approval_required"`
+	Categories            map[string]PromptFragmentRef `json:"categories"`
+	CategorySignature     string                       `json:"category_signature"`
+	TaskExecutionFocus    string                       `json:"task_execution_focus"`
+	CanonicalAgentProfile string                       `json:"canonical_agent_profile"`
+}
+
+type ToolsetSelection struct {
+	Profile       string        `json:"profile"`
+	Tools         []ToolsetTool `json:"tools"`
+	CreatedReason string        `json:"created_reason"`
+}
