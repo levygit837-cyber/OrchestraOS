@@ -1,71 +1,72 @@
-# Sistema de Orquestração de Agentes
+# OrchestraOS
 
-Projeto inicial para construir um sistema em que ideias, decisões, execução de código, automações e operação sejam coordenadas por agentes de IA com supervisão humana progressivamente menor.
+Sistema de orquestração de agentes de IA. Transforma intenção humana em planejamento, execução e validação contínua via DAG de work units.
 
 ## Estado
 
-- Nome final: em aberto
-- Fase atual: fundação e integração E2E
+- Fase atual: Thin Orchestrator — pipeline architecture
 - Fonte de verdade: este repositório
-- Comunicação operacional sugerida: CLI + GitHub
-- Execução técnica sugerida: Codex + GitHub + worktrees + automações futuras
-- Arquitetura: Arquitetura Modular Simplificada (ADR-0019) com Orchestrator central e agentes isolados
+- Stack: Go, PostgreSQL (planejado), GitHub
+- Autonomia aprovada: Nível 2
 
-## Documentos Principais
+## Quickstart
 
-- [AGENTS.md](AGENTS.md): regras que agentes devem seguir ao trabalhar no repositório.
-- [docs/canvas/project-canvas.md](docs/canvas/project-canvas.md): canvas textual do produto, legível por humanos e por IA.
-- [docs/canvas/system-map.mmd](docs/canvas/system-map.mmd): mapa Mermaid da arquitetura atual.
-- [docs/architecture/README.md](docs/architecture/README.md): visão geral da arquitetura do OrchestraOS.
-- [docs/architecture/core/stack.md](docs/architecture/core/stack.md): stack técnica recomendada e evolução.
-- [docs/architecture/orchestration.md](docs/architecture/orchestration.md): modelo de orquestração de agentes.
-- [docs/architecture/core/domain-model.md](docs/architecture/core/domain-model.md): modelos de domínio do sistema.
-- [docs/architecture/interface/interface-strategy.md](docs/architecture/interface/interface-strategy.md): estratégia CLI, GitHub, Desktop, Web e conectores opcionais.
-- [docs/architecture/execution/task-decomposition.md](docs/architecture/execution/task-decomposition.md): decomposição de tasks em DAG.
-- [docs/architecture/interface/prompt-system.md](docs/architecture/interface/prompt-system.md): composição de SystemPrompts e TaskPrompts.
-- [docs/architecture/observability/memory-system.md](docs/architecture/observability/memory-system.md): desenho da memória recursiva derivada de eventos, checkpoints e documentação.
-- [docs/architecture/protocols/communication-protocol.md](docs/architecture/protocols/communication-protocol.md): contrato inicial de eventos e comandos.
-- [docs/architecture/core/repo-structure.md](docs/architecture/core/repo-structure.md): estrutura inicial de codigo, contratos e testes.
-- [docs/contracts/json-schemas.md](docs/contracts/json-schemas.md): indice dos schemas executaveis de dominio, eventos e comandos.
-- [docs/architecture/project/permissions.md](docs/architecture/project/permissions.md): matriz de ferramentas, riscos e aprovações.
-- [docs/architecture/agents/sandbox-and-autonomy.md](docs/architecture/agents/sandbox-and-autonomy.md): política inicial de sandbox e autonomia.
-- [docs/architecture/project/testing-strategy.md](docs/architecture/project/testing-strategy.md): estratégia de testes por domínio.
-- [docs/architecture/execution/failures-and-rollback.md](docs/architecture/execution/failures-and-rollback.md): falhas, rollback e recuperação.
-- [docs/architecture/project/mvp.md](docs/architecture/project/mvp.md): escopo do MVP local-first.
-- [docs/implementation/roadmap.md](docs/implementation/roadmap.md): plano técnico de implementação.
-- [docs/management/operating-model.md](docs/management/operating-model.md): modelo de gestão do projeto.
-- [docs/slack/slack-setup.md](docs/slack/slack-setup.md): configuração opcional de Slack para integração futura.
-- [docs/naming.md](docs/naming.md): opções de nomes para produto/empresa.
+```bash
+# Build
+go build ./cmd/orchestraos
 
-## Decisões Arquiteturais Atuais
+# Run a task with acceptance criteria
+./orchestraos run "Add login feature" \
+  "Create login form component" \
+  "Add authentication service" \
+  "[after: 1,2] Integration tests for login flow"
+```
 
-- Orchestrator como control plane central.
-- Agentes como workers isolados por task.
-- Comunicação agente-orquestrador por WebSocket com eventos persistidos.
-- Comunicação entre agentes mediada pelo Orchestrator.
-- Task Graph acíclico para decomposição de trabalho; loops ficam dentro das runs dos agentes.
-- Sistema de composição de prompts por fragmentos versionados.
-- Ledger persistente de progresso por work unit.
-- Histórico operacional normalizado no Event Store.
-- Memória recursiva futura como camada derivada e auditável, não como fonte de verdade.
-- Interface inicial: scripts de bootstrap, CLI fina e GitHub.
-- Operação inicial GitHub-first: issues, branches, worktrees, pull requests, reviews e checks.
-- Chat, incluindo Slack, fica como conector opcional futuro.
-- Stack inicial: Go, Postgres, Codex/CLI, Git worktree, Docker e GitHub.
-- Autonomia inicial aprovada: Nível 2.
+## Arquitetura
 
-## Estrutura do Repositório
+Pipeline architecture com 3 regras:
 
-- `cmd/orchestraos/`: entrada da CLI local.
-- `internal/domain/`: todos os entity types compartilhados (ADR-0019 Pilar 1).
-- `internal/modules/`: módulos autônomos (agent, agentsession, orchestrator, prompt, review, run, task, taskgraph, trigger, workunit).
-- `internal/core/`: infraestrutura compartilhada (apperrors, db, eventstore, statemachine, transition, validation).
-- `internal/bootstrap/`: injeção de dependências e wiring de serviços.
-- `contracts/schemas/`: JSON Schemas versionados.
-- `tests/architecture/`: testes automáticos de regras de arquitetura.
+1. `domain/` é puro — zero imports internos
+2. Dependências fluem para baixo — nunca entre pacotes irmãos
+3. SQL confinado a `store/`
 
-Para mais detalhes, consulte [docs/architecture/core/repo-structure.md](docs/architecture/core/repo-structure.md).
+```
+cmd/orchestraos/       CLI entrypoint
+internal/
+├── domain/            Tipos puros (Task, Run, WorkUnit, TaskGraph, EventEnvelope)
+├── planner/           Task → DAG de WorkUnits (heuristic planner)
+├── executor/          DAG → execução em ordem topológica
+├── runtime/           Interface de execução (fake runtime)
+├── store/             Persistência unificada (interface + in-memory)
+├── event/             Event emitter
+├── apperrors/         Erros padronizados
+└── orchestrator.go    Composição: planner → executor → runtime (~55 linhas)
+tests/architecture/    6 testes de arquitetura via AST
+```
 
-## Regra de Trabalho
+Pipeline: `Task → planner.Plan() → []WorkUnit → executor.Execute() → runtime.Execute()`
 
-Antes de implementar qualquer funcionalidade, transformar a ideia em um item pequeno com objetivo, escopo, critérios de aceite e teste esperado. O projeto deve crescer por decisões registradas, não por improviso acumulado.
+## Testes de Arquitetura
+
+6 testes automatizados que bloqueiam CI:
+
+| Teste | Regra |
+|-------|-------|
+| TestDependencyDirection | Grafo de imports validado por package |
+| TestDomainPurity | domain/ sem imports internos |
+| TestPackageSizeLimit | Nenhum package > 800 linhas |
+| TestMaxFunctionComplexity | Nenhuma função > 40 linhas |
+| TestSQLConfinement | SQL apenas em store/ |
+| TestNoGlobalState | Sem variáveis globais mutáveis |
+
+```bash
+make arch    # roda testes de arquitetura
+make check   # vet + test + arch + lint + build
+```
+
+## Documentação
+
+- [AGENTS.md](AGENTS.md) — regras para agentes
+- [docs/canvas/project-canvas.md](docs/canvas/project-canvas.md) — visão do produto
+- [docs/adr/](docs/adr/) — decisões arquiteturais
+- [docs/development/CODING_STANDARDS.md](docs/development/CODING_STANDARDS.md) — padrões de código
