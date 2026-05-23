@@ -40,6 +40,8 @@ type Run struct {
 	FinishedAt    *time.Time `json:"finished_at,omitempty"`
 	Result        *RunResult `json:"result,omitempty"`
 	FailureReason *string    `json:"failure_reason,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 // EventSource abstracts a runtime that produces events.

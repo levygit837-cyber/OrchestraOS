@@ -95,7 +95,7 @@ func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, 
 	}
 	if !appendResult.Duplicate {
 		repo := NewRepository(tx)
-		if err := repo.UpdateCheckpointWithEvent(session.ID, appendResult.Event.ID); err != nil {
+		if err := repo.UpdateCheckpointWithEvent(session.ID, appendResult.Event.ID, appendResult.Event.CreatedAt, appendResult.Event.CreatedAt); err != nil {
 			return nil, apperrors.Wrap(apperrors.CodePersistence, "agent_session_service.update_checkpoint", err)
 		}
 		recoverableState, err := serialization.MarshalPayload("agent_session_service.recoverable_checkpoint_state", map[string]interface{}{
@@ -110,7 +110,7 @@ func (s *AgentSessionService) Checkpoint(ctx context.Context, sessionID string, 
 		if err != nil {
 			return nil, err
 		}
-		if err := repo.UpdateRecoverableState(session.ID, recoverableState); err != nil {
+		if err := repo.UpdateRecoverableState(session.ID, recoverableState, appendResult.Event.CreatedAt); err != nil {
 			return nil, apperrors.Wrap(apperrors.CodePersistence, "agent_session_service.update_recoverable_checkpoint_state", err)
 		}
 		session.LastSeenEventID = appendResult.Event.ID

@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
@@ -57,6 +58,10 @@ func (s *AgentService) Create(ctx context.Context, input CreateAgentInput) (*tra
 	}
 	defer dbcore.RollbackTx(tx)
 
+	if input.ID == "" {
+		input.ID = uuid.New().String()
+	}
+	now := time.Now().UTC()
 	agent := &Agent{
 		ID:                     input.ID,
 		Name:                   input.Name,
@@ -66,6 +71,8 @@ func (s *AgentService) Create(ctx context.Context, input CreateAgentInput) (*tra
 		DefaultPromptFragments: input.DefaultPromptFragments,
 		RuntimeType:            input.RuntimeType,
 		Status:                 AgentStatusActive,
+		CreatedAt:              now,
+		UpdatedAt:              now,
 	}
 
 	if err := NewRepository(tx).Create(agent); err != nil {
@@ -151,11 +158,14 @@ func (s *AgentService) FindOrCreate(ctx context.Context, profile string, runtime
 
 	// Atomically create; if a concurrent call already created it, the unique
 	// constraint will raise a violation that we handle by selecting again.
+	now := time.Now().UTC()
 	agent = &Agent{
 		ID:          uuid.New().String(),
 		Name:        profile + " agent",
 		Profile:     profile,
 		RuntimeType: runtimeType,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	if err := repo.Create(agent); err != nil {
 		var pqErr *pq.Error

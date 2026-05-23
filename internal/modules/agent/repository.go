@@ -3,9 +3,7 @@ package agent
 import (
 	"context"
 	"database/sql"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
@@ -22,12 +20,6 @@ func NewRepository(db db.DBTX) *Repository {
 
 // Create inserts a new agent
 func (r *Repository) Create(agent *Agent) error {
-	if agent.ID == "" {
-		agent.ID = uuid.New().String()
-	}
-
-	now := time.Now().UTC()
-
 	_, err := r.db.Exec(
 		QueryInsert,
 		agent.ID,
@@ -38,8 +30,8 @@ func (r *Repository) Create(agent *Agent) error {
 		textArray(agent.DefaultPromptFragments),
 		agent.RuntimeType,
 		agent.Status,
-		now,
-		now,
+		agent.CreatedAt,
+		agent.UpdatedAt,
 	)
 	if err != nil {
 		return apperrors.Wrap(apperrors.CodePersistence, "repository.create", err)
@@ -86,8 +78,6 @@ func (r *Repository) scanAgent(scanner interface {
 	var agent Agent
 	var capabilities, allowedTools, defaultPromptFragments []string
 	var status string
-	var createdAt, updatedAt time.Time
-
 	err := scanner.Scan(
 		&agent.ID,
 		&agent.Name,
@@ -97,8 +87,8 @@ func (r *Repository) scanAgent(scanner interface {
 		&defaultPromptFragments,
 		&agent.RuntimeType,
 		&status,
-		&createdAt,
-		&updatedAt,
+		&agent.CreatedAt,
+		&agent.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
