@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
 
@@ -27,9 +26,6 @@ func NewRepository(db db.DBTX) *Repository {
 
 // Create inserts a new trigger
 func (r *Repository) Create(trigger *Trigger) error {
-	if trigger.ID == "" {
-		trigger.ID = uuid.New().String()
-	}
 	_, err := r.db.Exec(
 		QueryInsert,
 		trigger.ID,
