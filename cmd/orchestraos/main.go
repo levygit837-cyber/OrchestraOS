@@ -18,7 +18,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: orchestraos run \"<task title>\" \"<criteria1>\" \"<criteria2>\" ...\n")
+		printUsage()
 		os.Exit(1)
 	}
 
@@ -30,24 +30,36 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\nUsage: orchestraos run \"<title>\" \"<criteria1>\" ...\n", cmd)
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
+		printUsage()
 		os.Exit(1)
 	}
 }
 
+func printUsage() {
+	fmt.Fprintf(os.Stderr, "Usage: orchestraos run [--provider fake|gemini|deepseek] \"<title>\" \"<criteria1>\" ...\n")
+}
+
 func runTask(args []string) error {
-	if len(args) < 3 {
+	provider := "fake"
+	remaining := args
+
+	if len(remaining) > 1 && remaining[0] == "--provider" {
+		provider = remaining[1]
+		remaining = remaining[2:]
+	}
+
+	if len(remaining) < 3 {
 		return fmt.Errorf("need at least: title + 2 acceptance criteria")
 	}
 
-	title := args[0]
-	criteria := args[1:]
+	title := remaining[0]
+	criteria := remaining[1:]
 
 	ctx := context.Background()
-
 	s := store.NewMemory()
 	p := planner.NewHeuristic()
-	rt := runtime.NewFake()
+	rt := buildRuntime(provider)
 	ex := executor.New(s, rt)
 	orch := orchestraos.NewOrchestrator(s, p, ex)
 
@@ -69,6 +81,7 @@ func runTask(args []string) error {
 
 	fmt.Printf("Task created: %s\n", task.ID)
 	fmt.Printf("  Title: %s\n", task.Title)
+	fmt.Printf("  Provider: %s\n", provider)
 	fmt.Printf("  Criteria: %s\n", strings.Join(criteria, " | "))
 	fmt.Println()
 
@@ -84,4 +97,19 @@ func runTask(args []string) error {
 	}
 
 	return nil
+}
+
+func buildRuntime(provider string) runtime.Runtime {
+	switch provider {
+	case "gemini":
+		return runtime.NewGemini(runtime.Config{
+			APIKey: os.Getenv("GEMINI_API_KEY"),
+		})
+	case "deepseek":
+		return runtime.NewDeepSeek(runtime.Config{
+			APIKey: os.Getenv("DEEPSEEK_API_KEY"),
+		})
+	default:
+		return runtime.NewFake()
+	}
 }

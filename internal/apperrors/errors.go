@@ -9,6 +9,10 @@ const (
 	KindNotFound
 	KindConflict
 	KindInternal
+	KindRateLimit
+	KindAuthFailure
+	KindTimeout
+	KindProviderDown
 )
 
 type Error struct {
@@ -40,4 +44,12 @@ func IsNotFound(err error) bool {
 		return e.Kind == KindNotFound
 	}
 	return false
+}
+
+func IsRetryable(err error) bool {
+	e, ok := err.(*Error)
+	if !ok {
+		return false
+	}
+	return e.Kind == KindRateLimit || e.Kind == KindTimeout || e.Kind == KindProviderDown
 }

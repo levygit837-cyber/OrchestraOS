@@ -21,7 +21,7 @@ var allowedImports = map[string][]string{
 	"internal/event":     {"internal/domain", "internal/store"},
 	"internal/planner":   {"internal/domain", "internal/apperrors"},
 	"internal/executor":  {"internal/domain", "internal/apperrors", "internal/runtime", "internal/store"},
-	"internal/runtime":   {"internal/domain"},
+	"internal/runtime":   {"internal/domain", "internal/apperrors"},
 	"internal":           {"internal/domain", "internal/executor", "internal/planner", "internal/store"},
 	"cmd/orchestraos":    {"internal", "internal/domain", "internal/executor", "internal/planner", "internal/runtime", "internal/store"},
 }
