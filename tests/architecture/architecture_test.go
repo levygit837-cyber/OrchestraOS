@@ -28,7 +28,7 @@ var allowedImports = map[string][]string{
 	"internal/provider/deepseek": {"internal/domain", "internal/apperrors", "internal/runtime", "internal/sse"},
 	"internal/daggen":            {"internal/domain", "internal/apperrors"},
 	"internal/decomposer":        {"internal/domain", "internal/apperrors", "internal/daggen", "internal/retry"},
-	"internal/assignment":         {"internal/domain", "internal/apperrors"},
+	"internal/assignment":        {"internal/domain", "internal/apperrors"},
 	"internal":                   {"internal/domain", "internal/executor", "internal/planner", "internal/store"},
 	"cmd/orchestraos":            {"internal", "internal/domain", "internal/executor", "internal/planner", "internal/runtime", "internal/store", "internal/provider/gemini", "internal/provider/deepseek"},
 }

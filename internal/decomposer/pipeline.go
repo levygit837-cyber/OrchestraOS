@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/daggen"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
@@ -134,6 +133,4 @@ func NewPlannerAdapter(p *Pipeline) *PlannerAdapter {
 	return &PlannerAdapter{pipeline: p}
 }
 
-func buildGraphID() string {
-	return uuid.New().String()
-}
+

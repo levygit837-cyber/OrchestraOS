@@ -24,11 +24,11 @@ type DecompositionResult struct {
 }
 
 type WUSpec struct {
-	NodeID             string   `json:"node_id"`
-	Title              string   `json:"title"`
-	Objective          string   `json:"objective"`
+	NodeID             string    `json:"node_id"`
+	Title              string    `json:"title"`
+	Objective          string    `json:"objective"`
 	Context            WUContext `json:"context"`
-	AcceptanceCriteria []string `json:"acceptance_criteria"`
-	DependsOn          []string `json:"depends_on"`
-	SuggestedAgent     string   `json:"suggested_agent"`
+	AcceptanceCriteria []string  `json:"acceptance_criteria"`
+	DependsOn          []string  `json:"depends_on"`
+	SuggestedAgent     string    `json:"suggested_agent"`
 }
