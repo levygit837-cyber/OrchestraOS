@@ -2,121 +2,88 @@
 
 ## Purpose
 
-This document codifies the rules that every contributor (human or LLM) must follow when modifying the codebase. The architecture follows **ADR-0019** (Arquitetura Modular Simplificada). Violations caught by automated tools (`golangci-lint`, architecture tests) will block CI. Violations not caught by tools should still be treated as blockers during review.
+Rules for every contributor (human or LLM). Violations caught by CI (`golangci-lint`, architecture tests) block merge. Violations not caught by tools are blockers during review.
 
 ---
 
-## Module Standards
+## Package Structure
 
-Every module under `internal/modules/` MUST contain:
+```
+internal/
+  domain/       # Pure types — zero internal imports
+  planner/      # Task → DAG decomposition
+  executor/     # DAG → topological execution
+  runtime/      # Agent execution interface
+  store/        # Unified persistence (interface + implementations)
+  event/        # Event emitter
+  apperrors/    # Standardized errors
+```
 
-1. `doc.go` — package documentation and context briefing
-2. `README.md` — operational map, responsibilities, file map, allowed dependencies
-3. `models.go` — local module types (DTOs, input/output structs). **Shared entity types belong to `internal/domain/`**
-4. `repository.go` — pure CRUD, no business logic, no timestamps, no deduplication (see Repository Rules below)
-5. `service.go` — domain logic, state transitions, event emission
+### 3 Golden Rules
 
-### Optional Files (create only when needed)
-
-- `queries.go` — SQL constants only (omit if the module has no DB table)
-- `contract.go` — gateway to README.md/CONTRACTS.md, module rules for architecture tests
-- `CONTRACTS.md` — invariants, state machine, boundary rules, error rules
-- `events.go` — event types and payloads emitted by this module
-- `validation.go` — syntactic input validation rules
-- `fetch.go` — `RequireByID` and DI query helpers
-- `service_<verb>.go` — decomposition of `service.go` when > 300 lines
-
-### Forbidden in any module
-
-- `helpers.go` or `utils.go` — move reusable code to `internal/core/`
-- Inline SQL strings outside `queries.go`
-- Business logic inside `repository.go` (including `time.Now()`, status branching, deduplication, `ON CONFLICT`)
-- Direct mutation of another module's tables
-- Calling another module's `Service` methods — use DI interfaces or `core/transition` helpers (only `orchestrator/` and `bootstrap/` may import multiple modules per ADR-0019)
-- `panic()` — always return `apperrors.Error`
-- `fmt.Println` / `fmt.Printf` — use structured logging or return errors
-
-### Cross-Module Imports
-
-- **Zero cross-module imports** in `internal/modules/*` except `internal/modules/orchestrator/`.
-- `orchestrator/` is the **only** module allowed to import other modules for coordination.
-- All shared entity types (`Task`, `Run`, `WorkUnit`, `Agent`, etc.) live in `internal/domain/`.
-- Modules import `internal/domain/` for shared types, never another module's `models.go`.
+1. **domain/ is pure** — zero imports from other internal packages.
+2. **Dependencies flow down** — packages depend on domain; never on siblings.
+3. **SQL confined to store/** — no SQL patterns in any other package.
 
 ---
 
-## State Machine Rules
+## Function Complexity
 
-1. Every status transition MUST call `core/statemachine.CanTransition` before mutating state.
-2. Terminal statuses (`completed`, `failed`, `cancelled`, `stopped`) are immutable.
-3. `completed` transitions require `EvidenceRefs`, `ValidationEventID`, or `Justification`.
-4. Every mutation MUST emit a domain event in the same transaction.
+- No function body may exceed **40 lines** (enforced by `TestMaxFunctionComplexity`).
+- Extract helpers when a function grows beyond the limit.
+
+---
+
+## Package Size
+
+- No package may exceed **800 lines** of non-test Go code (enforced by `TestPackageSizeLimit`).
 
 ---
 
 ## Error Handling
 
-1. All errors exposed outside a module MUST be `apperrors.Error`.
-2. Raw database errors MUST be wrapped with `apperrors.Wrap` (not `fmt.Errorf`).
-3. Use `apperrors.CodeNotFound` for missing entities.
-4. Use `apperrors.CodeInvalidTransition` for illegal status changes.
-5. Use `apperrors.CodeConflict` for concurrency/idempotency violations.
-6. Never ignore an error (`_ = someCall()`). If it truly cannot fail, document why with a comment.
+1. All errors MUST be `apperrors.Error`.
+2. Raw errors MUST be wrapped with `apperrors.Wrap`.
+3. Use `apperrors.KindNotFound` for missing entities.
+4. Use `apperrors.KindValidation` for input validation failures.
+5. Use `apperrors.KindConflict` for concurrency violations.
+6. Never ignore an error (`_ = someCall()`). If it truly cannot fail, document why.
 
 ---
 
-## Repository Rules (ADR-0019 Pilar 4)
+## Forbidden Patterns
 
-`repository.go` is CRUD only. It MUST NOT contain:
-
-1. `time.Now()` — timestamps must be passed as parameters from `service.go`.
-2. Status-based branching (`if status == StatusRunning`) — logic belongs in `service.go`.
-3. `ON CONFLICT` / deduplication — upsert logic belongs in `service.go`.
-4. Field validation (`if id == ""`) — validation belongs in `service.go` or `validation.go`.
-5. `uuid.New()` for ID generation — IDs should be generated by `service.go` and passed in.
-
----
-
-## Transaction Rules
-
-1. Always use `core/db.BeginTx`, `CommitTx`, `RollbackTx`.
-2. Prefer `defer dbcore.RollbackTx(tx)` immediately after `BeginTx`.
-3. Verify mutations with `dbcore.EnsureRowsAffected` when updating single rows.
-4. Keep transactions as short as possible — do not call external APIs inside a transaction.
+- `panic()` — always return errors
+- `fmt.Println` / `fmt.Printf` — use structured logging or return errors
+- `helpers.go` or `utils.go` — put reusable code in the right package
+- Inline SQL outside `store/`
+- Global mutable variables (maps, slices, channels, pointers)
 
 ---
 
 ## Naming Conventions
 
 | Construct | Convention | Example |
-|---|---|---|
-| Service | `*Service` | `TaskService` |
-| Repository | `*Repository` | `TaskRepository` |
-| Input struct | `Create*Input`, `Update*Input` | `CreateTaskInput` |
-| Result struct | `*Result` | `TaskGraphDecomposeResult` |
-| Status constant | `Status*` | `StatusCreated` |
-| Event type | `package.status` | `task.created`, `run.started` |
-| Operation name | `package.function` | `task_service.create` |
+|-----------|-----------|---------|
+| Interface | `*er` verb | `Planner`, `Runtime` |
+| Constructor | `New*` | `NewHeuristic()` |
+| Result struct | `*Result` | `executor.Result` |
+| Status constant | `*Status*` | `TaskStatusCreated` |
+| Error operation | `package.function` | `planner.parse` |
 
 ---
 
 ## Testing
 
-1. Unit tests belong next to the file they test (`*_test.go`).
-2. Architecture tests belong in `tests/architecture/`.
-3. Integration tests belong in `tests/integration/`.
-4. Every state transition MUST have at least one test path.
-5. Mock external dependencies; test business logic in isolation.
+1. Unit tests next to the file they test (`*_test.go`).
+2. Architecture tests in `tests/architecture/`.
+3. Run `make check` before committing.
 
 ---
 
-## Adding a New Module
+## Adding a New Package
 
-1. Run `./scripts/scaffold/new-module.sh <name>`.
-2. Run `./scripts/scaffold/new-module.sh <name> --with-optional` if you also need `queries.go`, `contract.go`, `CONTRACTS.md`, `events.go`, and `validation.go`.
-3. Fill in `README.md`.
-4. Implement `models.go`, `repository.go`, `service.go`.
-5. Add the service factory to `internal/bootstrap/services.go`.
-6. Run `go test ./internal/modules/<name>`.
-7. Run `./scripts/go/verify-contracts.sh`.
-8. Run `./scripts/go/lint.sh`.
+1. Create directory under `internal/`.
+2. Add to `allowedImports` in `tests/architecture/architecture_test.go`.
+3. Only import `domain/` and declared dependencies.
+4. Run `make arch` to verify.

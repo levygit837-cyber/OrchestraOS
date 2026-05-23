@@ -41,7 +41,7 @@ internal/
 | Para... | Consulte |
 |---------|----------|
 | Entender o produto e visão | `docs/canvas/project-canvas.md` |
-| Decisões arquiteturais | `docs/adr/` |
+| Decisões arquiteturais | `docs/adr/` (vigente: `0020-thin-orchestrator-pipeline.md`) |
 | Regras de código | `docs/development/CODING_STANDARDS.md` |
 
 ## Fluxo de Trabalho
