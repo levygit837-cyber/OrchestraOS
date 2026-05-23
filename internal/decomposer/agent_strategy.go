@@ -3,6 +3,7 @@ package decomposer
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -107,8 +108,9 @@ type llmWUSpec struct {
 }
 
 func parseDecompositionResponse(req *domain.DecompositionRequest, raw string) (*domain.DecompositionResult, error) {
+	cleaned := stripCodeFences(raw)
 	var resp llmResponse
-	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
+	if err := json.Unmarshal([]byte(cleaned), &resp); err != nil {
 		return nil, apperrors.Wrap(apperrors.KindDecomposition, "decomposer.agent.parse", err)
 	}
 	if len(resp.WorkUnits) == 0 {
@@ -168,4 +170,17 @@ func resolveDeps(indices []int, nodeIDs []string) []string {
 		return []string{}
 	}
 	return deps
+}
+
+func stripCodeFences(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "```") {
+		if i := strings.Index(s, "\n"); i != -1 {
+			s = s[i+1:]
+		}
+	}
+	if strings.HasSuffix(s, "```") {
+		s = s[:len(s)-3]
+	}
+	return strings.TrimSpace(s)
 }
