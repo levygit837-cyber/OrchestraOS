@@ -29,6 +29,7 @@ issues:
     - migrations
     - vendor
     - .go
+    - .tools
   exclude-rules:
     - path: cmd/
       linters:
