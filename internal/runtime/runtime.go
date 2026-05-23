@@ -1,13 +1,11 @@
 package runtime
 
 import (
-	"context"
 	"net/http"
 	"time"
-
-	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
+// Config holds provider configuration.
 type Config struct {
 	Provider    string
 	Model       string
@@ -16,42 +14,6 @@ type Config struct {
 	MaxTokens   int
 	Temperature float64
 	Timeout     time.Duration
-}
-
-type Prompt struct {
-	SystemMessage string
-	UserMessage   string
-	WorkUnitID    string
-	TaskID        string
-}
-
-type Result struct {
-	Status        domain.RunResult
-	Output        string
-	FailureReason string
-	Provider      string
-	Model         string
-	TokensUsed    int
-	Latency       time.Duration
-}
-
-type StreamChunk struct {
-	Delta         string
-	ThinkingDelta string
-	TokensUsed    int
-	IsThinking    bool
-	IsFinal       bool
-	Provider      string
-	Model         string
-}
-
-type Runtime interface {
-	Execute(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (*Result, error)
-}
-
-type StreamRuntime interface {
-	Runtime
-	ExecuteStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (<-chan StreamChunk, <-chan error)
 }
 
 type resolvedConfig struct {

@@ -12,6 +12,8 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 	"github.com/levygit837-cyber/OrchestraOS/internal/executor"
 	"github.com/levygit837-cyber/OrchestraOS/internal/planner"
+	"github.com/levygit837-cyber/OrchestraOS/internal/provider/deepseek"
+	"github.com/levygit837-cyber/OrchestraOS/internal/provider/gemini"
 	"github.com/levygit837-cyber/OrchestraOS/internal/runtime"
 	"github.com/levygit837-cyber/OrchestraOS/internal/store"
 )
@@ -99,14 +101,14 @@ func runTask(args []string) error {
 	return nil
 }
 
-func buildRuntime(provider string) runtime.Runtime {
+func buildRuntime(provider string) domain.Runtime {
 	switch provider {
 	case "gemini":
-		return runtime.NewGemini(runtime.Config{
+		return gemini.New(runtime.Config{
 			APIKey: os.Getenv("GEMINI_API_KEY"),
 		})
 	case "deepseek":
-		return runtime.NewDeepSeek(runtime.Config{
+		return deepseek.New(runtime.Config{
 			APIKey: os.Getenv("DEEPSEEK_API_KEY"),
 		})
 	default:

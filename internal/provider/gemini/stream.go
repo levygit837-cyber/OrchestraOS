@@ -1,4 +1,4 @@
-package runtime
+package gemini
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/runtime"
 	"github.com/levygit837-cyber/OrchestraOS/internal/sse"
 )
 
@@ -28,21 +29,20 @@ type geminiStreamResponse struct {
 	UsageMeta  *geminiUsageMetada      `json:"usageMetadata,omitempty"`
 }
 
-// ExecuteStream opens a streaming connection to Gemini and emits chunks.
-func (g *Gemini) ExecuteStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (<-chan StreamChunk, <-chan error) {
-	chunks := make(chan StreamChunk, 16)
+func (g *Gemini) ExecuteStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (<-chan domain.StreamChunk, <-chan error) {
+	chunks := make(chan domain.StreamChunk, 16)
 	errs := make(chan error, 1)
 	go g.runStream(ctx, wu, task, chunks, errs)
 	return chunks, errs
 }
 
-func (g *Gemini) runStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task, chunks chan<- StreamChunk, errs chan<- error) {
+func (g *Gemini) runStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task, chunks chan<- domain.StreamChunk, errs chan<- error) {
 	defer close(chunks)
 	defer close(errs)
 
-	body, err := g.buildRequest(BuildPrompt(wu, task))
+	body, err := g.buildRequest(runtime.BuildPrompt(wu, task))
 	if err != nil {
-		errs <- apperrors.Wrap(apperrors.KindStreamInitFailed, "runtime.gemini.stream", err)
+		errs <- apperrors.Wrap(apperrors.KindStreamInitFailed, "gemini.stream", err)
 		return
 	}
 
@@ -55,49 +55,49 @@ func (g *Gemini) runStream(ctx context.Context, wu *domain.WorkUnit, task *domai
 
 	lines := make(chan sse.Line, 16)
 	go sse.Parse(resp.Body, lines)
-	g.consumeGeminiSSE(lines, chunks, errs)
+	g.consumeSSE(lines, chunks, errs)
 }
 
 func (g *Gemini) doStreamRequest(ctx context.Context, body []byte) (*http.Response, error) {
 	url := fmt.Sprintf("%s/models/%s:streamGenerateContent?alt=sse&key=%s", g.endpoint, g.model, g.apiKey)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, apperrors.Wrap(apperrors.KindStreamInitFailed, "runtime.gemini.stream", err)
+		return nil, apperrors.Wrap(apperrors.KindStreamInitFailed, "gemini.stream", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := g.client.Do(req)
 	if err != nil {
-		return nil, classifyStreamInitError("runtime.gemini.stream", err)
+		return nil, classifyStreamInitError("gemini.stream", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		defer func() { _ = resp.Body.Close() }()
-		return nil, classifyStreamStatusCode("runtime.gemini.stream", resp)
+		return nil, classifyStreamStatusCode("gemini.stream", resp)
 	}
 	return resp, nil
 }
 
-func (g *Gemini) consumeGeminiSSE(lines <-chan sse.Line, chunks chan<- StreamChunk, errs chan<- error) {
+func (g *Gemini) consumeSSE(lines <-chan sse.Line, chunks chan<- domain.StreamChunk, errs chan<- error) {
 	for line := range lines {
 		if line.IsDone {
 			break
 		}
-		if err := g.emitGeminiChunk(line.Data, chunks); err != nil {
+		if err := g.emitChunk(line.Data, chunks); err != nil {
 			errs <- err
 			return
 		}
 	}
-	chunks <- StreamChunk{IsFinal: true, Provider: "gemini", Model: g.model}
+	chunks <- domain.StreamChunk{IsFinal: true, Provider: "gemini", Model: g.model}
 }
 
-func (g *Gemini) emitGeminiChunk(data string, chunks chan<- StreamChunk) error {
+func (g *Gemini) emitChunk(data string, chunks chan<- domain.StreamChunk) error {
 	var sr geminiStreamResponse
 	if err := json.Unmarshal([]byte(data), &sr); err != nil {
-		return newStreamInterruptedError("runtime.gemini.stream", "invalid JSON chunk: "+err.Error())
+		return apperrors.New(apperrors.KindStreamInterrupted, "gemini.stream", "invalid JSON chunk: "+err.Error())
 	}
 	for _, cand := range sr.Candidates {
 		for _, part := range cand.Content.Parts {
-			chunk := StreamChunk{Provider: "gemini", Model: g.model}
+			chunk := domain.StreamChunk{Provider: "gemini", Model: g.model}
 			if part.Thought {
 				chunk.ThinkingDelta = part.Text
 				chunk.IsThinking = true

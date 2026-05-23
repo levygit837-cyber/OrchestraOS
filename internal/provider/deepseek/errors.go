@@ -1,4 +1,4 @@
-package runtime
+package deepseek
 
 import (
 	"context"
@@ -48,10 +48,6 @@ func classifyStreamInitError(op string, err error) *apperrors.Error {
 		return httpErr
 	}
 	return apperrors.Wrap(apperrors.KindStreamInitFailed, op, err)
-}
-
-func newStreamInterruptedError(op, msg string) *apperrors.Error {
-	return apperrors.New(apperrors.KindStreamInterrupted, op, msg)
 }
 
 func classifyStreamStatusCode(op string, resp *http.Response) *apperrors.Error {
