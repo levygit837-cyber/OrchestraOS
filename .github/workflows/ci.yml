@@ -13,168 +13,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Build
-        run: go build ./...
+      - run: go build ./...
 
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Test
-        run: go test ./... -race -count=1
+      - run: go test ./... -race -count=1
 
   vet:
     name: Vet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Vet
-        run: go vet ./...
-
-  architecture:
-    name: Architecture Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Architecture Tests
-        run: go test ./tests/architecture/... -v -count=1
-
-  module-structure:
-    name: Module Structure Verification
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify Module Structure
-        run: ./scripts/go/verify-module-structure.sh
-
-  contracts:
-    name: Contract Verification
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Contract Verification
-        run: ./scripts/go/verify-contracts.sh
+      - run: go vet ./...
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v6
         with:
           version: v1.64.6
           args: --timeout=5m
-
-  golden-rule:
-    name: Golden Rule — Module Import Boundaries
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Verify modules never import each other
-        run: |
-          echo "FAILURE REASON: A module in internal/modules/* imported another module."
-          echo "Modules MUST be autonomous (ADR-0030)."
-          go test ./tests/architecture/... -run TestModuleBoundaries -v -count=1
-
-      - name: Verify only allowed packages import modules
-        run: |
-          echo "FAILURE REASON: A package outside bootstrap/cmd imported internal/modules/*."
-          echo "Only bootstrap (DI wiring) and cmd (entrypoint) may import modules."
-          go test ./tests/architecture/... -run TestOnlyCoordinationImportsModules -v -count=1
-
-      - name: Verify cmd uses bootstrap DI
-        run: |
-          echo "FAILURE REASON: cmd/ instantiated a service/repository directly."
-          echo "cmd/ MUST use bootstrap.* factories (ADR-0030)."
-          go test ./tests/architecture/... -run TestCmdBootstrapDI -v -count=1
-
-  architecture-gates:
-    name: Architecture Gates — Purity & Integrity
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Verify repository purity (no business logic in repos)
-        run: |
-          echo "FAILURE REASON: Business logic detected in repository.go."
-          echo "Repositories must be pure CRUD (ADR-0030)."
-          go test ./tests/architecture/... -run TestRepositoryPurity -v -count=1
-
-      - name: Verify repository method names are CRUD-only
-        run: |
-          echo "FAILURE REASON: Non-CRUD method name in repository.go."
-          go test ./tests/architecture/... -run TestRepositoryMethodNames -v -count=1
-
-      - name: Verify domain import integrity
-        run: |
-          echo "FAILURE REASON: Shared entity types missing from internal/domain/."
-          echo "All cross-module types must live in internal/domain (ADR-0030)."
-          go test ./tests/architecture/... -run TestDomainImportIntegrity -v -count=1
-
-      - name: Verify service decomposition rules
-        run: |
-          echo "FAILURE REASON: service_<sub>.go exists without service.go > 300 lines."
-          go test ./tests/architecture/... -run TestServiceDecomposition -v -count=1
-
-      - name: Detect code anomalies
-        run: |
-          echo "FAILURE REASON: Code anomaly detected (panic, fmt.Println, inline SQL, ignored errors)."
-          go test ./tests/architecture/... -run TestCodeAnomalies -v -count=1

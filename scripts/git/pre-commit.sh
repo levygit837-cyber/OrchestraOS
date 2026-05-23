@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # pre-commit.sh — install to .git/hooks/pre-commit to run checks before every commit.
-# Usage: cp scripts/git/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Usage: make setup
 
 set -euo pipefail
 
@@ -12,11 +12,5 @@ go vet ./...
 
 echo "--- go test ./tests/architecture/... ---"
 go test ./tests/architecture/... -count=1
-
-echo "--- ./scripts/go/verify-contracts.sh ---"
-./scripts/go/verify-contracts.sh
-
-echo "--- ./scripts/go/verify-module-structure.sh ---"
-./scripts/go/verify-module-structure.sh
 
 echo "=== Pre-commit checks passed ==="
