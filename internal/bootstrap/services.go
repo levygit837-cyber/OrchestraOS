@@ -30,13 +30,13 @@ type (
 	Priority                = taskmod.Priority
 	RiskLevel               = taskmod.RiskLevel
 	RunTaskOptions          = orchestratormod.RunTaskOptions
-	TaskContext             = promptmod.TaskContext
-	PersistMetadata         = promptmod.PersistMetadata
-	ToolsetSelection        = promptmod.ToolsetSelection
-	RuntimeType             = agentmod.RuntimeType
+	TaskContext             = domain.PromptComposeInput
+	PersistMetadata         = domain.PersistMetadata
+	ToolsetSelection        = domain.ToolsetSelection
+	RuntimeType             = domain.AgentRuntimeType
 	Runtime                 = agentmod.Runtime
 	RuntimeConfig           = agentmod.RuntimeConfig
-	RelayConfig             = runmod.RelayConfig
+	RelayConfig             = domain.RelayConfig
 )
 
 // TaskService creates a TaskService with standard dependencies.
@@ -233,12 +233,27 @@ func TriggerService(db *sql.DB) *triggermod.TriggerService {
 }
 
 // RuntimeEventRelay creates a RuntimeEventRelay wired to domain services.
-func RuntimeEventRelay(db *sql.DB) *runmod.RuntimeEventRelay {
-	return runmod.NewRuntimeEventRelay(
+type eventRelayAdapter struct {
+	relay *runmod.RuntimeEventRelay
+}
+
+func (a *eventRelayAdapter) Run(ctx context.Context, runtime domain.EventSource, config domain.RelayConfig) (domain.RunStatus, error) {
+	status, err := a.relay.Run(ctx, runtime, runmod.RelayConfig{
+		SessionID:   config.SessionID,
+		RunID:       config.RunID,
+		RuntimeType: config.RuntimeType,
+		AgentID:     config.AgentID,
+		OnEvent:     config.OnEvent,
+	})
+	return domain.RunStatus(status), err
+}
+
+func RuntimeEventRelay(db *sql.DB) orchestratormod.EventRelay {
+	return &eventRelayAdapter{relay: runmod.NewRuntimeEventRelay(
 		db,
 		AgentSessionService(db),
 		RunService(db),
-	)
+	)}
 }
 
 // OrchestratorService creates an OrchestratorService with all dependencies wired.
@@ -263,7 +278,7 @@ func OrchestratorService(db *sql.DB) *orchestratormod.Service {
 		ReviewService:       &reviewAdapter{svc: reviewSvc},
 		TriggerService:      triggerSvc,
 		WorkUnitLister:      workunitmod.NewRepository(db),
-		RuntimeEventRelay:   RuntimeEventRelay,
+		RuntimeEventRelay:   RuntimeEventRelay(db),
 		NewFakeRuntime:      func() orchestratormod.Runtime { return &runtimeAdapter{r: agentmod.NewFakeRuntime()} },
 		NewGeminiRuntime:    func() orchestratormod.Runtime { return &runtimeAdapter{r: agentmod.NewGeminiRuntime()} },
 	})
@@ -278,13 +293,13 @@ type taskServiceAdapter struct {
 	svc *taskmod.TaskService
 }
 
-func (a *taskServiceAdapter) GetByID(ctx context.Context, id string) (*taskmod.Task, error) {
+func (a *taskServiceAdapter) GetByID(ctx context.Context, id string) (*domain.Task, error) {
 	return taskmod.NewRepository(a.db).GetByID(id)
 }
-func (a *taskServiceAdapter) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error) {
+func (a *taskServiceAdapter) Complete(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return a.svc.Complete(ctx, taskID, input)
 }
-func (a *taskServiceAdapter) Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*taskmod.Task], error) {
+func (a *taskServiceAdapter) Fail(ctx context.Context, taskID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Task], error) {
 	return a.svc.Fail(ctx, taskID, input)
 }
 
@@ -292,10 +307,10 @@ func (a *taskServiceAdapter) Fail(ctx context.Context, taskID string, input tran
 // Converts orchestrator.CreateRunInput to run.CreateRunInput; returns *run.Run natively.
 type runAdapter struct{ svc *runmod.RunService }
 
-func (a *runAdapter) Create(ctx context.Context, input orchestratormod.CreateRunInput) (*transition.OperationResult[*runmod.Run], error) {
+func (a *runAdapter) Create(ctx context.Context, input orchestratormod.CreateRunInput) (*transition.OperationResult[*domain.Run], error) {
 	return a.svc.Create(ctx, runmod.CreateRunInput{TaskID: input.TaskID, WorkUnitID: input.WorkUnitID})
 }
-func (a *runAdapter) Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*runmod.Run], error) {
+func (a *runAdapter) Start(ctx context.Context, runID string, input transition.TransitionInput) (*transition.OperationResult[*domain.Run], error) {
 	return a.svc.Start(ctx, runID, input)
 }
 
@@ -304,7 +319,7 @@ type taskGraphAdapter struct {
 	svc *taskgraphmod.TaskGraphService
 }
 
-func (a *taskGraphAdapter) GetActiveByTask(taskID string) (*taskgraphmod.TaskGraph, error) {
+func (a *taskGraphAdapter) GetActiveByTask(taskID string) (*domain.TaskGraph, error) {
 	return taskgraphmod.NewRepository(a.db).GetActiveByTask(taskID)
 }
 func (a *taskGraphAdapter) Decompose(ctx context.Context, input orchestratormod.DecomposeInput) (*orchestratormod.DecomposeResult, error) {
@@ -314,7 +329,7 @@ func (a *taskGraphAdapter) Decompose(ctx context.Context, input orchestratormod.
 	if err != nil {
 		return nil, err
 	}
-	workUnits := make([]workunitmod.WorkUnit, len(res.WorkUnits))
+	workUnits := make([]domain.WorkUnit, len(res.WorkUnits))
 	for i, wu := range res.WorkUnits {
 		workUnits[i] = *planWorkUnitToDomain(&wu)
 	}
@@ -325,25 +340,25 @@ type sessionAdapter struct {
 	svc *agentsessionmod.AgentSessionService
 }
 
-func (a *sessionAdapter) Create(ctx context.Context, input orchestratormod.CreateAgentSessionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error) {
+func (a *sessionAdapter) Create(ctx context.Context, input orchestratormod.CreateAgentSessionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	return a.svc.Create(ctx, agentsessionmod.CreateAgentSessionInput{
 		AgentID: input.AgentID, RunID: input.RunID, TaskID: input.TaskID, WorkUnitID: input.WorkUnitID,
 	})
 }
-func (a *sessionAdapter) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error) {
+func (a *sessionAdapter) Connect(ctx context.Context, sessionID, connectionID, sandboxID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	return a.svc.Connect(ctx, sessionID, connectionID, sandboxID, input)
 }
-func (a *sessionAdapter) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*agentsessionmod.AgentSession], error) {
+func (a *sessionAdapter) Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error) {
 	return a.svc.Stop(ctx, sessionID, input)
 }
 
 // reviewAdapter bridges review.ReviewService to orchestrator.ReviewManager.
 type reviewAdapter struct{ svc *reviewmod.ReviewService }
 
-func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType reviewmod.ValidationGate) (*transition.OperationResult[*reviewmod.Review], error) {
+func (a *reviewAdapter) Create(ctx context.Context, runID, workUnitID, taskID, agentSessionID string, gateType domain.ReviewValidationGate) (*transition.OperationResult[*domain.Review], error) {
 	return a.svc.Create(ctx, reviewmod.CreateReviewInput{
 		RunID: runID, WorkUnitID: workUnitID, TaskID: taskID,
-		AgentSessionID: agentSessionID, GateType: gateType,
+		AgentSessionID: agentSessionID, GateType: reviewmod.ValidationGate(gateType),
 	})
 }
 
@@ -351,14 +366,14 @@ type promptAdapter struct {
 	svc *promptmod.PromptService
 }
 
-func (a *promptAdapter) PersistComposedPrompt(ctx context.Context, composed *promptmod.ComposedPrompt, metadata promptmod.PersistMetadata) (*promptmod.PreparedRunPrompt, error) {
-	return a.svc.PersistComposedPrompt(ctx, composed, metadata)
+func (a *promptAdapter) PreparePrompt(ctx context.Context, input domain.PromptComposeInput, metadata domain.PersistMetadata) (*domain.PreparedRunPrompt, error) {
+	return a.svc.PreparePrompt(ctx, input, metadata)
 }
 
 // workUnitReaderAdapter bridges trigger.WorkUnitReader to workunit.Repository.
 type workUnitReaderAdapter struct{ repo *workunitmod.Repository }
 
-func (a *workUnitReaderAdapter) GetByID(id string) (*workunitmod.WorkUnit, error) {
+func (a *workUnitReaderAdapter) GetByID(id string) (*domain.WorkUnit, error) {
 	return a.repo.GetByID(id)
 }
 

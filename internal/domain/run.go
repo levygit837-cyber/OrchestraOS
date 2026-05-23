@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // ============================================================================
 // Run Domain
@@ -37,4 +40,18 @@ type Run struct {
 	FinishedAt    *time.Time `json:"finished_at,omitempty"`
 	Result        *RunResult `json:"result,omitempty"`
 	FailureReason *string    `json:"failure_reason,omitempty"`
+}
+
+// EventSource abstracts a runtime that produces events.
+type EventSource interface {
+	ReceiveEvent(ctx context.Context) (*EventEnvelope, error)
+}
+
+// RelayConfig holds the identifiers needed to route runtime events.
+type RelayConfig struct {
+	SessionID   string
+	RunID       string
+	RuntimeType string
+	AgentID     string
+	OnEvent     func(*EventEnvelope) // optional progress callback
 }

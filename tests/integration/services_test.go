@@ -206,7 +206,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 
-	taskContext := prompt.TaskContext{
+	taskContext := domain.PromptComposeInput{
 		TaskID:             taskResult.Value.ID,
 		TaskTitle:          taskResult.Value.Title,
 		TaskDescription:    taskResult.Value.Description,
@@ -222,16 +222,16 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		AcceptanceCriteria: wuResult.Value.AcceptanceCriteria,
 		ValidationPlan:     wuResult.Value.ValidationPlan,
 	}
-	toolset, err := prompt.SelectToolset(wuResult.Value.AssignedAgentProfile)
+	toolset, err := promptService.SelectToolset(wuResult.Value.AssignedAgentProfile)
 	if err != nil {
 		t.Fatalf("select toolset: %v", err)
 	}
 	taskContext.Toolset = toolset
-	composed, err := prompt.Compose(taskContext)
+	composed, err := promptService.Compose(ctx, taskContext)
 	if err != nil {
 		t.Fatalf("compose prompt: %v", err)
 	}
-	prepared, err := promptService.PersistComposedPrompt(ctx, composed, prompt.PersistMetadata{
+	prepared, err := promptService.PersistComposedPrompt(ctx, composed, domain.PersistMetadata{
 		RunID:          runResult.Value.ID,
 		WorkUnitID:     wuResult.Value.ID,
 		TaskID:         taskResult.Value.ID,
@@ -278,7 +278,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if storedToolset == nil || len(storedToolset.Tools) == 0 {
 		t.Fatalf("expected stored toolset snapshot, got %+v", storedToolset)
 	}
-	referenced, err := promptService.PersistComposedPrompt(ctx, composed, prompt.PersistMetadata{
+	referenced, err := promptService.PersistComposedPrompt(ctx, composed, domain.PersistMetadata{
 		RunID:          runResult.Value.ID,
 		WorkUnitID:     wuResult.Value.ID,
 		TaskID:         taskResult.Value.ID,
@@ -343,7 +343,7 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reviewer session: %v", err)
 	}
-	reviewerTaskContext := prompt.TaskContext{
+	reviewerTaskContext := domain.PromptComposeInput{
 		TaskID:             taskResult.Value.ID,
 		TaskTitle:          taskResult.Value.Title,
 		TaskDescription:    taskResult.Value.Description,
@@ -359,16 +359,16 @@ func TestPromptServicePreparesSnapshotsAndEvents(t *testing.T) {
 		AcceptanceCriteria: reviewerWU.Value.AcceptanceCriteria,
 		ValidationPlan:     reviewerWU.Value.ValidationPlan,
 	}
-	reviewerToolset, err := prompt.SelectToolset(reviewerWU.Value.AssignedAgentProfile)
+	reviewerToolset, err := promptService.SelectToolset(reviewerWU.Value.AssignedAgentProfile)
 	if err != nil {
 		t.Fatalf("select reviewer toolset: %v", err)
 	}
 	reviewerTaskContext.Toolset = reviewerToolset
-	reviewerComposed, err := prompt.Compose(reviewerTaskContext)
+	reviewerComposed, err := promptService.Compose(ctx, reviewerTaskContext)
 	if err != nil {
 		t.Fatalf("compose reviewer prompt: %v", err)
 	}
-	reviewerPrepared, err := promptService.PersistComposedPrompt(ctx, reviewerComposed, prompt.PersistMetadata{
+	reviewerPrepared, err := promptService.PersistComposedPrompt(ctx, reviewerComposed, domain.PersistMetadata{
 		RunID:          reviewerRun.Value.ID,
 		WorkUnitID:     reviewerWU.Value.ID,
 		TaskID:         taskResult.Value.ID,
