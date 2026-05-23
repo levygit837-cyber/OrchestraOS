@@ -43,6 +43,17 @@ jobs:
           cache: true
       - run: go test ./... -race -count=1
 
+  arch:
+    name: PR Gate / Architecture Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./tests/architecture/... -v -count=1
+
   lint:
     name: PR Gate / Lint
     runs-on: ubuntu-latest
