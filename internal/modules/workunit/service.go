@@ -213,6 +213,9 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 	if len(inputs) == 0 {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "at least one work unit is required")
 	}
+	if len(inputs) > 1 && inputs[0].EventID != "" {
+		return nil, apperrors.New(apperrors.CodeInvalidInput, op, "batch creation does not support external event IDs")
+	}
 	taskID := inputs[0].TaskID
 	taskGraphID := inputs[0].TaskGraphID
 	for i := range inputs {
@@ -319,12 +322,8 @@ func (s *WorkUnitService) createMany(ctx context.Context, inputs []CreateWorkUni
 		if err != nil {
 			return nil, err
 		}
-		eventID := input.EventID
-		if len(inputs) > 1 {
-			eventID = ""
-		}
 		appendResult, err := transition.AppendServiceEvent(ctx, tx, &domain.EventEnvelope{
-			ID:          eventID,
+			ID:          input.EventID,
 			Type:        "work_unit.created",
 			Version:     transition.EventVersionV1,
 			TaskID:      wu.TaskID,

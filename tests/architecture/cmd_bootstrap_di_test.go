@@ -13,10 +13,11 @@ import (
 // or services directly. All wiring/DI must go through internal/bootstrap/.
 //
 // Per ADR-0030:
-//   "cmd/ deve usar bootstrap/ para wiring de dependências."
-//   Instantiating NewRepository() or NewService() directly in cmd/ bypasses
-//   the DI container and makes testing, mocking, and lifecycle management
-//   impossible.
+//
+//	"cmd/ deve usar bootstrap/ para wiring de dependências."
+//	Instantiating NewRepository() or NewService() directly in cmd/ bypasses
+//	the DI container and makes testing, mocking, and lifecycle management
+//	impossible.
 //
 // Allowed in cmd/:
 //   - Calling bootstrap.Initialize() or similar DI setup functions.
@@ -66,7 +67,7 @@ func TestCmdBootstrapDI(t *testing.T) {
 					modName := filepath.Base(impPath)
 					t.Errorf(
 						"cmd file %s imports module %q directly — "+
-						"cmd/ must NOT import modules directly. Use internal/bootstrap/ for DI wiring (ADR-0030).",
+							"cmd/ must NOT import modules directly. Use internal/bootstrap/ for DI wiring (ADR-0030).",
 						path, modName,
 					)
 				}

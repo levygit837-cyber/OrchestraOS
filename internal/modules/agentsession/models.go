@@ -8,12 +8,12 @@ type Status = domain.AgentSessionStatus
 type AgentSession = domain.AgentSession
 
 const (
-	StatusStarting     = domain.AgentSessionStatusStarting
-	StatusRunning      = domain.AgentSessionStatusRunning
+	StatusStarting        = domain.AgentSessionStatusStarting
+	StatusRunning         = domain.AgentSessionStatusRunning
 	StatusWaitingApproval = domain.AgentSessionStatusWaitingApproval
-	StatusPaused       = domain.AgentSessionStatusPaused
-	StatusStopping     = domain.AgentSessionStatusStopping
-	StatusStopped      = domain.AgentSessionStatusStopped
-	StatusDisconnected = domain.AgentSessionStatusDisconnected
-	StatusFailed       = domain.AgentSessionStatusFailed
+	StatusPaused          = domain.AgentSessionStatusPaused
+	StatusStopping        = domain.AgentSessionStatusStopping
+	StatusStopped         = domain.AgentSessionStatusStopped
+	StatusDisconnected    = domain.AgentSessionStatusDisconnected
+	StatusFailed          = domain.AgentSessionStatusFailed
 )

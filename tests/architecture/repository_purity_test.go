@@ -18,12 +18,12 @@ var repositoryPurityRoots = []string{"../../internal/modules", "../../internal/c
 // repositoryPurityPatterns detects business logic in repository.go files.
 //
 // Heuristics (per ADR-0030 Pilar 3: "repository.go é CRUD puro"):
-//   1. Status-based branching: if statements that compare variables with Status* constants.
-//   2. Deduplication logic: patterns like "if existing != nil" followed by comparison.
-//   3. Reference/upsert detection: returning booleans indicating if record was created or referenced.
-//   4. Hardcoded status strings: string literals like "active", "inactive", "running", etc.
-//   5. Field validation: checking ID == "", Sequence == 0, CreatedAt.IsZero() (beyond simple nil check).
-//   6. ON CONFLICT clauses in SQL strings.
+//  1. Status-based branching: if statements that compare variables with Status* constants.
+//  2. Deduplication logic: patterns like "if existing != nil" followed by comparison.
+//  3. Reference/upsert detection: returning booleans indicating if record was created or referenced.
+//  4. Hardcoded status strings: string literals like "active", "inactive", "running", etc.
+//  5. Field validation: checking ID == "", Sequence == 0, CreatedAt.IsZero() (beyond simple nil check).
+//  6. ON CONFLICT clauses in SQL strings.
 type repositoryPurityPattern struct {
 	name        string
 	regex       *regexp.Regexp
@@ -67,8 +67,9 @@ var repositoryPurityPatterns = []repositoryPurityPattern{
 // operations and no business logic.
 //
 // Per ADR-0030 Pilar 3:
-//   "repository.go é CRUD puro. Não computar timestamps baseados em status,
-//   não fazer deduplicação, não fazer upsert logic."
+//
+//	"repository.go é CRUD puro. Não computar timestamps baseados em status,
+//	não fazer deduplicação, não fazer upsert logic."
 func TestRepositoryPurity(t *testing.T) {
 	for _, root := range repositoryPurityRoots {
 		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -118,7 +119,7 @@ func scanRepositoryForBusinessLogic(t *testing.T, path string) {
 			if pattern.regex.MatchString(line) {
 				t.Errorf(
 					"repository business logic detected at %s:%d — %s (ADR-0030). "+
-					"Line: %s",
+						"Line: %s",
 					path, lineNum, pattern.description, trimmed,
 				)
 			}
@@ -138,7 +139,8 @@ var allowedRepositoryMethodPrefixes = []string{
 // methods with CRUD-appropriate names.
 //
 // Disallowed patterns (business logic methods):
-//   Validate*, Check*, Process*, Transition*, Start*, Stop*, Execute*, etc.
+//
+//	Validate*, Check*, Process*, Transition*, Start*, Stop*, Execute*, etc.
 func TestRepositoryMethodNames(t *testing.T) {
 	for _, root := range repositoryPurityRoots {
 		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -182,7 +184,7 @@ func TestRepositoryMethodNames(t *testing.T) {
 					pos := fset.Position(fn.Pos())
 					t.Errorf(
 						"repository %s contains non-CRUD method %q at %s — "+
-						"repositories must only have CRUD methods (Create, Get, List, Update, Delete, scan*, etc.) (ADR-0030).",
+							"repositories must only have CRUD methods (Create, Get, List, Update, Delete, scan*, etc.) (ADR-0030).",
 						path, name, pos,
 					)
 				}

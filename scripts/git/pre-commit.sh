@@ -16,4 +16,7 @@ go test ./tests/architecture/... -count=1
 echo "--- ./scripts/go/verify-contracts.sh ---"
 ./scripts/go/verify-contracts.sh
 
+echo "--- ./scripts/go/verify-module-structure.sh ---"
+./scripts/go/verify-module-structure.sh
+
 echo "=== Pre-commit checks passed ==="

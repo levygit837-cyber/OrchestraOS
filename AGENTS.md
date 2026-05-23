@@ -47,7 +47,7 @@ Nenhum agente deve assumir autonomia maior que a aprovada explicitamente nos doc
 
 ## Commits e Branches
 
-**NUNCA commit ou push diretamente na branch `main`.**
+**NUNCA commit ou push diretamente na branch `master`.**
 
 Sempre use o script controlado:
 ```bash
@@ -55,7 +55,7 @@ Sempre use o script controlado:
 ```
 
 Este script automaticamente:
-- Cria uma feature branch se você estiver na `main`
+- Cria uma feature branch se você estiver na `master`
 - Roda todas as validações (`go vet`, architecture tests, contracts)
 - Só commita se tudo passar
 

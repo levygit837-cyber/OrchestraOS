@@ -37,10 +37,6 @@ func anomalyTypePtrDeref(a *AnomalyType) *string {
 	return stringPtr(string(*a))
 }
 
-func resolutionActionPtr(r ResolutionAction) *string {
-	return stringPtr(string(r))
-}
-
 func resolutionActionPtrDeref(r *ResolutionAction) *string {
 	if r == nil {
 		return nil

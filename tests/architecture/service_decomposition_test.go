@@ -11,7 +11,8 @@ import (
 // when the main service.go file exceeds 300 lines.
 //
 // Per ADR-0030 / CODING_STANDARDS.md:
-//   "service_<sub>.go só é permitido se service.go tiver > 300 linhas."
+//
+//	"service_<sub>.go só é permitido se service.go tiver > 300 linhas."
 //
 // Rationale: Decomposition should be justified by file size. Small service.go
 // files should not be split arbitrarily, as it fragments the business logic
@@ -65,8 +66,8 @@ func TestServiceDecomposition(t *testing.T) {
 		if lines <= 300 {
 			t.Errorf(
 				"module %q has %s but service.go has only %d lines — "+
-				"service_<sub>.go is only permitted when service.go has > 300 lines (CODING_STANDARDS.md). "+
-				"Consider merging back into service.go or justifying the decomposition.",
+					"service_<sub>.go is only permitted when service.go has > 300 lines (CODING_STANDARDS.md). "+
+					"Consider merging back into service.go or justifying the decomposition.",
 				modName, strings.Join(subServiceFiles, ", "), lines,
 			)
 		}

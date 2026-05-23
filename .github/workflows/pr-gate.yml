@@ -77,7 +77,7 @@ jobs:
           cache: true
       - run: |
           echo "FAILURE REASON: A module in internal/modules/* imported another module."
-          echo "Modules MUST be autonomous (ADR-0022). Only DI interface return types are allowed (ADR-0026)."
+          echo "Modules MUST be autonomous (ADR-0030)."
           go test ./tests/architecture/... -run TestModuleBoundaries -v -count=1
 
   golden-rule-importers:
@@ -90,12 +90,12 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: |
-          echo "FAILURE REASON: A package outside orchestrator/bootstrap/cmd imported internal/modules/*."
-          echo "Only orchestrator (coordination), bootstrap (DI wiring), and cmd (entrypoint) may import modules."
+          echo "FAILURE REASON: A package outside bootstrap/cmd imported internal/modules/*."
+          echo "Only bootstrap (DI wiring) and cmd (entrypoint) may import modules."
           go test ./tests/architecture/... -run TestOnlyCoordinationImportsModules -v -count=1
 
-  golden-rule-transition-leaf:
-    name: PR Gate / Golden Rule — Transition Package Is Leaf
+  golden-rule-bootstrap-di:
+    name: PR Gate / Golden Rule — cmd Uses Bootstrap DI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -104,23 +104,9 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: |
-          echo "FAILURE REASON: internal/core/transition imported a module."
-          echo "transition must be a leaf package with no module dependencies."
-          go test ./tests/architecture/... -run TestTransitionPackageIsLeaf -v -count=1
-
-  golden-rule-no-coordination:
-    name: PR Gate / Golden Rule — No coordination Package References
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-      - run: |
-          echo "FAILURE REASON: A module still imports the removed coordination package."
-          echo "internal/core/coordination was removed per ADR-0028. Use internal/core/transition for shared types."
-          go test ./tests/architecture/... -run TestModulesDoNotImportCoordination -v -count=1
+          echo "FAILURE REASON: cmd/ instantiated a service/repository directly."
+          echo "cmd/ MUST use bootstrap.* factories (ADR-0030)."
+          go test ./tests/architecture/... -run TestCmdBootstrapDI -v -count=1
 
   module-structure:
     name: PR Gate / Module Structure Verification
@@ -132,12 +118,11 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: |
-          echo "FAILURE REASON: A module is missing mandatory files (doc.go, README.md, CONTRACTS.md, etc.)."
-          go test ./tests/architecture/... -run TestModuleRequiredFiles -v -count=1
-          go test ./tests/architecture/... -run TestCoreRequiredFiles -v -count=1
+          echo "FAILURE REASON: A module is missing mandatory files (doc.go, README.md, etc.)."
+          ./scripts/go/verify-module-structure.sh
 
-  contract-sync:
-    name: PR Gate / Contract Documentation Sync
+  architecture-purity:
+    name: PR Gate / Repository Purity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -146,12 +131,12 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: |
-          echo "FAILURE REASON: CONTRACTS.md or README.md is out of sync with code."
-          echo "Every status constant must be documented. Every import must be listed in README.md Allowed Dependencies."
-          go test ./tests/architecture/... -run TestContractsSync -v -count=1
+          echo "FAILURE REASON: Business logic detected in repository.go."
+          echo "Repositories must be pure CRUD (ADR-0030)."
+          go test ./tests/architecture/... -run TestRepositoryPurity -v -count=1
 
-  queries-purity:
-    name: PR Gate / Queries Purity
+  architecture-method-names:
+    name: PR Gate / Repository Method Names
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -160,16 +145,11 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: |
-          echo "FAILURE REASON: A queries.go file contains functions, non-stdlib imports, or non-string declarations."
-          echo "queries.go must only contain SQL string constants/variables (ADR-0028)."
-          go test ./tests/architecture/... -run TestQueriesPurity -v -count=1
+          echo "FAILURE REASON: Non-CRUD method name in repository.go."
+          go test ./tests/architecture/... -run TestRepositoryMethodNames -v -count=1
 
-  # ===========================================================================
-  # ANOMALY DETECTION — Catches patterns that violate coding standards.
-  # ===========================================================================
-
-  anomaly-filenames:
-    name: PR Gate / Anomaly — Forbidden Filenames
+  domain-integrity:
+    name: PR Gate / Domain Import Integrity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -178,9 +158,22 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: |
-          echo "FAILURE REASON: Forbidden filename detected (helpers.go, utils.go, common.go, base.go, misc.go, kit.go, ops.go, etc.)."
-          echo "See ADR-0028 Section 2.2.2 for the full list of prohibited names."
-          go test ./tests/architecture/... -run TestForbiddenFilenames -v -count=1
+          echo "FAILURE REASON: Shared entity types missing from internal/domain/."
+          echo "All cross-module types must live in internal/domain (ADR-0030)."
+          go test ./tests/architecture/... -run TestDomainImportIntegrity -v -count=1
+
+  service-decomposition:
+    name: PR Gate / Service Decomposition
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          echo "FAILURE REASON: service_<sub>.go exists without service.go > 300 lines."
+          go test ./tests/architecture/... -run TestServiceDecomposition -v -count=1
 
   anomaly-code:
     name: PR Gate / Anomaly — Code Anti-Patterns
@@ -192,34 +185,5 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: |
-          echo "FAILURE REASON: Code anti-pattern detected (panic, fmt.Println, inline SQL, ignored errors without comment)."
-          echo "See docs/development/CODING_STANDARDS.md for remediation."
+          echo "FAILURE REASON: Code anti-pattern detected (panic, fmt.Println, inline SQL, ignored errors)."
           go test ./tests/architecture/... -run TestCodeAnomalies -v -count=1
-
-  anomaly-domain:
-    name: PR Gate / Anomaly — Domain Package Purity
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-      - run: |
-          echo "FAILURE REASON: Entity structs found in internal/domain/*."
-          echo "Entity structs must live in their respective modules (ADR-0022). internal/domain is for shared infrastructure types only."
-          go test ./tests/architecture/... -run TestDomainPurity -v -count=1
-
-  anomaly-coordination:
-    name: PR Gate / Anomaly — coordination Package Fully Removed
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-      - run: |
-          echo "FAILURE REASON: References to removed internal/core/coordination package detected."
-          echo "coordination/ was removed per ADR-0028. Its logic was distributed to owner modules."
-          go test ./tests/architecture/... -run TestCoordinationRemoved -v -count=1
