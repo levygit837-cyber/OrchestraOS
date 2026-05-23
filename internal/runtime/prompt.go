@@ -8,7 +8,7 @@ import (
 )
 
 // BuildPrompt constructs a structured prompt from a WorkUnit and Task.
-func BuildPrompt(wu *domain.WorkUnit, task *domain.Task) Prompt {
+func BuildPrompt(wu *domain.WorkUnit, task *domain.Task) domain.Prompt {
 	system := fmt.Sprintf(
 		"You are an AI agent executing a work unit for task: %s\n"+
 			"Task description: %s\n"+
@@ -37,7 +37,7 @@ func BuildPrompt(wu *domain.WorkUnit, task *domain.Task) Prompt {
 		}
 	}
 
-	return Prompt{
+	return domain.Prompt{
 		SystemMessage: system,
 		UserMessage:   user.String(),
 		WorkUnitID:    wu.ID,

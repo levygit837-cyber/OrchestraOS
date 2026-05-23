@@ -15,17 +15,19 @@ const projectRoot = "../../"
 // allowedImports defines the permitted internal import graph.
 // Key = package path suffix, Value = allowed internal import suffixes.
 var allowedImports = map[string][]string{
-	"internal/domain":    {},
-	"internal/apperrors": {},
-	"internal/store":     {"internal/domain", "internal/apperrors"},
-	"internal/event":     {"internal/domain", "internal/store"},
-	"internal/planner":   {"internal/domain", "internal/apperrors"},
-	"internal/executor":  {"internal/domain", "internal/apperrors", "internal/runtime", "internal/store"},
-	"internal/sse":       {},
-	"internal/retry":     {"internal/apperrors"},
-	"internal/runtime":   {"internal/domain", "internal/apperrors", "internal/sse"},
-	"internal":           {"internal/domain", "internal/executor", "internal/planner", "internal/store"},
-	"cmd/orchestraos":    {"internal", "internal/domain", "internal/executor", "internal/planner", "internal/runtime", "internal/store"},
+	"internal/domain":            {},
+	"internal/apperrors":         {},
+	"internal/store":             {"internal/domain", "internal/apperrors"},
+	"internal/event":             {"internal/domain", "internal/store"},
+	"internal/planner":           {"internal/domain", "internal/apperrors"},
+	"internal/executor":          {"internal/domain", "internal/apperrors", "internal/store"},
+	"internal/sse":               {},
+	"internal/retry":             {"internal/apperrors"},
+	"internal/runtime":           {"internal/domain", "internal/apperrors"},
+	"internal/provider/gemini":   {"internal/domain", "internal/apperrors", "internal/runtime", "internal/sse"},
+	"internal/provider/deepseek": {"internal/domain", "internal/apperrors", "internal/runtime", "internal/sse"},
+	"internal":                   {"internal/domain", "internal/executor", "internal/planner", "internal/store"},
+	"cmd/orchestraos":            {"internal", "internal/domain", "internal/executor", "internal/planner", "internal/runtime", "internal/store", "internal/provider/gemini", "internal/provider/deepseek"},
 }
 
 const modulePath = "github.com/levygit837-cyber/OrchestraOS/"
@@ -105,6 +107,8 @@ func TestPackageSizeLimit(t *testing.T) {
 		"internal/sse",
 		"internal/retry",
 		"internal/runtime",
+		"internal/provider/gemini",
+		"internal/provider/deepseek",
 	}
 
 	for _, pkg := range packages {
@@ -179,12 +183,12 @@ func TestSQLConfinement(t *testing.T) {
 	}
 
 	err := filepath.Walk(filepath.Join(projectRoot, "internal"), func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".go") {
 			return err
 		}
 
-		relPath, _ := filepath.Rel(projectRoot, path)
-		if strings.HasPrefix(relPath, "internal/store") {
+		rel, _ := filepath.Rel(filepath.Join(projectRoot, "internal"), path)
+		if strings.HasPrefix(rel, "store") {
 			return nil
 		}
 
@@ -193,11 +197,10 @@ func TestSQLConfinement(t *testing.T) {
 			return err
 		}
 		content := string(data)
-
 		for _, pattern := range sqlPatterns {
 			if strings.Contains(content, pattern) {
-				t.Errorf("%s contains SQL pattern %q — SQL must be confined to store/",
-					relPath, pattern)
+				t.Errorf("SQL pattern %q found in %s — SQL must be confined to store/",
+					pattern, rel)
 			}
 		}
 		return nil
@@ -258,10 +261,6 @@ func TestNoGlobalState(t *testing.T) {
 	}
 }
 
-func goFileFilter(fi os.FileInfo) bool {
-	return strings.HasSuffix(fi.Name(), ".go") && !strings.HasSuffix(fi.Name(), "_test.go")
-}
-
 func typeString(expr ast.Expr) string {
 	if expr == nil {
 		return ""
@@ -282,4 +281,8 @@ func typeString(expr ast.Expr) string {
 	default:
 		return ""
 	}
+}
+
+func goFileFilter(fi os.FileInfo) bool {
+	return !fi.IsDir() && strings.HasSuffix(fi.Name(), ".go") && !strings.HasSuffix(fi.Name(), "_test.go")
 }

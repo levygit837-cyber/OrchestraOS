@@ -1,4 +1,4 @@
-package runtime_test
+package gemini_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/provider/gemini"
 	"github.com/levygit837-cyber/OrchestraOS/internal/runtime"
 )
 
@@ -19,7 +20,7 @@ func geminiSSEChunk(text string, thought bool) string {
 	return fmt.Sprintf(`{"candidates":[{"content":{"parts":[{"text":%q%s}]}}]}`, text, thoughtField)
 }
 
-func geminiTestWU() *domain.WorkUnit {
+func testWU() *domain.WorkUnit {
 	return &domain.WorkUnit{
 		ID:                 "wu-g1",
 		Title:              "test gemini",
@@ -28,7 +29,7 @@ func geminiTestWU() *domain.WorkUnit {
 	}
 }
 
-func geminiTestTask() *domain.Task {
+func testTask() *domain.Task {
 	return &domain.Task{ID: "t-g1", Title: "test task", Description: "desc"}
 }
 
@@ -47,8 +48,8 @@ func TestGeminiExecuteStream_NormalChunks(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	g := runtime.NewGemini(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := g.ExecuteStream(context.Background(), geminiTestWU(), geminiTestTask())
+	g := gemini.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := g.ExecuteStream(context.Background(), testWU(), testTask())
 
 	var deltas []string
 	var gotFinal bool
@@ -77,8 +78,8 @@ func TestGeminiExecuteStream_ThinkingChunks(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	g := runtime.NewGemini(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := g.ExecuteStream(context.Background(), geminiTestWU(), geminiTestTask())
+	g := gemini.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := g.ExecuteStream(context.Background(), testWU(), testTask())
 
 	var thinking, content []string
 	for chunk := range chunks {
@@ -110,8 +111,8 @@ func TestGeminiExecuteStream_HTTPError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	g := runtime.NewGemini(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := g.ExecuteStream(context.Background(), geminiTestWU(), geminiTestTask())
+	g := gemini.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := g.ExecuteStream(context.Background(), testWU(), testTask())
 
 	for range chunks {
 	}
@@ -128,8 +129,8 @@ func TestGeminiExecuteStream_InvalidJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	g := runtime.NewGemini(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := g.ExecuteStream(context.Background(), geminiTestWU(), geminiTestTask())
+	g := gemini.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := g.ExecuteStream(context.Background(), testWU(), testTask())
 
 	for range chunks {
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	"github.com/levygit837-cyber/OrchestraOS/internal/runtime"
 	"github.com/levygit837-cyber/OrchestraOS/internal/store"
 )
 
@@ -23,10 +22,10 @@ type Result struct {
 // Executor executes a DAG of work units in topological order.
 type Executor struct {
 	store   store.Store
-	runtime runtime.Runtime
+	runtime domain.Runtime
 }
 
-func New(s store.Store, rt runtime.Runtime) *Executor {
+func New(s store.Store, rt domain.Runtime) *Executor {
 	return &Executor{store: s, runtime: rt}
 }
 
@@ -103,7 +102,7 @@ func (e *Executor) failRun(ctx context.Context, run *domain.Run, wuID, reason st
 	return nil
 }
 
-func (e *Executor) finalizeRun(ctx context.Context, run *domain.Run, wuID string, rt *runtime.Result, result *Result) error {
+func (e *Executor) finalizeRun(ctx context.Context, run *domain.Run, wuID string, rt *domain.RuntimeResult, result *Result) error {
 	run.Result = &rt.Status
 	now := time.Now()
 	run.FinishedAt = &now

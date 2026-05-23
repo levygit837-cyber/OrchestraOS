@@ -1,4 +1,4 @@
-package runtime_test
+package deepseek_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/provider/deepseek"
 	"github.com/levygit837-cyber/OrchestraOS/internal/runtime"
 )
 
@@ -19,7 +20,7 @@ func deepseekSSEChunk(content, reasoning string) string {
 	return fmt.Sprintf(`{"choices":[{"delta":{"content":%q%s}}]}`, content, rc)
 }
 
-func deepseekTestWU() *domain.WorkUnit {
+func testWU() *domain.WorkUnit {
 	return &domain.WorkUnit{
 		ID:                 "wu-d1",
 		Title:              "test deepseek",
@@ -28,8 +29,16 @@ func deepseekTestWU() *domain.WorkUnit {
 	}
 }
 
-func deepseekTestTask() *domain.Task {
+func testTask() *domain.Task {
 	return &domain.Task{ID: "t-d1", Title: "test task", Description: "desc"}
+}
+
+func writeSSE(w http.ResponseWriter, chunks ...string) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	for _, c := range chunks {
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", c)
+	}
+	_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
 }
 
 func TestDeepSeekExecuteStream_NormalChunks(t *testing.T) {
@@ -39,8 +48,8 @@ func TestDeepSeekExecuteStream_NormalChunks(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	d := runtime.NewDeepSeek(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := d.ExecuteStream(context.Background(), deepseekTestWU(), deepseekTestTask())
+	d := deepseek.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := d.ExecuteStream(context.Background(), testWU(), testTask())
 
 	var deltas []string
 	var gotFinal bool
@@ -69,8 +78,8 @@ func TestDeepSeekExecuteStream_ReasoningContent(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	d := runtime.NewDeepSeek(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := d.ExecuteStream(context.Background(), deepseekTestWU(), deepseekTestTask())
+	d := deepseek.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := d.ExecuteStream(context.Background(), testWU(), testTask())
 
 	var thinking, content []string
 	for chunk := range chunks {
@@ -103,8 +112,8 @@ func TestDeepSeekExecuteStream_HTTPError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	d := runtime.NewDeepSeek(runtime.Config{APIKey: "bad", BaseURL: srv.URL})
-	chunks, errs := d.ExecuteStream(context.Background(), deepseekTestWU(), deepseekTestTask())
+	d := deepseek.New(runtime.Config{APIKey: "bad", BaseURL: srv.URL})
+	chunks, errs := d.ExecuteStream(context.Background(), testWU(), testTask())
 
 	for range chunks {
 	}
@@ -121,8 +130,8 @@ func TestDeepSeekExecuteStream_InvalidJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	d := runtime.NewDeepSeek(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := d.ExecuteStream(context.Background(), deepseekTestWU(), deepseekTestTask())
+	d := deepseek.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := d.ExecuteStream(context.Background(), testWU(), testTask())
 
 	for range chunks {
 	}
@@ -139,8 +148,8 @@ func TestDeepSeekExecuteStream_RateLimitError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	d := runtime.NewDeepSeek(runtime.Config{APIKey: "test", BaseURL: srv.URL})
-	chunks, errs := d.ExecuteStream(context.Background(), deepseekTestWU(), deepseekTestTask())
+	d := deepseek.New(runtime.Config{APIKey: "test", BaseURL: srv.URL})
+	chunks, errs := d.ExecuteStream(context.Background(), testWU(), testTask())
 
 	for range chunks {
 	}

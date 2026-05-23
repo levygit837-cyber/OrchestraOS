@@ -1,4 +1,4 @@
-package runtime
+package deepseek
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
+	"github.com/levygit837-cyber/OrchestraOS/internal/runtime"
 	"github.com/levygit837-cyber/OrchestraOS/internal/sse"
 )
 
@@ -26,22 +27,21 @@ type openAIStreamResponse struct {
 	Usage   *openAIUsage         `json:"usage,omitempty"`
 }
 
-// ExecuteStream opens a streaming connection to DeepSeek and emits chunks.
-func (d *DeepSeek) ExecuteStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (<-chan StreamChunk, <-chan error) {
-	chunks := make(chan StreamChunk, 16)
+func (d *DeepSeek) ExecuteStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (<-chan domain.StreamChunk, <-chan error) {
+	chunks := make(chan domain.StreamChunk, 16)
 	errs := make(chan error, 1)
 	go d.runStream(ctx, wu, task, chunks, errs)
 	return chunks, errs
 }
 
-func (d *DeepSeek) runStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task, chunks chan<- StreamChunk, errs chan<- error) {
+func (d *DeepSeek) runStream(ctx context.Context, wu *domain.WorkUnit, task *domain.Task, chunks chan<- domain.StreamChunk, errs chan<- error) {
 	defer close(chunks)
 	defer close(errs)
 
-	prompt := BuildPrompt(wu, task)
+	prompt := runtime.BuildPrompt(wu, task)
 	body, err := d.buildStreamRequest(prompt)
 	if err != nil {
-		errs <- apperrors.Wrap(apperrors.KindStreamInitFailed, "runtime.deepseek.stream", err)
+		errs <- apperrors.Wrap(apperrors.KindStreamInitFailed, "deepseek.stream", err)
 		return
 	}
 
@@ -54,10 +54,10 @@ func (d *DeepSeek) runStream(ctx context.Context, wu *domain.WorkUnit, task *dom
 
 	lines := make(chan sse.Line, 16)
 	go sse.Parse(resp.Body, lines)
-	d.consumeDeepSeekSSE(lines, chunks, errs)
+	d.consumeSSE(lines, chunks, errs)
 }
 
-func (d *DeepSeek) buildStreamRequest(prompt Prompt) ([]byte, error) {
+func (d *DeepSeek) buildStreamRequest(prompt domain.Prompt) ([]byte, error) {
 	req := openAIRequest{
 		Model:  d.model,
 		Stream: true,
@@ -75,42 +75,42 @@ func (d *DeepSeek) doStreamRequest(ctx context.Context, body []byte) (*http.Resp
 	url := fmt.Sprintf("%s/chat/completions", d.endpoint)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, apperrors.Wrap(apperrors.KindStreamInitFailed, "runtime.deepseek.stream", err)
+		return nil, apperrors.Wrap(apperrors.KindStreamInitFailed, "deepseek.stream", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+d.apiKey)
 
 	resp, err := d.client.Do(req)
 	if err != nil {
-		return nil, classifyStreamInitError("runtime.deepseek.stream", err)
+		return nil, classifyStreamInitError("deepseek.stream", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		defer func() { _ = resp.Body.Close() }()
-		return nil, classifyStreamStatusCode("runtime.deepseek.stream", resp)
+		return nil, classifyStreamStatusCode("deepseek.stream", resp)
 	}
 	return resp, nil
 }
 
-func (d *DeepSeek) consumeDeepSeekSSE(lines <-chan sse.Line, chunks chan<- StreamChunk, errs chan<- error) {
+func (d *DeepSeek) consumeSSE(lines <-chan sse.Line, chunks chan<- domain.StreamChunk, errs chan<- error) {
 	for line := range lines {
 		if line.IsDone {
 			break
 		}
-		if err := d.emitOpenAIChunk(line.Data, chunks); err != nil {
+		if err := d.emitChunk(line.Data, chunks); err != nil {
 			errs <- err
 			return
 		}
 	}
-	chunks <- StreamChunk{IsFinal: true, Provider: "deepseek", Model: d.model}
+	chunks <- domain.StreamChunk{IsFinal: true, Provider: "deepseek", Model: d.model}
 }
 
-func (d *DeepSeek) emitOpenAIChunk(data string, chunks chan<- StreamChunk) error {
+func (d *DeepSeek) emitChunk(data string, chunks chan<- domain.StreamChunk) error {
 	var sr openAIStreamResponse
 	if err := json.Unmarshal([]byte(data), &sr); err != nil {
-		return newStreamInterruptedError("runtime.deepseek.stream", "invalid JSON chunk: "+err.Error())
+		return apperrors.New(apperrors.KindStreamInterrupted, "deepseek.stream", "invalid JSON chunk: "+err.Error())
 	}
 	for _, choice := range sr.Choices {
-		chunk := StreamChunk{Provider: "deepseek", Model: d.model}
+		chunk := domain.StreamChunk{Provider: "deepseek", Model: d.model}
 		if choice.Delta.ReasoningContent != "" {
 			chunk.ThinkingDelta = choice.Delta.ReasoningContent
 			chunk.IsThinking = true
