@@ -19,24 +19,21 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
-	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
 // RunReader abstracts run reads to avoid cyclic imports.
 type RunReader interface {
-	GetByID(id string) (*runmod.Run, error)
+	GetByID(id string) (*domain.Run, error)
 }
 
 // AgentSessionReader abstracts agent-session reads to avoid cyclic imports.
 type AgentSessionReader interface {
-	GetByID(id string) (*agentsessionmod.AgentSession, error)
+	GetByID(id string) (*domain.AgentSession, error)
 }
 
 // WorkUnitReader abstracts work-unit reads to avoid cyclic imports.
 type WorkUnitReader interface {
-	GetByID(id string) (*workunitmod.WorkUnit, error)
+	GetByID(id string) (*domain.WorkUnit, error)
 }
 
 // TriggerService manages trigger lifecycle and anomaly detection.
@@ -118,10 +115,10 @@ func (s *TriggerService) Create(ctx context.Context, input CreateTriggerInput) (
 		AgentSessionID:   nilIfEmpty(input.AgentSessionID),
 		TriggerType:      input.TriggerType,
 		Status:           input.Status,
-		AnomalyType:      input.AnomalyType,
+		AnomalyType:      anomalyTypePtrDeref(input.AnomalyType),
 		ThresholdValue:   input.ThresholdValue,
 		CurrentValue:     input.CurrentValue,
-		ResolutionAction: input.ResolutionAction,
+		ResolutionAction: resolutionActionPtrDeref(input.ResolutionAction),
 		CreatedAt:        s.clock(),
 	}
 
@@ -259,7 +256,7 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 		detected = append(detected, &Trigger{
 			TriggerType:    TypeHeartbeatTimeout,
 			Status:         StatusTriggered,
-			AnomalyType:    &anomaly,
+			AnomalyType:    anomalyTypePtr(anomaly),
 			AgentSessionID: &sessionID,
 			RunID:          &session.RunID,
 			TaskID:         &session.TaskID,
@@ -276,7 +273,7 @@ func (s *TriggerService) EvaluateSession(ctx context.Context, sessionID string) 
 		detected = append(detected, &Trigger{
 			TriggerType:    TypeHeartbeatTimeout,
 			Status:         StatusTriggered,
-			AnomalyType:    &anomaly,
+			AnomalyType:    anomalyTypePtr(anomaly),
 			AgentSessionID: &sessionID,
 			RunID:          &session.RunID,
 			TaskID:         &session.TaskID,
@@ -422,7 +419,7 @@ func (s *TriggerService) transition(ctx context.Context, triggerID string, targe
 
 	trigger.Status = target
 	trigger.ResolvedAt = resolvedAt
-	trigger.ResolutionAction = resolutionPtr
+	trigger.ResolutionAction = resolutionActionPtrDeref(resolutionPtr)
 
 	payload, err := serialization.MarshalPayload("trigger_service.transition_payload", map[string]interface{}{
 		"trigger_id":  trigger.ID,
@@ -499,7 +496,7 @@ func (s *TriggerService) persistDetectedTrigger(ctx context.Context, tx *sql.Tx,
 	return trigger, nil
 }
 
-func (s *TriggerService) requireRunByID(tx *sql.Tx, id string) (*runmod.Run, error) {
+func (s *TriggerService) requireRunByID(tx *sql.Tx, id string) (*domain.Run, error) {
 	run, err := s.newRunReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "run.get", err)
@@ -510,7 +507,7 @@ func (s *TriggerService) requireRunByID(tx *sql.Tx, id string) (*runmod.Run, err
 	return run, nil
 }
 
-func (s *TriggerService) requireSessionByID(tx *sql.Tx, id string) (*agentsessionmod.AgentSession, error) {
+func (s *TriggerService) requireSessionByID(tx *sql.Tx, id string) (*domain.AgentSession, error) {
 	session, err := s.newAgentSessionReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "agentsession.get", err)
@@ -521,7 +518,7 @@ func (s *TriggerService) requireSessionByID(tx *sql.Tx, id string) (*agentsessio
 	return session, nil
 }
 
-func (s *TriggerService) requireWorkUnitByID(tx *sql.Tx, id string) (*workunitmod.WorkUnit, error) {
+func (s *TriggerService) requireWorkUnitByID(tx *sql.Tx, id string) (*domain.WorkUnit, error) {
 	wu, err := s.newWorkUnitReader(tx).GetByID(id)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "workunit.get", err)
@@ -646,17 +643,13 @@ func ptrValue(s *string) string {
 	return *s
 }
 
-func ptrValueString(a *AnomalyType) string {
+func ptrValueString(a *string) string {
 	if a == nil {
 		return ""
 	}
-	return string(*a)
+	return *a
 }
 
-func ptrValueStringToPtr(a *AnomalyType) *string {
-	if a == nil {
-		return nil
-	}
-	s := string(*a)
-	return &s
+func ptrValueStringToPtr(a *string) *string {
+	return a
 }

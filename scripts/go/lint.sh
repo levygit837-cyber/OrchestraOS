@@ -12,6 +12,9 @@ go vet ./...
 echo "=== go test ./tests/architecture/... ==="
 go test ./tests/architecture/... -count=1
 
+echo "=== ./scripts/go/verify-module-structure.sh ==="
+./scripts/go/verify-module-structure.sh
+
 echo "=== golangci-lint run ./... ==="
 if command -v golangci-lint &> /dev/null; then
     golangci-lint run ./...

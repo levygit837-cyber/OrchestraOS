@@ -26,7 +26,7 @@ const (
 		SELECT id, type, version, task_id, run_id, work_unit_id, agent_id, trace_id, span_id, parent_span_id, sequence, priority, requires_ack, created_at, payload
 		FROM events WHERE work_unit_id = $1 ORDER BY sequence ASC`
 
-	QueryLastCheckpointByRun = `
+	QueryGetLastCheckpointByRun = `
 		SELECT id, type, version, task_id, run_id, work_unit_id, agent_id, trace_id, span_id, parent_span_id, sequence, priority, requires_ack, created_at, payload
 		FROM events
 		WHERE run_id = $1 AND type = 'agent.checkpoint_reached'

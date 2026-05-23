@@ -19,9 +19,9 @@ const (
 		SELECT id, task_id, version, status, planner_strategy, rationale, created_by, node_count, edge_count, created_at, updated_at
 		FROM task_graphs WHERE task_id = $1 ORDER BY version DESC`
 
-	QueryNextVersion = `
+	QueryGetNextVersion = `
 		SELECT COALESCE(MAX(version), 0) + 1 FROM task_graphs WHERE task_id = $1`
 
-	QuerySupersedeActiveByTask = `
+	QueryUpdateActiveToSupersededByTask = `
 		UPDATE task_graphs SET status = 'superseded', updated_at = $2 WHERE task_id = $1 AND status = 'active'`
 )

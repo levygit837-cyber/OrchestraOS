@@ -48,7 +48,7 @@ func AcquireAdvisoryTxLock(ctx context.Context, tx *sql.Tx, key, op string) erro
 	hasher := fnv.New64a()
 	_, _ = hasher.Write([]byte(key))
 	lockID := int64(hasher.Sum64())
-	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock($1)`, lockID); err != nil {
+	if _, err := tx.ExecContext(ctx, QueryAdvisoryLock, lockID); err != nil {
 		return apperrors.Wrap(apperrors.CodePersistence, op, err)
 	}
 	return nil

@@ -65,6 +65,7 @@ func (s *AgentService) Create(ctx context.Context, input CreateAgentInput) (*tra
 		AllowedTools:           input.AllowedTools,
 		DefaultPromptFragments: input.DefaultPromptFragments,
 		RuntimeType:            input.RuntimeType,
+		Status:                 AgentStatusActive,
 	}
 
 	if err := NewRepository(tx).Create(agent); err != nil {

@@ -20,6 +20,25 @@ import (
 	workunitmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/workunit"
 )
 
+// --- Type aliases for cmd/ consumption ---
+type (
+	CreateAgentSessionInput = agentsessionmod.CreateAgentSessionInput
+	CreateRunInput          = runmod.CreateRunInput
+	CreateTaskInput         = taskmod.CreateTaskInput
+	CreateWorkUnitInput     = workunitmod.CreateWorkUnitInput
+	DecomposeTaskGraphInput = taskgraphmod.DecomposeTaskGraphInput
+	Priority                = taskmod.Priority
+	RiskLevel               = taskmod.RiskLevel
+	RunTaskOptions          = orchestratormod.RunTaskOptions
+	TaskContext             = promptmod.TaskContext
+	PersistMetadata         = promptmod.PersistMetadata
+	ToolsetSelection        = promptmod.ToolsetSelection
+	RuntimeType             = agentmod.RuntimeType
+	Runtime                 = agentmod.Runtime
+	RuntimeConfig           = agentmod.RuntimeConfig
+	RelayConfig             = runmod.RelayConfig
+)
+
 // TaskService creates a TaskService with standard dependencies.
 func TaskService(db *sql.DB) *taskmod.TaskService {
 	return taskmod.NewTaskService(db, orchestratormod.CancelTaskDependents)
@@ -99,7 +118,7 @@ func RunService(db *sql.DB) *runmod.RunService {
 		func(tx *sql.Tx) runmod.WorkUnitReader {
 			return workunitmod.NewRepository(tx)
 		},
-		runmod.TransitionRunWithWorkUnit,
+		TransitionRunWithWorkUnit,
 	)
 }
 
@@ -365,4 +384,48 @@ func (a *runtimeAdapter) ReceiveEvent(ctx context.Context) (*domain.EventEnvelop
 func (a *runtimeAdapter) Status() orchestratormod.RuntimeStatus {
 	s := a.r.Status()
 	return orchestratormod.RuntimeStatus{State: s.State, CurrentStep: s.CurrentStep, LastHeartbeat: s.LastHeartbeat}
+}
+
+// --- Repository factories for cmd/ consumption ---
+
+// AgentSessionRepository creates an AgentSession repository.
+func AgentSessionRepository(db *sql.DB) *agentsessionmod.Repository {
+	return agentsessionmod.NewRepository(db)
+}
+
+// RunRepository creates a Run repository.
+func RunRepository(db *sql.DB) *runmod.Repository {
+	return runmod.NewRepository(db)
+}
+
+// TaskRepository creates a Task repository.
+func TaskRepository(db *sql.DB) *taskmod.Repository {
+	return taskmod.NewRepository(db)
+}
+
+// WorkUnitRepository creates a WorkUnit repository.
+func WorkUnitRepository(db *sql.DB) *workunitmod.Repository {
+	return workunitmod.NewRepository(db)
+}
+
+// --- Function wrappers for cmd/ consumption ---
+
+// SelectToolset selects a toolset for the given agent profile.
+func SelectToolset(agentProfile string) (promptmod.ToolsetSelection, error) {
+	return promptmod.SelectToolset(agentProfile)
+}
+
+// ComposeTaskPrompt composes a prompt for a task.
+func ComposeTaskPrompt(ctx promptmod.TaskContext) (*promptmod.ComposedPrompt, error) {
+	return promptmod.Compose(ctx)
+}
+
+// NewFakeRuntime creates a new fake runtime.
+func NewFakeRuntime() agentmod.Runtime {
+	return agentmod.NewFakeRuntime()
+}
+
+// NewGeminiRuntime creates a new Gemini runtime.
+func NewGeminiRuntime() agentmod.Runtime {
+	return agentmod.NewGeminiRuntime()
 }

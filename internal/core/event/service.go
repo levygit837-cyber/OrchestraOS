@@ -66,7 +66,8 @@ func (s *Service) Append(ctx context.Context, envelope *Envelope) (*AppendResult
 }
 
 func (s *Service) List(ctx context.Context) ([]Envelope, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	store, err := eventstore.NewStoreWithExecutor(s.executor)
 	if err != nil {
 		return nil, err
@@ -75,7 +76,8 @@ func (s *Service) List(ctx context.Context) ([]Envelope, error) {
 }
 
 func (s *Service) ListByTask(ctx context.Context, taskID string) ([]Envelope, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if err := validation.RequiredUUID(taskID, "task_id", "event_service.list_by_task"); err != nil {
 		return nil, err
 	}
@@ -87,7 +89,8 @@ func (s *Service) ListByTask(ctx context.Context, taskID string) ([]Envelope, er
 }
 
 func (s *Service) ListByRun(ctx context.Context, runID string) ([]Envelope, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if err := validation.RequiredUUID(runID, "run_id", "event_service.list_by_run"); err != nil {
 		return nil, err
 	}
@@ -99,7 +102,8 @@ func (s *Service) ListByRun(ctx context.Context, runID string) ([]Envelope, erro
 }
 
 func (s *Service) ListByWorkUnit(ctx context.Context, workUnitID string) ([]Envelope, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if err := validation.RequiredUUID(workUnitID, "work_unit_id", "event_service.list_by_work_unit"); err != nil {
 		return nil, err
 	}
@@ -111,7 +115,8 @@ func (s *Service) ListByWorkUnit(ctx context.Context, workUnitID string) ([]Enve
 }
 
 func (s *Service) ReplayTask(ctx context.Context, taskID string) (*statemachine.ReplayState, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if err := validation.RequiredUUID(taskID, "task_id", "event_service.replay_task"); err != nil {
 		return nil, err
 	}
@@ -123,7 +128,8 @@ func (s *Service) ReplayTask(ctx context.Context, taskID string) (*statemachine.
 }
 
 func (s *Service) ReplayRun(ctx context.Context, runID string) (*statemachine.ReplayState, error) {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if err := validation.RequiredUUID(runID, "run_id", "event_service.replay_run"); err != nil {
 		return nil, err
 	}
@@ -134,8 +140,9 @@ func (s *Service) ReplayRun(ctx context.Context, runID string) (*statemachine.Re
 	return store.ReplayRunState(runID)
 }
 
-func (s *Service) LastCheckpointByRun(ctx context.Context, runID string) (*Envelope, error) {
-	_ = ctx
+func (s *Service) GetLastCheckpointByRun(ctx context.Context, runID string) (*Envelope, error) {
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if err := validation.RequiredUUID(runID, "run_id", "event_service.last_checkpoint_by_run"); err != nil {
 		return nil, err
 	}
@@ -143,7 +150,7 @@ func (s *Service) LastCheckpointByRun(ctx context.Context, runID string) (*Envel
 	if err != nil {
 		return nil, err
 	}
-	return store.LastCheckpointByRun(runID)
+	return store.GetLastCheckpointByRun(runID)
 }
 
 func (s *Service) validateEnvelopeInput(envelope *Envelope) error {

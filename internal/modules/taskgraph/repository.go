@@ -26,13 +26,6 @@ func (r *Repository) Create(graph *TaskGraph) error {
 	if graph.ID == "" {
 		graph.ID = uuid.New().String()
 	}
-	now := time.Now().UTC()
-	if graph.CreatedAt.IsZero() {
-		graph.CreatedAt = now
-	}
-	if graph.UpdatedAt.IsZero() {
-		graph.UpdatedAt = graph.CreatedAt
-	}
 	_, err := r.db.Exec(
 		QueryInsert,
 		graph.ID,
@@ -81,16 +74,16 @@ func (r *Repository) ListByTask(taskID string) ([]TaskGraph, error) {
 	return graphs, rows.Err()
 }
 
-func (r *Repository) NextVersion(taskID string) (int, error) {
+func (r *Repository) GetNextVersion(taskID string) (int, error) {
 	var version int
-	if err := r.db.QueryRow(QueryNextVersion, taskID).Scan(&version); err != nil {
+	if err := r.db.QueryRow(QueryGetNextVersion, taskID).Scan(&version); err != nil {
 		return 0, fmt.Errorf("failed to get next task graph version: %w", err)
 	}
 	return version, nil
 }
 
-func (r *Repository) SupersedeActiveByTask(taskID string, updatedAt time.Time) error {
-	_, err := r.db.Exec(QuerySupersedeActiveByTask, taskID, updatedAt)
+func (r *Repository) UpdateActiveToSupersededByTask(taskID string, updatedAt time.Time) error {
+	_, err := r.db.Exec(QueryUpdateActiveToSupersededByTask, taskID, updatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to supersede active task graph: %w", err)
 	}

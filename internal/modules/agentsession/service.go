@@ -19,12 +19,11 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/validation"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	agentmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agent"
 )
 
 // AgentReader abstracts agent reads to avoid cyclic imports.
 type AgentReader interface {
-	GetByID(ctx context.Context, id string) (*agentmod.Agent, error)
+	GetByID(ctx context.Context, id string) (*domain.Agent, error)
 }
 
 type AgentSessionService struct {
@@ -302,7 +301,7 @@ func validateCreateAgentSessionInput(input CreateAgentSessionInput) error {
 	return nil
 }
 
-func (s *AgentSessionService) requireAgentByID(ctx context.Context, tx *sql.Tx, id string) (*agentmod.Agent, error) {
+func (s *AgentSessionService) requireAgentByID(ctx context.Context, tx *sql.Tx, id string) (*domain.Agent, error) {
 	op := "agent_session_service.require_agent"
 	agent, err := s.newAgentReader(tx).GetByID(ctx, id)
 	if err != nil {

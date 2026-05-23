@@ -5,8 +5,6 @@ import (
 	"os"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	taskmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
-	taskgraphmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/taskgraph"
 	"github.com/spf13/cobra"
 )
 
@@ -27,11 +25,11 @@ var taskCreateCmd = &cobra.Command{
 		acceptanceCriteria, _ := cmd.Flags().GetStringArray("acceptance")
 
 		service := bootstrap.TaskService(getDB())
-		result, err := service.Create(cmd.Context(), taskmod.CreateTaskInput{
+		result, err := service.Create(cmd.Context(), bootstrap.CreateTaskInput{
 			Title:              title,
 			Description:        description,
-			Priority:           taskmod.Priority(priority),
-			RiskLevel:          taskmod.RiskLevel(riskLevel),
+			Priority:           bootstrap.Priority(priority),
+			RiskLevel:          bootstrap.RiskLevel(riskLevel),
 			AcceptanceCriteria: acceptanceCriteria,
 		})
 		if err != nil {
@@ -47,7 +45,7 @@ var taskListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all tasks",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := taskmod.NewRepository(getDB())
+		repo := bootstrap.TaskRepository(getDB())
 		tasks, err := repo.List()
 		if err != nil {
 			return fmt.Errorf("failed to list tasks: %w", err)
@@ -77,7 +75,7 @@ var taskGetCmd = &cobra.Command{
 	Short: "Get task details",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := taskmod.NewRepository(getDB())
+		repo := bootstrap.TaskRepository(getDB())
 		task, err := repo.GetByID(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to get task: %w", err)
@@ -112,7 +110,7 @@ var taskGraphCreateCmd = &cobra.Command{
 		createdBy, _ := cmd.Flags().GetString("created-by")
 
 		service := bootstrap.TaskGraphService(getDB())
-		result, err := service.Decompose(cmd.Context(), taskgraphmod.DecomposeTaskGraphInput{
+		result, err := service.Decompose(cmd.Context(), bootstrap.DecomposeTaskGraphInput{
 			TaskID:        taskID,
 			ReplaceActive: replaceActive,
 			CreatedBy:     createdBy,

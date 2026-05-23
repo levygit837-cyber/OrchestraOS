@@ -122,30 +122,26 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Verify modules never import each other (except allowed DI types)
+      - name: Verify modules never import each other
         run: |
-          echo "=== GOLDEN RULE: Modules in internal/modules/* MUST NOT import each other ==="
-          echo "Allowed exceptions: DI interface return types only (ADR-0026)"
-          echo ""
+          echo "FAILURE REASON: A module in internal/modules/* imported another module."
+          echo "Modules MUST be autonomous (ADR-0030)."
           go test ./tests/architecture/... -run TestModuleBoundaries -v -count=1
 
-      - name: Verify only orchestrator/bootstrap/cmd may import modules
+      - name: Verify only allowed packages import modules
         run: |
-          echo "=== GOLDEN RULE: Only orchestrator, bootstrap and cmd may import modules ==="
+          echo "FAILURE REASON: A package outside bootstrap/cmd imported internal/modules/*."
+          echo "Only bootstrap (DI wiring) and cmd (entrypoint) may import modules."
           go test ./tests/architecture/... -run TestOnlyCoordinationImportsModules -v -count=1
 
-      - name: Verify transition package is leaf
+      - name: Verify cmd uses bootstrap DI
         run: |
-          echo "=== GOLDEN RULE: internal/core/transition must not import modules ==="
-          go test ./tests/architecture/... -run TestTransitionPackageIsLeaf -v -count=1
+          echo "FAILURE REASON: cmd/ instantiated a service/repository directly."
+          echo "cmd/ MUST use bootstrap.* factories (ADR-0030)."
+          go test ./tests/architecture/... -run TestCmdBootstrapDI -v -count=1
 
-      - name: Verify modules do not import removed coordination package
-        run: |
-          echo "=== GOLDEN RULE: Modules must not import removed coordination package ==="
-          go test ./tests/architecture/... -run TestModulesDoNotImportCoordination -v -count=1
-
-  anomaly-detection:
-    name: Anomaly Detection — Anti-Patterns
+  architecture-gates:
+    name: Architecture Gates — Purity & Integrity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -156,22 +152,29 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Detect forbidden filenames
+      - name: Verify repository purity (no business logic in repos)
         run: |
-          echo "=== ANOMALY: Detecting forbidden filenames (helpers.go, utils.go, etc.) ==="
-          go test ./tests/architecture/... -run TestForbiddenFilenames -v -count=1
+          echo "FAILURE REASON: Business logic detected in repository.go."
+          echo "Repositories must be pure CRUD (ADR-0030)."
+          go test ./tests/architecture/... -run TestRepositoryPurity -v -count=1
 
-      - name: Detect code anomalies (panic, fmt.Println, inline SQL, ignored errors)
+      - name: Verify repository method names are CRUD-only
         run: |
-          echo "=== ANOMALY: Detecting code anomalies ==="
+          echo "FAILURE REASON: Non-CRUD method name in repository.go."
+          go test ./tests/architecture/... -run TestRepositoryMethodNames -v -count=1
+
+      - name: Verify domain import integrity
+        run: |
+          echo "FAILURE REASON: Shared entity types missing from internal/domain/."
+          echo "All cross-module types must live in internal/domain (ADR-0030)."
+          go test ./tests/architecture/... -run TestDomainImportIntegrity -v -count=1
+
+      - name: Verify service decomposition rules
+        run: |
+          echo "FAILURE REASON: service_<sub>.go exists without service.go > 300 lines."
+          go test ./tests/architecture/... -run TestServiceDecomposition -v -count=1
+
+      - name: Detect code anomalies
+        run: |
+          echo "FAILURE REASON: Code anomaly detected (panic, fmt.Println, inline SQL, ignored errors)."
           go test ./tests/architecture/... -run TestCodeAnomalies -v -count=1
-
-      - name: Verify domain package purity
-        run: |
-          echo "=== ANOMALY: Detecting entity structs left in internal/domain ==="
-          go test ./tests/architecture/... -run TestDomainPurity -v -count=1
-
-      - name: Verify coordination package is fully removed
-        run: |
-          echo "=== ANOMALY: Detecting references to removed coordination package ==="
-          go test ./tests/architecture/... -run TestCoordinationRemoved -v -count=1
