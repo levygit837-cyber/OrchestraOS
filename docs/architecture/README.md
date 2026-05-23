@@ -1,6 +1,6 @@
 # Arquitetura do OrchestraOS
 
-Este documento registra a arquitetura do OrchestraOS, refletindo a arquitetura de **Módulos Verticais (Vertical Slice Architecture)** conforme ADR 0022.
+Este documento registra a arquitetura do OrchestraOS, refletindo a **Arquitetura Modular Simplificada** conforme ADR-0019.
 
 ## Contexto
 
@@ -8,19 +8,22 @@ O OrchestraOS é um sistema de orquestração de agentes capaz de executar múlt
 
 O produto é local-first para desenvolvimento, com desenho pronto para rodar em servidor. A interface inicial é CLI fina, com GitHub como superfície externa principal. O primeiro runtime de agente é Codex/CLI em sandbox.
 
-## Arquitetura de Módulos Verticais
+## Arquitetura Modular Simplificada (ADR-0019)
 
-Conforme ADR 0022 (LLM-Optimized Module Architecture), o OrchestraOS adota uma arquitetura de **Módulos Verticais** para otimizar o sistema para operação por agentes de IA (LLMs). Cada entidade de domínio tem seu próprio módulo autônomo em `internal/modules/<entity>/`.
+O OrchestraOS adota uma **Arquitetura Modular Simplificada** conforme ADR-0019, que substituiu a ADR-0015 (Vertical Slice). A arquitetura é organizada em 4 pilares:
 
-### Regra de Ouro
+### Os 4 Pilares
 
-**Módulos verticais NUNCA importam outros módulos diretamente.** Comunicação cross-module ocorre via `internal/core/coordination/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
+1. **`internal/domain/`** centraliza **todos** os entity types compartilhados (Task, Run, WorkUnit, Agent, etc.).
+2. **Módulos em `internal/modules/`** não importam outros módulos. Zero exceções.
+3. **Apenas `internal/bootstrap/` e `internal/modules/orchestrator/`** importam múltiplos módulos.
+4. **`repository.go`** é CRUD puro — sem business logic, sem timestamps, sem deduplication.
 
 ### Estrutura
 
-- **Módulos Verticais (`internal/modules/`)**: Cada módulo representa uma entidade de domínio (agent, task, run, workunit, etc.) com sua própria lógica, repositório, validação e contratos.
-- **Core (`internal/core/`)**: Componentes compartilhados usados por todos os módulos (apperrors, db, eventstore, orchestration, statemachine, validation).
-- **Domain (`internal/domain/`)**: Tipos compartilhados entre módulos que não pertencem a um único módulo vertical.
+- **Domain (`internal/domain/`)**: Todos os entity types compartilhados entre módulos (Task, Run, WorkUnit, Agent, AgentSession, TaskGraph, Trigger, Review, Prompt, etc.).
+- **Módulos (`internal/modules/`)**: Cada módulo representa uma entidade de domínio com sua própria lógica, repositório e serviço. Módulos são autônomos e não importam outros módulos.
+- **Core (`internal/core/`)**: Infraestrutura compartilhada (apperrors, db, event, eventstore, serialization, statemachine, transition, validation).
 - **Bootstrap (`internal/bootstrap/`)**: Injeção de dependências e wiring de serviços com adapters para conectar módulos sem dependências diretas.
 
 ## Decisao Arquitetural
@@ -133,10 +136,9 @@ flowchart TD
 - [ADR 0014: Persistencia M0, CLI minima e testes](../adr/0014-m0-cli-persistence-and-integration-tests.md)
 - [ADR 0015: TUI como interface local primaria](../adr/0015-tui-as-primary-local-interface.md)
 - [ADR 0016: State Machine event-sourced](../adr/0016-event-sourced-state-machine.md)
-- [ADR 0022: LLM-Optimized Module Architecture](../adr/0022-llm-optimized-module-architecture.md)
-- [ADR 0023: Hybrid Intelligent Orchestrator Architecture](../adr/0016-hybrid-intelligent-orchestrator.md)
-- [ADR 0024: Deprecation of ADR 0017 - Domain Services Layer](../adr/0024-deprecation-of-adr-0017.md)
-- [Migration to Vertical Slices](execution/migration-vertical-slices.md)
+- [ADR 0015: LLM-Optimized Module Architecture (superseded)](../adr/0015-vertical-module-architecture.md)
+- [ADR 0016: Hybrid Intelligent Orchestrator Architecture](../adr/0016-hybrid-intelligent-orchestrator.md)
+- [ADR 0019: Arquitetura Modular Simplificada (vigente)](../adr/0019-simplified-modular-architecture.md)
 
 ## Referencias Tecnicas
 

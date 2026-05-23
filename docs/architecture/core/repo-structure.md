@@ -1,10 +1,10 @@
 # Estrutura do Repositorio
 
-Este documento define a estrutura atual do repositório do OrchestraOS, refletindo a arquitetura de módulos verticais (Vertical Slice Architecture) conforme ADR 0022.
+Este documento define a estrutura atual do repositório do OrchestraOS, refletindo a **Arquitetura Modular Simplificada** conforme ADR-0019.
 
 ## Decisao
 
-O repositório adota uma arquitetura de **Módulos Verticais** para otimizar o sistema para operação por agentes de IA (LLMs), reduzindo contexto desnecessário e aumentando escalabilidade.
+O repositório adota uma **Arquitetura Modular Simplificada** (ADR-0019) para otimizar o sistema para operação por agentes de IA (LLMs), com regras mínimas e verificáveis.
 
 ```text
 cmd/orchestraos/
@@ -15,7 +15,6 @@ internal/
     db/
     event/
     eventstore/
-    orchestration/
     serialization/
     statemachine/
     transition/
@@ -68,20 +67,19 @@ Componentes compartilhados usados por todos os módulos verticais. Não contém 
 - `db/`: Helpers de transação (BeginTx, CommitTx, RollbackTx, EnsureRowsAffected)
 - `event/`: EventService wrapper do Event Store
 - `eventstore/`: Store de eventos com validação schema, append e replay
-- `orchestration/`: Helpers cross-domain (TransitionInput, OperationResult, RuntimeEventRelay)
 - `serialization/`: Marshalling genérico de payloads
 - `statemachine/`: Regras de transição de estado e replay
 - `transition/`: Payload builders para transições
 - `validation/`: Validadores genéricos (UUID, texto, priority, risk, runtime)
 
 ### internal/domain/
-Tipos compartilhados entre módulos que não pertencem a um único módulo vertical. Contém tipos como checkpoint, event payloads, e tipos de domínio compartilhados.
+Todos os entity types compartilhados entre módulos (conforme ADR-0019 Pilar 1). Contém structs como Task, Run, WorkUnit, Agent, AgentSession, TaskGraph, Trigger, Review, Prompt, além de checkpoint types e event payloads.
 
 ### internal/migrations/
 Migrations do banco de dados usando goose.
 
 ### internal/modules/
-**Módulos Verticais autônomos** conforme ADR 0022. Cada módulo representa uma entidade de domínio e contém toda a lógica relacionada a essa entidade.
+**Módulos autônomos** conforme ADR-0019. Cada módulo representa uma entidade de domínio e contém sua lógica de negócio, repositório e serviço.
 
 - `agent/`: Agent entities, Runtimes (Fake, Gemini, Codex), GeminiPlanner
 - `agentsession/`: Ciclo de vida de sessões de agente, heartbeat, checkpoint, timeout
@@ -94,7 +92,7 @@ Migrations do banco de dados usando goose.
 - `trigger/`: Detecção de anomalias (stalls, loops)
 - `workunit/`: Work units, dependências, ownership, paths
 
-**Regra de Ouro (ADR 0022):** Módulos verticais NUNCA importam outros módulos diretamente. Comunicação cross-module ocorre via `internal/core/coordination/` ou interfaces DI com adapters em `internal/bootstrap/services.go`.
+**Regra de Isolamento (ADR-0019 Pilar 2):** Módulos NUNCA importam outros módulos diretamente. Apenas `orchestrator/` e `bootstrap/` podem importar múltiplos módulos. Dependências cross-module são resolvidas via interfaces DI com adapters em `internal/bootstrap/services.go`.
 
 ### contracts/
 Contratos JSON versionados como artefatos independentes.
@@ -117,14 +115,15 @@ Fonte de verdade para arquitetura, canvas, ADRs, contratos narrativos e operaç�
 
 ## Regras
 
-- **Isolamento de Módulos:** Módulos verticais não se importam diretamente. Comunicação via core/coordination ou DI.
+- **Isolamento de Módulos (ADR-0019):** Módulos não se importam diretamente. Apenas `orchestrator/` e `bootstrap/` importam múltiplos módulos.
 - **O dominio (internal/domain/) não deve depender de banco, WebSocket, GitHub, Docker ou CLI.**
 - JSON Schemas são contratos de borda; tipos Go são o modelo interno.
 - Schemas devem rejeitar campos desconhecidos por padrão.
 - Novas dependências só devem entrar quando a validação com biblioteca padrão não for suficiente.
 - Mudanças arquiteturais relevantes continuam exigindo ADR.
 - Mudanças de contrato devem atualizar schemas JSON correspondentes.
-- Cada módulo vertical deve ter: README.md, CONTRACTS.md, doc.go, models.go, service.go, repository.go, queries.go, validation.go
+- Cada módulo deve ter no mínimo: `doc.go`, `README.md`, `models.go`, `repository.go`, `service.go`. Arquivos como `queries.go`, `validation.go`, `contract.go` e `CONTRACTS.md` são opcionais (ADR-0019).
+- `repository.go` é CRUD puro: sem `time.Now()`, sem lógica de status, sem deduplication (ADR-0019 Pilar 4).
 
 ## Escopo Atual
 
@@ -143,7 +142,7 @@ O código atual implementa os seguintes módulos verticais:
 
 ## Referências
 
-- ADR 0022: LLM-Optimized Module Architecture
-- ADR 0024: Deprecation of ADR 0017
+- ADR-0019: Arquitetura Modular Simplificada (vigente)
+- ADR-0015: LLM-Optimized Module Architecture (superseded by ADR-0019)
 - docs/architecture/core/module_index.md
 - docs/development/CODING_STANDARDS.md

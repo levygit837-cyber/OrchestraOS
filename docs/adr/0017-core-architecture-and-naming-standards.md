@@ -1,10 +1,10 @@
-# 0028. Padrões de Arquitetura Core e Nomenclatura — Eliminação do Deus Pacote
+# 0017. Padrões de Arquitetura Core e Nomenclatura — Eliminação do Deus Pacote
 
-**Status:** Superseded by ADR 0022 (conteúdo absorvido em 2026-05-18)  
+**Status:** Superseded (conteúdo absorvido pela ADR-0019 em 2026-05-21)  
 **Data:** 2026-05-17
 
-> **Nota:** Este ADR foi absorvido pelo ADR 0022. O conteúdo abaixo é mantido para referência histórica.
-> As regras de nomenclatura, template de `doc.go` e nomes proibidos de arquivos foram incorporados à Seção 5 do ADR 0022.
+> **Nota:** Este ADR foi absorvido pela ADR-0019 (Arquitetura Modular Simplificada). O conteúdo abaixo é mantido para referência histórica.
+> O pacote `core/coordination/` referido aqui foi removido. Helpers cross-module agora residem em `internal/core/transition/`.
 
 ---
 
