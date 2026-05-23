@@ -2,7 +2,7 @@ package agent
 
 import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
-// Aliases to shared domain types per ADR-0030.
+// Aliases to shared domain types per ADR-0019.
 
 type Agent = domain.Agent
 type RuntimeType = domain.AgentRuntimeType

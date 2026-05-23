@@ -12,21 +12,36 @@ Every module under `internal/modules/` MUST contain:
 
 1. `doc.go` — package documentation and context briefing
 2. `README.md` — operational map, responsibilities, file map, allowed dependencies
-3. `CONTRACTS.md` — invariants, state machine, boundary rules, error rules
-4. `queries.go` — SQL constants only (unless the module is a leaf with no DB access)
-5. `models.go` — domain type aliases and constants
-6. `repository.go` — pure CRUD, no business logic
-7. `service.go` — domain logic, state transitions, event emission
+3. `models.go` — local module types (DTOs, input/output structs). **Shared entity types belong to `internal/domain/`**
+4. `repository.go` — pure CRUD, no business logic, no timestamps, no deduplication
+5. `service.go` — domain logic, state transitions, event emission
+
+### Optional Files (create only when needed)
+
+- `queries.go` — SQL constants only (omit if the module has no DB table)
+- `contract.go` — gateway to README.md/CONTRACTS.md, module rules for architecture tests
+- `CONTRACTS.md` — invariants, state machine, boundary rules, error rules
+- `events.go` — event types and payloads emitted by this module
+- `validation.go` — syntactic input validation rules
 
 ### Forbidden in any module
 
 - `helpers.go` or `utils.go` — move reusable code to `internal/core/`
 - Inline SQL strings outside `queries.go`
 - Business logic inside `repository.go`
+- Timestamps generated inside `repository.go` — pass them from `service.go` or use DB defaults
+- `ON CONFLICT` / upsert logic inside `repository.go` — deduplication belongs in `service.go`
 - Direct mutation of another module's tables
 - Calling another module's `Service` methods — use DI interfaces or `core/transition` helpers
 - `panic()` — always return `apperrors.Error`
 - `fmt.Println` / `fmt.Printf` — use structured logging or return errors
+
+### Cross-Module Imports
+
+- **Zero cross-module imports** in `internal/modules/*` except `internal/modules/orchestrator/`.
+- `orchestrator/` is the **only** module allowed to import other modules for coordination.
+- All shared entity types (`Task`, `Run`, `WorkUnit`, `Agent`, etc.) live in `internal/domain/`.
+- Modules import `internal/domain/` for shared types, never another module's `models.go`.
 
 ---
 
@@ -86,9 +101,10 @@ Every module under `internal/modules/` MUST contain:
 ## Adding a New Module
 
 1. Run `./scripts/scaffold/new-module.sh <name>`.
-2. Fill in `README.md` and `CONTRACTS.md`.
-3. Implement `models.go`, `queries.go`, `repository.go`, `service.go`.
-4. Add the service factory to `internal/bootstrap/services.go`.
-5. Run `go test ./internal/modules/<name>`.
-6. Run `./scripts/go/verify-contracts.sh`.
-7. Run `./scripts/go/lint.sh`.
+2. Run `./scripts/scaffold/new-module.sh <name> --with-optional` if you also need `queries.go`, `contract.go`, `CONTRACTS.md`, `events.go`, and `validation.go`.
+3. Fill in `README.md`.
+4. Implement `models.go`, `repository.go`, `service.go`.
+5. Add the service factory to `internal/bootstrap/services.go`.
+6. Run `go test ./internal/modules/<name>`.
+7. Run `./scripts/go/verify-contracts.sh`.
+8. Run `./scripts/go/lint.sh`.

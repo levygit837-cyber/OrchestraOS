@@ -1,10 +1,10 @@
 # 0022. Arquitetura de Módulos Verticais — Decisão, Padronização e Políticas
 
-**Status:** Superseded by ADR-0030  
+**Status:** Superseded by ADR-0019  
 **Data original:** 2026-05-11  
 **Última atualização:** 2026-05-21
 
-> ⚠️ **AVISO:** Esta ADR foi substituída pela [ADR-0030](0030-simplified-modular-architecture.md). A arquitetura Vertical Slice foi julgada excessivamente complexa e não verificável. Mantemos este documento para preservar o histórico de decisões.
+> ⚠️ **AVISO:** Esta ADR foi substituída pela [ADR-0019](0019-simplified-modular-architecture.md). A arquitetura Vertical Slice foi julgada excessivamente complexa e não verificável. Mantemos este documento para preservar o histórico de decisões.
 
 
 **Data:** 2026-05-11

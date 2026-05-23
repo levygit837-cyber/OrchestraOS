@@ -16,7 +16,7 @@ import (
 // It requires multiple SQL keywords in sequence to avoid false positives
 // from error messages like "failed to update heartbeat".
 //
-// Updated per ADR-0030: also detects SELECT func(...) patterns (SQL without FROM).
+// Updated per ADR-0019: also detects SELECT func(...) patterns (SQL without FROM).
 var sqlPattern = regexp.MustCompile(`(?i)(SELECT\s+.*\s+FROM|SELECT\s+\w+\s*\(|INSERT\s+INTO|UPDATE\s+.*\s+SET|DELETE\s+FROM|CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE|JOIN\s+.*\s+ON)`)
 
 // safeToIgnoreCalls lists function names where ignoring the error is common
@@ -149,7 +149,7 @@ func scanForInlineSQL(t *testing.T, path string) {
 		// Detect actual SQL patterns inside string literals
 		if sqlPattern.MatchString(line) {
 			if strings.Contains(line, "`") || strings.Contains(line, `"`) {
-				t.Errorf("possible inline SQL at %s:%d — SQL must live in queries.go only (ADR-0022, CODING_STANDARDS.md). Line: %s", path, lineNum, trimmed)
+				t.Errorf("possible inline SQL at %s:%d — SQL must live in queries.go only (ADR-0015, CODING_STANDARDS.md). Line: %s", path, lineNum, trimmed)
 			}
 		}
 	}
@@ -207,7 +207,7 @@ func scanForIgnoredErrors(t *testing.T, fset *token.FileSet, f *ast.File, path s
 // scanForIgnoredVariables detects `_ = variable` assignments where the error
 // (or other return value) is silently discarded without documentation.
 //
-// Per ADR-0030 / CODING_STANDARDS.md: all ignored values must be documented.
+// Per ADR-0019 / CODING_STANDARDS.md: all ignored values must be documented.
 func scanForIgnoredVariables(t *testing.T, fset *token.FileSet, f *ast.File, path string) {
 	ast.Inspect(f, func(n ast.Node) bool {
 		assign, ok := n.(*ast.AssignStmt)
@@ -251,7 +251,7 @@ func scanForIgnoredVariables(t *testing.T, fset *token.FileSet, f *ast.File, pat
 // scanForFullyIgnoredTuple detects `_, _ = someCall()` where both return values
 // are silently discarded without documentation.
 //
-// Per ADR-0030 / CODING_STANDARDS.md: all ignored values must be documented.
+// Per ADR-0019 / CODING_STANDARDS.md: all ignored values must be documented.
 func scanForFullyIgnoredTuple(t *testing.T, fset *token.FileSet, f *ast.File, path string) {
 	ast.Inspect(f, func(n ast.Node) bool {
 		assign, ok := n.(*ast.AssignStmt)
@@ -290,7 +290,7 @@ func scanForFullyIgnoredTuple(t *testing.T, fset *token.FileSet, f *ast.File, pa
 // where errors are silently discarded. This is a common anti-pattern because
 // deferred errors are often important (e.g., rollback, close, cleanup).
 //
-// Per ADR-0030 / CODING_STANDARDS.md: all ignored errors must be documented,
+// Per ADR-0019 / CODING_STANDARDS.md: all ignored errors must be documented,
 // especially in defer blocks where failures may indicate resource leaks.
 func scanForIgnoredErrorsInDefer(t *testing.T, fset *token.FileSet, f *ast.File, path string) {
 	ast.Inspect(f, func(n ast.Node) bool {

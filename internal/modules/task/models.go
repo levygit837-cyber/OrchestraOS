@@ -2,7 +2,7 @@ package task
 
 import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
-// Aliases to shared domain types per ADR-0030.
+// Aliases to shared domain types per ADR-0019.
 // These allow existing code in the task module to continue using task.Task,
 // task.Status, etc., while other modules import domain directly.
 

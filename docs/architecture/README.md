@@ -134,7 +134,7 @@ flowchart TD
 - [ADR 0015: TUI como interface local primaria](../adr/0015-tui-as-primary-local-interface.md)
 - [ADR 0016: State Machine event-sourced](../adr/0016-event-sourced-state-machine.md)
 - [ADR 0022: LLM-Optimized Module Architecture](../adr/0022-llm-optimized-module-architecture.md)
-- [ADR 0023: Hybrid Intelligent Orchestrator Architecture](../adr/0023-hybrid-intelligent-orchestrator.md)
+- [ADR 0023: Hybrid Intelligent Orchestrator Architecture](../adr/0016-hybrid-intelligent-orchestrator.md)
 - [ADR 0024: Deprecation of ADR 0017 - Domain Services Layer](../adr/0024-deprecation-of-adr-0017.md)
 - [Migration to Vertical Slices](execution/migration-vertical-slices.md)
 

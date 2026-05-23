@@ -445,7 +445,7 @@ func (s *OrchestratorService) GetObservation(ctx context.Context, req Observatio
 
 ## Referencias
 
-- `docs/adr/0023-hybrid-intelligent-orchestrator.md`
+- `docs/adr/0016-hybrid-intelligent-orchestrator.md`
 - `docs/architecture/agents/intelligent-orchestrator-agent.md`
 - `docs/architecture/protocols/orchestrator-intervention-protocol.md`
 - `docs/architecture/agents/multi-agent-coordination.md`

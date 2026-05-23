@@ -17,7 +17,7 @@ var repositoryPurityRoots = []string{"../../internal/modules", "../../internal/c
 
 // repositoryPurityPatterns detects business logic in repository.go files.
 //
-// Heuristics (per ADR-0030 Pilar 3: "repository.go é CRUD puro"):
+// Heuristics (per ADR-0019 Pilar 3: "repository.go é CRUD puro"):
 //  1. Status-based branching: if statements that compare variables with Status* constants.
 //  2. Deduplication logic: patterns like "if existing != nil" followed by comparison.
 //  3. Reference/upsert detection: returning booleans indicating if record was created or referenced.
@@ -66,7 +66,7 @@ var repositoryPurityPatterns = []repositoryPurityPattern{
 // TestRepositoryPurity verifies that repository.go files contain only CRUD
 // operations and no business logic.
 //
-// Per ADR-0030 Pilar 3:
+// Per ADR-0019 Pilar 3:
 //
 //	"repository.go é CRUD puro. Não computar timestamps baseados em status,
 //	não fazer deduplicação, não fazer upsert logic."
@@ -118,7 +118,7 @@ func scanRepositoryForBusinessLogic(t *testing.T, path string) {
 		for _, pattern := range repositoryPurityPatterns {
 			if pattern.regex.MatchString(line) {
 				t.Errorf(
-					"repository business logic detected at %s:%d — %s (ADR-0030). "+
+					"repository business logic detected at %s:%d — %s (ADR-0019). "+
 						"Line: %s",
 					path, lineNum, pattern.description, trimmed,
 				)
@@ -184,7 +184,7 @@ func TestRepositoryMethodNames(t *testing.T) {
 					pos := fset.Position(fn.Pos())
 					t.Errorf(
 						"repository %s contains non-CRUD method %q at %s — "+
-							"repositories must only have CRUD methods (Create, Get, List, Update, Delete, scan*, etc.) (ADR-0030).",
+							"repositories must only have CRUD methods (Create, Get, List, Update, Delete, scan*, etc.) (ADR-0019).",
 						path, name, pos,
 					)
 				}

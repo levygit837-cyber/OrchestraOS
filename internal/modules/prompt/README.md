@@ -47,7 +47,7 @@ State Flow:
 
 ### Optional Files
 - `catalog.go` → fragment catalog loader
-- `catalog/` → markdown fragment files organized by category
+- `configs/prompts/` → markdown fragment files organized by category (located at repo root, loaded via embed)
 - `composer.go` → fragment selection and validation logic
 - `composer_render.go` → template rendering, system profile building, formatting helpers
 - `composer_test.go` → composer tests

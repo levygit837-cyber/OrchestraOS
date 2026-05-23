@@ -15,7 +15,7 @@ import (
 )
 
 // TransitionRunWithWorkUnit synchronizes a run transition with its associated work unit.
-// Lives in bootstrap to avoid run→workunit cross-module import (ADR-0030).
+// Lives in bootstrap to avoid run→workunit cross-module import (ADR-0019).
 func TransitionRunWithWorkUnit(ctx context.Context, tx *sql.Tx, run *runmod.Run, target runmod.Status, input transition.TransitionInput) error {
 	if run.WorkUnitID == "" {
 		return nil

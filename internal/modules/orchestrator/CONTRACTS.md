@@ -64,7 +64,7 @@ Forbidden:
 - Business logic beyond task orchestration and coordination.
 
 High-level task execution workflow is the sole responsibility of this module.
-Low-level cross-module transaction coordination belongs to the module that owns the aggregate root of the process (ADR-0028).
+Low-level cross-module transaction coordination belongs to the module that owns the aggregate root of the process (ADR-0017).
 
 ---
 
@@ -105,4 +105,4 @@ This pattern keeps `service.go` focused while allowing the orchestrator to grow 
 
 ## Related ADRs
 
-- ADR-0022: Vertical Slice Architecture (inclui padronização de módulos)
+- ADR-0015: Vertical Slice Architecture (inclui padronização de módulos)

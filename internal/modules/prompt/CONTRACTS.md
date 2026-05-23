@@ -87,5 +87,5 @@ No further decomposition at this time.
 
 ## Related ADRs
 
-- ADR-0022: Vertical Slice Architecture
-- ADR-0025: Module Standardization
+- ADR-0015: Vertical Slice Architecture
+- ADR-0019: Module Standardization
