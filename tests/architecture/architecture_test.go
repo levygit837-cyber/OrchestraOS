@@ -15,19 +15,19 @@ const projectRoot = "../../"
 // allowedImports defines the permitted internal import graph.
 // Key = package path suffix, Value = allowed internal import suffixes.
 var allowedImports = map[string][]string{
-	"internal/domain":           {},
-	"internal/apperrors":        {},
-	"internal/store":            {"internal/domain", "internal/apperrors"},
-	"internal/event":            {"internal/domain", "internal/store"},
-	"internal/planner":          {"internal/domain", "internal/apperrors"},
-	"internal/executor":         {"internal/domain", "internal/apperrors", "internal/store"},
-	"internal/sse":              {},
-	"internal/retry":            {"internal/apperrors"},
-	"internal/runtime":          {"internal/domain", "internal/apperrors"},
-	"internal/provider/gemini":  {"internal/domain", "internal/apperrors", "internal/runtime", "internal/sse"},
+	"internal/domain":            {},
+	"internal/apperrors":         {},
+	"internal/store":             {"internal/domain", "internal/apperrors"},
+	"internal/event":             {"internal/domain", "internal/store"},
+	"internal/planner":           {"internal/domain", "internal/apperrors"},
+	"internal/executor":          {"internal/domain", "internal/apperrors", "internal/store"},
+	"internal/sse":               {},
+	"internal/retry":             {"internal/apperrors"},
+	"internal/runtime":           {"internal/domain", "internal/apperrors"},
+	"internal/provider/gemini":   {"internal/domain", "internal/apperrors", "internal/runtime", "internal/sse"},
 	"internal/provider/deepseek": {"internal/domain", "internal/apperrors", "internal/runtime", "internal/sse"},
-	"internal":                  {"internal/domain", "internal/executor", "internal/planner", "internal/store"},
-	"cmd/orchestraos":           {"internal", "internal/domain", "internal/executor", "internal/planner", "internal/runtime", "internal/store", "internal/provider/gemini", "internal/provider/deepseek"},
+	"internal":                   {"internal/domain", "internal/executor", "internal/planner", "internal/store"},
+	"cmd/orchestraos":            {"internal", "internal/domain", "internal/executor", "internal/planner", "internal/runtime", "internal/store", "internal/provider/gemini", "internal/provider/deepseek"},
 }
 
 const modulePath = "github.com/levygit837-cyber/OrchestraOS/"
