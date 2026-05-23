@@ -47,6 +47,13 @@ codedb.snapshot
 canvas-v3-*.png
 canvas-v4-*.png
 
+# Worktrees metadata
+.worktrees/
+
+# Design assets
+.design/
+design/
+
 # Plans — kept locally only, not in repo
 plans/
 .ultraplan/
