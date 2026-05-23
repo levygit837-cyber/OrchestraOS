@@ -15,6 +15,10 @@ const (
 	KindProviderDown
 	KindStreamInitFailed
 	KindStreamInterrupted
+	KindGraphGeneration
+	KindGraphValidation
+	KindDecomposition
+	KindWorkUnitInvalid
 )
 
 type Error struct {
@@ -53,5 +57,5 @@ func IsRetryable(err error) bool {
 	if !ok {
 		return false
 	}
-	return e.Kind == KindRateLimit || e.Kind == KindTimeout || e.Kind == KindProviderDown || e.Kind == KindStreamInterrupted
+	return e.Kind == KindRateLimit || e.Kind == KindTimeout || e.Kind == KindProviderDown || e.Kind == KindStreamInterrupted || e.Kind == KindGraphGeneration
 }
