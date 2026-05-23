@@ -1,30 +1,22 @@
 package agent
 
-// Agent represents a configured agent runtime in the system.
-type Agent struct {
-	ID                     string      `json:"id"`
-	Name                   string      `json:"name"`
-	Profile                string      `json:"profile"`
-	Capabilities           []string    `json:"capabilities"`
-	AllowedTools           []string    `json:"allowed_tools"`
-	DefaultPromptFragments []string    `json:"default_prompt_fragments"`
-	RuntimeType            RuntimeType `json:"runtime_type"`
-}
+import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
-// RuntimeType defines the available agent runtime implementations.
-type RuntimeType string
+// Aliases to shared domain types per ADR-0030.
+
+type Agent = domain.Agent
+type RuntimeType = domain.AgentRuntimeType
 
 const (
-	RuntimeTypeCodexCLI RuntimeType = "codex_cli"
-	RuntimeTypeFake     RuntimeType = "fake"
-	RuntimeTypeExternal RuntimeType = "external"
-	RuntimeTypeGemini   RuntimeType = "gemini"
+	RuntimeTypeCodexCLI = domain.AgentRuntimeTypeCodexCLI
+	RuntimeTypeFake     = domain.AgentRuntimeTypeFake
+	RuntimeTypeExternal = domain.AgentRuntimeTypeExternal
+	RuntimeTypeGemini   = domain.AgentRuntimeTypeGemini
 )
 
-// AgentStatus represents the status of an agent in the database.
-type AgentStatus string
+type AgentStatus = domain.AgentStatus
 
 const (
-	AgentStatusActive   AgentStatus = "active"
-	AgentStatusInactive AgentStatus = "inactive"
+	AgentStatusActive   = domain.AgentStatusActive
+	AgentStatusInactive = domain.AgentStatusInactive
 )

@@ -8,8 +8,6 @@ import (
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/transition"
 	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
-	agentsessionmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/agentsession"
-	runmod "github.com/levygit837-cyber/OrchestraOS/internal/modules/run"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +27,7 @@ var agentSessionCreateCmd = &cobra.Command{
 		sandboxID, _ := cmd.Flags().GetString("sandbox-id")
 
 		db := getDB()
-		run, err := runmod.NewRepository(db).GetByID(runID)
+		run, err := bootstrap.RunRepository(db).GetByID(runID)
 		if err != nil {
 			return fmt.Errorf("failed to get run: %w", err)
 		}
@@ -38,7 +36,7 @@ var agentSessionCreateCmd = &cobra.Command{
 		}
 
 		service := bootstrap.AgentSessionService(db)
-		result, err := service.Create(cmd.Context(), agentsessionmod.CreateAgentSessionInput{
+		result, err := service.Create(cmd.Context(), bootstrap.CreateAgentSessionInput{
 			RunID:        runID,
 			TaskID:       run.TaskID,
 			WorkUnitID:   run.WorkUnitID,
@@ -60,7 +58,7 @@ var agentSessionGetCmd = &cobra.Command{
 	Short: "Get agent session details",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := agentsessionmod.NewRepository(getDB())
+		repo := bootstrap.AgentSessionRepository(getDB())
 		session, err := repo.GetByID(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to get agent session: %w", err)
@@ -97,7 +95,7 @@ var agentSessionStatusCmd = &cobra.Command{
 		status, _ := cmd.Flags().GetString("status")
 
 		service := bootstrap.AgentSessionService(getDB())
-		if err := updateAgentSessionStatus(context.Background(), service, args[0], agentsessionmod.Status(status)); err != nil {
+		if err := updateAgentSessionStatus(context.Background(), service, args[0], domain.AgentSessionStatus(status)); err != nil {
 			return fmt.Errorf("failed to update status: %w", err)
 		}
 
@@ -166,21 +164,28 @@ func init() {
 	agentSessionCmd.AddCommand(agentSessionCheckpointCmd)
 }
 
-func updateAgentSessionStatus(ctx context.Context, service *agentsessionmod.AgentSessionService, sessionID string, status agentsessionmod.Status) error {
+type agentSessionTransitioner interface {
+	Resume(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Disconnect(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Stop(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+	Fail(ctx context.Context, sessionID string, input transition.TransitionInput) (*transition.OperationResult[*domain.AgentSession], error)
+}
+
+func updateAgentSessionStatus(ctx context.Context, service agentSessionTransitioner, sessionID string, status domain.AgentSessionStatus) error {
 	switch status {
-	case agentsessionmod.StatusRunning:
+	case domain.AgentSessionStatusRunning:
 		_, err := service.Resume(ctx, sessionID, transition.TransitionInput{})
 		return err
-	case agentsessionmod.StatusDisconnected:
+	case domain.AgentSessionStatusDisconnected:
 		_, err := service.Disconnect(ctx, sessionID, transition.TransitionInput{Justification: "manual status update"})
 		return err
-	case agentsessionmod.StatusStopped:
+	case domain.AgentSessionStatusStopped:
 		_, err := service.Stop(ctx, sessionID, transition.TransitionInput{Justification: "manual status update"})
 		return err
-	case agentsessionmod.StatusFailed:
+	case domain.AgentSessionStatusFailed:
 		_, err := service.Fail(ctx, sessionID, transition.TransitionInput{FailureReason: "manual status update"})
 		return err
-	case agentsessionmod.StatusPaused, agentsessionmod.StatusWaitingApproval, agentsessionmod.StatusStopping:
+	case domain.AgentSessionStatusPaused, domain.AgentSessionStatusWaitingApproval, domain.AgentSessionStatusStopping:
 		return fmt.Errorf("manual status %q is not exposed as a service command yet", status)
 	default:
 		return fmt.Errorf("unknown agent session status %q", status)

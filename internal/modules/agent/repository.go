@@ -37,7 +37,7 @@ func (r *Repository) Create(agent *Agent) error {
 		textArray(agent.AllowedTools),
 		textArray(agent.DefaultPromptFragments),
 		agent.RuntimeType,
-		"active", // status
+		agent.Status,
 		now,
 		now,
 	)

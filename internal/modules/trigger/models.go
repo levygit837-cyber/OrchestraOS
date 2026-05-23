@@ -1,27 +1,54 @@
 package trigger
 
-import (
-	"encoding/json"
-	"time"
-)
+import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
-type Status string
+// Aliases to shared domain types per ADR-0030.
 
-const (
-	StatusActive    Status = "active"
-	StatusTriggered Status = "triggered"
-	StatusResolved  Status = "resolved"
-	StatusDismissed Status = "dismissed"
-)
-
-type Type string
+type Trigger = domain.Trigger
+type Status = domain.TriggerStatus
+type Type = domain.TriggerType
 
 const (
-	TypeThreshold        Type = "threshold"
-	TypeAnomaly          Type = "anomaly"
-	TypeHeartbeatTimeout Type = "heartbeat_timeout"
-	TypePolicy           Type = "policy"
+	StatusActive    = domain.TriggerStatusActive
+	StatusTriggered = domain.TriggerStatusTriggered
+	StatusResolved  = domain.TriggerStatusResolved
+	StatusDismissed = domain.TriggerStatusDismissed
+
+	TypeThreshold        = domain.TriggerTypeThreshold
+	TypeAnomaly          = domain.TriggerTypeAnomaly
+	TypeHeartbeatTimeout = domain.TriggerTypeHeartbeatTimeout
+	TypePolicy           = domain.TriggerTypePolicy
 )
+
+// Helper functions for type conversions.
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+func anomalyTypePtr(a AnomalyType) *string {
+	return stringPtr(string(a))
+}
+
+func anomalyTypePtrDeref(a *AnomalyType) *string {
+	if a == nil {
+		return nil
+	}
+	return stringPtr(string(*a))
+}
+
+func resolutionActionPtr(r ResolutionAction) *string {
+	return stringPtr(string(r))
+}
+
+func resolutionActionPtrDeref(r *ResolutionAction) *string {
+	if r == nil {
+		return nil
+	}
+	return stringPtr(string(*r))
+}
+
+// Local types (not shared across modules).
 
 type AnomalyType string
 
@@ -50,20 +77,4 @@ type ThresholdConfig struct {
 	TokenMax        int `json:"token_max"`
 	StepsMax        int `json:"steps_max"`
 	TimeMaxSeconds  int `json:"time_max_seconds"`
-}
-
-type Trigger struct {
-	ID               string            `json:"id"`
-	RunID            *string           `json:"run_id,omitempty"`
-	TaskID           *string           `json:"task_id,omitempty"`
-	AgentSessionID   *string           `json:"agent_session_id,omitempty"`
-	TriggerType      Type              `json:"trigger_type"`
-	Status           Status            `json:"status"`
-	AnomalyType      *AnomalyType      `json:"anomaly_type,omitempty"`
-	ThresholdValue   json.RawMessage   `json:"threshold_value,omitempty"`
-	CurrentValue     json.RawMessage   `json:"current_value,omitempty"`
-	TriggeredAt      *time.Time        `json:"triggered_at,omitempty"`
-	ResolvedAt       *time.Time        `json:"resolved_at,omitempty"`
-	ResolutionAction *ResolutionAction `json:"resolution_action,omitempty"`
-	CreatedAt        time.Time         `json:"created_at"`
 }

@@ -106,7 +106,8 @@ func ValidateWorkUnitDependencies(inputs []CreateWorkUnitInput, existing []WorkU
 }
 
 func ValidateDependenciesCompleted(ctx context.Context, tx *sql.Tx, wu *WorkUnit) error {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if len(wu.DependsOn) == 0 {
 		return nil
 	}
@@ -130,7 +131,8 @@ func ValidateDependenciesCompleted(ctx context.Context, tx *sql.Tx, wu *WorkUnit
 }
 
 func ValidateOwnedPathAvailability(ctx context.Context, tx *sql.Tx, wu *WorkUnit) error {
-	_ = ctx
+	// ctx reserved for future cancellation; intentionally ignored
+	_ = ctx //nolint:ctx-ignored // ctx reserved for future cancellation; intentionally ignored
 	if len(wu.OwnedPaths) == 0 {
 		return nil
 	}

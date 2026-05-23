@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/bootstrap"
-	orchestratormod "github.com/levygit837-cyber/OrchestraOS/internal/modules/orchestrator"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +47,7 @@ var taskRunCmd = &cobra.Command{
 		orchService := bootstrap.OrchestratorService(getDB())
 
 		start := time.Now()
-		result, err := orchService.RunTask(cmd.Context(), taskID, orchestratormod.RunTaskOptions{
+		result, err := orchService.RunTask(cmd.Context(), taskID, bootstrap.RunTaskOptions{
 			RuntimeType:     runtimeType,
 			PlannerStrategy: planner,
 			MaxSteps:        maxSteps,

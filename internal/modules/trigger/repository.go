@@ -30,11 +30,6 @@ func (r *Repository) Create(trigger *Trigger) error {
 	if trigger.ID == "" {
 		trigger.ID = uuid.New().String()
 	}
-	now := time.Now()
-	if trigger.CreatedAt.IsZero() {
-		trigger.CreatedAt = now
-	}
-
 	_, err := r.db.Exec(
 		QueryInsert,
 		trigger.ID,
@@ -172,20 +167,14 @@ func (r *Repository) scanTrigger(scanner interface {
 	trigger.RunID = runID
 	trigger.TaskID = taskID
 	trigger.AgentSessionID = agentSessionID
-	if anomalyType != nil {
-		a := AnomalyType(*anomalyType)
-		trigger.AnomalyType = &a
-	}
+	trigger.AnomalyType = anomalyType
 	if triggeredAt.Valid {
 		trigger.TriggeredAt = &triggeredAt.Time
 	}
 	if resolvedAt.Valid {
 		trigger.ResolvedAt = &resolvedAt.Time
 	}
-	if resolutionAction != nil {
-		ra := ResolutionAction(*resolutionAction)
-		trigger.ResolutionAction = &ra
-	}
+	trigger.ResolutionAction = resolutionAction
 
 	return &trigger, nil
 }

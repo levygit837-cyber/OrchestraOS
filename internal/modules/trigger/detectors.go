@@ -19,7 +19,7 @@ func (d StallDetector) Detect(lastEventAt *time.Time, startedAt time.Time, now t
 		return &Trigger{
 			TriggerType: TypeAnomaly,
 			Status:      StatusTriggered,
-			AnomalyType: &anomaly,
+			AnomalyType: anomalyTypePtr(anomaly),
 			ThresholdValue: mustMarshal(map[string]interface{}{
 				"stall_seconds": thresholdSeconds,
 			}),
@@ -62,7 +62,7 @@ func (d LoopDetector) Detect(eventTypes []string, threshold int, now time.Time) 
 	return &Trigger{
 		TriggerType: TypeAnomaly,
 		Status:      StatusTriggered,
-		AnomalyType: &anomaly,
+		AnomalyType: anomalyTypePtr(anomaly),
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"loop_repetitions": threshold,
 		}),
@@ -100,7 +100,7 @@ func (d DriftDetector) Detect(ownedPaths, readPaths, accessedPaths []string, now
 	return &Trigger{
 		TriggerType: TypeAnomaly,
 		Status:      StatusTriggered,
-		AnomalyType: &anomaly,
+		AnomalyType: anomalyTypePtr(anomaly),
 		CurrentValue: mustMarshal(map[string]interface{}{
 			"drift_paths": driftPaths,
 		}),
@@ -131,7 +131,7 @@ func (d PathViolationDetector) Detect(ownedPaths, modifiedPaths []string, now ti
 	return &Trigger{
 		TriggerType: TypeAnomaly,
 		Status:      StatusTriggered,
-		AnomalyType: &anomaly,
+		AnomalyType: anomalyTypePtr(anomaly),
 		CurrentValue: mustMarshal(map[string]interface{}{
 			"violation_paths": violations,
 		}),
@@ -151,7 +151,7 @@ func (d TokenThresholdDetector) Detect(currentTokens, maxTokens int, now time.Ti
 	return &Trigger{
 		TriggerType: TypeThreshold,
 		Status:      StatusTriggered,
-		AnomalyType: &anomaly,
+		AnomalyType: anomalyTypePtr(anomaly),
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"token_max": maxTokens,
 		}),
@@ -174,7 +174,7 @@ func (d StepsThresholdDetector) Detect(currentSteps, maxSteps int, now time.Time
 	return &Trigger{
 		TriggerType: TypeThreshold,
 		Status:      StatusTriggered,
-		AnomalyType: &anomaly,
+		AnomalyType: anomalyTypePtr(anomaly),
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"steps_max": maxSteps,
 		}),
@@ -198,7 +198,7 @@ func (d TimeThresholdDetector) Detect(startedAt time.Time, now time.Time, maxSec
 	return &Trigger{
 		TriggerType: TypeThreshold,
 		Status:      StatusTriggered,
-		AnomalyType: &anomaly,
+		AnomalyType: anomalyTypePtr(anomaly),
 		ThresholdValue: mustMarshal(map[string]interface{}{
 			"time_max_seconds": maxSeconds,
 		}),

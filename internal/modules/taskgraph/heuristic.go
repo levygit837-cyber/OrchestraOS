@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 )
 
 const (
@@ -38,7 +38,7 @@ type groupedCriteria struct {
 	Weight   int
 }
 
-func BuildLocalHeuristicGraphPlan(task *task.Task) (*GraphPlan, error) {
+func BuildLocalHeuristicGraphPlan(task *domain.Task) (*GraphPlan, error) {
 	criteria, err := parseCriterionPlans(task.AcceptanceCriteria)
 	if err != nil {
 		return nil, err
@@ -352,8 +352,8 @@ func validateWorkUnitDependencies(inputs []graphWorkUnitInput) error {
 }
 
 // TaskForGraphTest creates a minimal task for testing graph decomposition.
-func TaskForGraphTest(criteria []string) *task.Task {
-	return &task.Task{
+func TaskForGraphTest(criteria []string) *domain.Task {
+	return &domain.Task{
 		ID:                 uuid.New().String(),
 		Title:              "Task graph test",
 		AcceptanceCriteria: criteria,

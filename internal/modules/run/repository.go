@@ -113,16 +113,8 @@ func (r *Repository) ListByTask(taskID string) ([]Run, error) {
 }
 
 // UpdateStatus updates run status and result
-func (r *Repository) UpdateStatus(id string, status Status, result *Result, failureReason *string) error {
+func (r *Repository) UpdateStatus(id string, status Status, startedAt, finishedAt *time.Time, result *Result, failureReason *string) error {
 	now := time.Now()
-
-	var startedAt, finishedAt *time.Time
-	if status == StatusRunning {
-		startedAt = &now
-	}
-	if status == StatusCompleted || status == StatusFailed || status == StatusCancelled {
-		finishedAt = &now
-	}
 
 	var resultStr *string
 	if result != nil {

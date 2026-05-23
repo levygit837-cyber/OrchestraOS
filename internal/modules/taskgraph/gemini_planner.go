@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/apperrors"
-	"github.com/levygit837-cyber/OrchestraOS/internal/modules/task"
+	"github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
 	"google.golang.org/genai"
 )
@@ -66,7 +66,7 @@ func NewGeminiPlanner() (*GeminiPlanner, error) {
 }
 
 // Plan decomposes the given task into a GraphPlan using Gemini.
-func (p *GeminiPlanner) Plan(ctx context.Context, task *task.Task) (*GraphPlan, error) {
+func (p *GeminiPlanner) Plan(ctx context.Context, task *domain.Task) (*GraphPlan, error) {
 	op := "gemini_planner.plan"
 
 	prompt, err := PlannerPrompt(task)
@@ -119,7 +119,7 @@ func (p *GeminiPlanner) Plan(ctx context.Context, task *task.Task) (*GraphPlan, 
 }
 
 // convertToGraphPlan transforms planner output into a GraphPlan with UUIDs and resolved dependencies.
-func (p *GeminiPlanner) convertToGraphPlan(task *task.Task, output *plannerOutput) (*GraphPlan, error) {
+func (p *GeminiPlanner) convertToGraphPlan(task *domain.Task, output *plannerOutput) (*GraphPlan, error) {
 	op := "gemini_planner.convert"
 
 	if output == nil {

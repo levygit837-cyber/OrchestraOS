@@ -162,9 +162,9 @@ func (s *Store) ListByWorkUnit(workUnitID string) ([]domain.EventEnvelope, error
 	return s.repo.ListByWorkUnit(workUnitID)
 }
 
-// LastCheckpointByRun retrieves the latest checkpoint event for a run.
-func (s *Store) LastCheckpointByRun(runID string) (*domain.EventEnvelope, error) {
-	return s.repo.LastCheckpointByRun(runID)
+// GetLastCheckpointByRun retrieves the latest checkpoint event for a run.
+func (s *Store) GetLastCheckpointByRun(runID string) (*domain.EventEnvelope, error) {
+	return s.repo.GetLastCheckpointByRun(runID)
 }
 
 // Replay reconstructs state by replaying events for a task

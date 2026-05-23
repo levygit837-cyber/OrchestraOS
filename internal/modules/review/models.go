@@ -1,46 +1,26 @@
 package review
 
-import "time"
+import "github.com/levygit837-cyber/OrchestraOS/internal/domain"
 
-type Status string
+// Aliases to shared domain types per ADR-0030.
 
-const (
-	StatusPending          Status = "pending"
-	StatusInProgress       Status = "in_progress"
-	StatusApproved         Status = "approved"
-	StatusChangesRequested Status = "changes_requested"
-	StatusNeedsDiscussion  Status = "needs_discussion"
-)
-
-type ValidationGate string
+type Review = domain.Review
+type Status = domain.ReviewStatus
+type ValidationGate = domain.ReviewValidationGate
+type CriteriaChecked = domain.CriteriaChecked
 
 const (
-	GateHard   ValidationGate = "hard"
-	GateSoft   ValidationGate = "soft"
-	GatePolicy ValidationGate = "policy"
+	StatusPending          = domain.ReviewStatusPending
+	StatusInProgress       = domain.ReviewStatusInProgress
+	StatusApproved         = domain.ReviewStatusApproved
+	StatusChangesRequested = domain.ReviewStatusChangesRequested
+	StatusNeedsDiscussion  = domain.ReviewStatusNeedsDiscussion
+
+	GateHard   = domain.ReviewValidationGateHard
+	GateSoft   = domain.ReviewValidationGateSoft
+	GatePolicy = domain.ReviewValidationGatePolicy
 )
+
+// Local types (not shared across modules).
 
 type Decision = Status
-
-type CriteriaChecked struct {
-	Criterion string `json:"criterion"`
-	Passed    bool   `json:"passed"`
-	Reason    string `json:"reason,omitempty"`
-}
-
-type Review struct {
-	ID              string            `json:"id"`
-	RunID           *string           `json:"run_id,omitempty"`
-	WorkUnitID      *string           `json:"work_unit_id,omitempty"`
-	TaskID          *string           `json:"task_id,omitempty"`
-	AgentSessionID  *string           `json:"agent_session_id,omitempty"`
-	ReviewerAgentID *string           `json:"reviewer_agent_id,omitempty"`
-	GateType        ValidationGate    `json:"gate_type"`
-	Status          Status            `json:"status"`
-	VerdictReason   string            `json:"verdict_reason,omitempty"`
-	EvidenceRefs    []string          `json:"evidence_refs,omitempty"`
-	CriteriaChecked []CriteriaChecked `json:"criteria_checked,omitempty"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       time.Time         `json:"updated_at"`
-	CompletedAt     *time.Time        `json:"completed_at,omitempty"`
-}

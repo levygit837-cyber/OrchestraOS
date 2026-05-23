@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -83,8 +84,19 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *Com
 			ApprovalRequired: fragment.ApprovalRequired,
 			AutonomyLevel:    fragment.AutonomyLevel,
 		}
-		if err := repo.CreateOrVerifyFragment(localFragment); err != nil {
-			return nil, apperrors.Wrap(apperrors.CodeConflict, "prompt_service.persist_fragment", err)
+		existing, err := repo.GetFragment(localFragment.ID, localFragment.Version)
+		if err != nil {
+			return nil, apperrors.Wrap(apperrors.CodePersistence, "prompt_service.verify_fragment", err)
+		}
+		if existing != nil && existing.MetadataHash != localFragment.MetadataHash {
+			return nil, apperrors.New(apperrors.CodeConflict, "prompt_service.verify_fragment",
+				fmt.Sprintf("prompt fragment %s@%s already exists with metadata hash %s, got %s",
+					localFragment.ID, localFragment.Version, existing.MetadataHash, localFragment.MetadataHash))
+		}
+		if existing == nil {
+			if err := repo.CreateOrVerifyFragment(localFragment); err != nil {
+				return nil, apperrors.Wrap(apperrors.CodeConflict, "prompt_service.persist_fragment", err)
+			}
 		}
 	}
 
@@ -123,8 +135,7 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *Com
 		VariablesApplied:   variablesApplied,
 		CreatedAt:          time.Now().UTC(),
 	}
-	reusedPromptSnapshot, err := repo.CreateOrReferencePromptSnapshot(promptSnapshot)
-	if err != nil {
+	if err := repo.CreateOrReferencePromptSnapshot(promptSnapshot); err != nil {
 		return nil, apperrors.Wrap(apperrors.CodePersistence, "prompt_service.create_prompt_snapshot", err)
 	}
 
@@ -161,7 +172,7 @@ func (s *PromptService) PersistComposedPrompt(ctx context.Context, composed *Com
 		"composition_hash":   promptSnapshot.CompositionHash,
 		"category_signature": promptSnapshot.CategorySignature,
 		"fragment_count":     len(promptSnapshot.FragmentRefs),
-		"reused":             reusedPromptSnapshot,
+		"reused":             false,
 		"count_used":         promptSnapshot.CountUsed,
 	})
 	if err != nil {

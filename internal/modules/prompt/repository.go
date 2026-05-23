@@ -9,8 +9,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/levygit837-cyber/OrchestraOS/internal/core/db"
 )
@@ -28,25 +26,6 @@ func NewRepository(db db.DBTX) *Repository {
 // ============================================================================
 
 func (r *Repository) CreateOrVerifyFragment(fragment *PromptFragment) error {
-	existing, err := r.GetFragment(fragment.ID, fragment.Version)
-	if err != nil {
-		return err
-	}
-	if existing != nil {
-		if existing.MetadataHash != fragment.MetadataHash {
-			return fmt.Errorf("prompt fragment %s@%s already exists with metadata hash %s, got %s", fragment.ID, fragment.Version, existing.MetadataHash, fragment.MetadataHash)
-		}
-		return nil
-	}
-
-	now := time.Now().UTC()
-	if fragment.CreatedAt.IsZero() {
-		fragment.CreatedAt = now
-	}
-	if fragment.UpdatedAt.IsZero() {
-		fragment.UpdatedAt = fragment.CreatedAt
-	}
-
 	appliesWhen := jsonOrEmptyObject(fragment.AppliesWhen)
 	requires, err := marshalStringList(fragment.Requires)
 	if err != nil {
@@ -159,16 +138,12 @@ func (r *Repository) scanPromptFragment(scanner interface {
 // ============================================================================
 
 func (r *Repository) CreatePromptSnapshot(snapshot *PromptSnapshot) error {
-	_, err := r.CreateOrReferencePromptSnapshot(snapshot)
-	return err
+	return r.CreateOrReferencePromptSnapshot(snapshot)
 }
 
-func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *PromptSnapshot) (bool, error) {
+func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *PromptSnapshot) error {
 	if snapshot.ID == "" {
 		snapshot.ID = uuid.New().String()
-	}
-	if snapshot.CreatedAt.IsZero() {
-		snapshot.CreatedAt = time.Now().UTC()
 	}
 	if snapshot.FirstUsedAt.IsZero() {
 		snapshot.FirstUsedAt = snapshot.CreatedAt
@@ -183,7 +158,7 @@ func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *PromptSnapshot) (
 	}
 	fragmentRefsJSON, err := json.Marshal(fragmentRefs)
 	if err != nil {
-		return false, fmt.Errorf("marshal prompt snapshot fragment refs: %w", err)
+		return fmt.Errorf("marshal prompt snapshot fragment refs: %w", err)
 	}
 	assemblyOrder := snapshot.AssemblyOrder
 	if assemblyOrder == nil {
@@ -191,11 +166,10 @@ func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *PromptSnapshot) (
 	}
 	assemblyOrderJSON, err := json.Marshal(assemblyOrder)
 	if err != nil {
-		return false, fmt.Errorf("marshal prompt snapshot assembly order: %w", err)
+		return fmt.Errorf("marshal prompt snapshot assembly order: %w", err)
 	}
 	variablesApplied := jsonOrEmptyObject(snapshot.VariablesApplied)
 
-	requestedID := snapshot.ID
 	row := r.db.QueryRow(
 		QuerySnapshotInsert,
 		snapshot.ID,
@@ -217,10 +191,10 @@ func (r *Repository) CreateOrReferencePromptSnapshot(snapshot *PromptSnapshot) (
 	)
 	persisted, err := r.scanPromptSnapshot(row)
 	if err != nil {
-		return false, fmt.Errorf("failed to create or reference prompt snapshot: %w", err)
+		return fmt.Errorf("failed to create or reference prompt snapshot: %w", err)
 	}
 	*snapshot = *persisted
-	return snapshot.ID != requestedID || snapshot.CountUsed > 1, nil
+	return nil
 }
 
 func (r *Repository) GetPromptSnapshot(id string) (*PromptSnapshot, error) {
@@ -228,7 +202,7 @@ func (r *Repository) GetPromptSnapshot(id string) (*PromptSnapshot, error) {
 	return r.scanPromptSnapshot(row)
 }
 
-func (r *Repository) LatestPromptSnapshotByRun(runID string) (*PromptSnapshot, error) {
+func (r *Repository) GetLatestPromptSnapshotByRun(runID string) (*PromptSnapshot, error) {
 	row := r.db.QueryRow(QuerySnapshotLatestByRun, runID)
 	return r.scanPromptSnapshot(row)
 }
@@ -283,9 +257,7 @@ func (r *Repository) CreateToolsetSnapshot(snapshot *ToolsetSnapshot) error {
 	if snapshot.ID == "" {
 		snapshot.ID = uuid.New().String()
 	}
-	if snapshot.CreatedAt.IsZero() {
-		snapshot.CreatedAt = time.Now().UTC()
-	}
+
 	tools := snapshot.Tools
 	if tools == nil {
 		tools = []ToolsetTool{}
@@ -314,7 +286,7 @@ func (r *Repository) GetToolsetSnapshot(id string) (*ToolsetSnapshot, error) {
 	return r.scanToolsetSnapshot(row)
 }
 
-func (r *Repository) LatestToolsetSnapshotByAgentSession(agentSessionID string) (*ToolsetSnapshot, error) {
+func (r *Repository) GetLatestToolsetSnapshotByAgentSession(agentSessionID string) (*ToolsetSnapshot, error) {
 	row := r.db.QueryRow(QueryToolsetLatestByAgentSession, agentSessionID)
 	return r.scanToolsetSnapshot(row)
 }

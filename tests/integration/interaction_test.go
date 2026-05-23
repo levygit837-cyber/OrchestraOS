@@ -184,7 +184,8 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 		}
 
 		// Update run to running
-		if err := runRepo.UpdateStatus(run.ID, runmod.StatusRunning, nil, nil); err != nil {
+		now := time.Now()
+		if err := runRepo.UpdateStatus(run.ID, runmod.StatusRunning, &now, nil, nil, nil); err != nil {
 			t.Fatalf("Failed to update run status: %v", err)
 		}
 
@@ -212,7 +213,8 @@ func TestTaskWorkUnitRunInteraction(t *testing.T) {
 
 		// Complete run
 		result := runmod.ResultSucceeded
-		if err := runRepo.UpdateStatus(run.ID, runmod.StatusCompleted, &result, nil); err != nil {
+		now = time.Now()
+		if err := runRepo.UpdateStatus(run.ID, runmod.StatusCompleted, nil, &now, &result, nil); err != nil {
 			t.Fatalf("Failed to complete run: %v", err)
 		}
 
@@ -300,7 +302,8 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Transition to running
-		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusRunning); err != nil {
+		now := time.Now()
+		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusRunning, &now, nil); err != nil {
 			t.Fatalf("Failed to update session to running: %v", err)
 		}
 
@@ -324,7 +327,7 @@ func TestAgentSessionWithRun(t *testing.T) {
 		}
 
 		// Transition to stopped
-		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusStopped); err != nil {
+		if err := sessionRepo.UpdateStatus(session.ID, agentsessionmod.StatusStopped, nil, nil); err != nil {
 			t.Fatalf("Failed to update session to stopped: %v", err)
 		}
 
