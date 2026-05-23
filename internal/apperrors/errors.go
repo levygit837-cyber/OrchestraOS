@@ -13,6 +13,8 @@ const (
 	KindAuthFailure
 	KindTimeout
 	KindProviderDown
+	KindStreamInitFailed
+	KindStreamInterrupted
 )
 
 type Error struct {
@@ -51,5 +53,5 @@ func IsRetryable(err error) bool {
 	if !ok {
 		return false
 	}
-	return e.Kind == KindRateLimit || e.Kind == KindTimeout || e.Kind == KindProviderDown
+	return e.Kind == KindRateLimit || e.Kind == KindTimeout || e.Kind == KindProviderDown || e.Kind == KindStreamInterrupted
 }

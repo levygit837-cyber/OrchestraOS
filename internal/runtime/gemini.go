@@ -21,73 +21,39 @@ const (
 	geminiDefaultTimeout  = 60 * time.Second
 )
 
-// Gemini implements Runtime using the Google Gemini API.
 type Gemini struct {
-	apiKey   string
-	model    string
-	endpoint string
-	maxTok   int
-	temp     float64
-	client   *http.Client
+	apiKey, model, endpoint string
+	maxTok                  int
+	temp                    float64
+	client                  *http.Client
 }
 
 func NewGemini(cfg Config) *Gemini {
-	model := cfg.Model
-	if model == "" {
-		model = geminiDefaultModel
-	}
-	endpoint := cfg.BaseURL
-	if endpoint == "" {
-		endpoint = geminiDefaultEndpoint
-	}
-	maxTok := cfg.MaxTokens
-	if maxTok == 0 {
-		maxTok = geminiDefaultTokens
-	}
-	temp := cfg.Temperature
-	if temp == 0 {
-		temp = geminiDefaultTemp
-	}
-	timeout := cfg.Timeout
-	if timeout == 0 {
-		timeout = geminiDefaultTimeout
-	}
+	rc := resolveConfig(cfg, geminiDefaultModel, geminiDefaultEndpoint, geminiDefaultTokens, geminiDefaultTemp, geminiDefaultTimeout)
 	return &Gemini{
-		apiKey:   cfg.APIKey,
-		model:    model,
-		endpoint: endpoint,
-		maxTok:   maxTok,
-		temp:     temp,
-		client:   &http.Client{Timeout: timeout},
+		apiKey: rc.apiKey, model: rc.model, endpoint: rc.endpoint,
+		maxTok: rc.maxTok, temp: rc.temp, client: rc.client,
 	}
 }
 
 func (g *Gemini) Execute(ctx context.Context, wu *domain.WorkUnit, task *domain.Task) (*Result, error) {
 	prompt := BuildPrompt(wu, task)
 	start := time.Now()
-
 	body, err := g.buildRequest(prompt)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.KindInternal, "runtime.gemini", err)
 	}
-
 	resp, err := g.doRequest(ctx, body)
 	if err != nil {
 		return nil, err
 	}
-
 	output, tokens, err := g.parseResponse(resp)
 	if err != nil {
 		return nil, err
 	}
-
 	return &Result{
-		Status:     domain.RunResultSucceeded,
-		Output:     output,
-		Provider:   "gemini",
-		Model:      g.model,
-		TokensUsed: tokens,
-		Latency:    time.Since(start),
+		Status: domain.RunResultSucceeded, Output: output, Provider: "gemini",
+		Model: g.model, TokensUsed: tokens, Latency: time.Since(start),
 	}, nil
 }
 
@@ -102,9 +68,7 @@ type geminiContent struct {
 	Role  string       `json:"role,omitempty"`
 }
 
-type geminiPart struct {
-	Text string `json:"text"`
-}
+type geminiPart struct{ Text string `json:"text"` }
 
 type geminiGenerationConfig struct {
 	MaxOutputTokens int     `json:"maxOutputTokens"`
@@ -116,29 +80,16 @@ type geminiResponse struct {
 	UsageMeta  *geminiUsageMetada `json:"usageMetadata,omitempty"`
 }
 
-type geminiCandidate struct {
-	Content geminiContent `json:"content"`
-}
-
-type geminiUsageMetada struct {
-	TotalTokenCount int `json:"totalTokenCount"`
-}
+type geminiCandidate struct{ Content geminiContent `json:"content"` }
+type geminiUsageMetada struct{ TotalTokenCount int `json:"totalTokenCount"` }
 
 func (g *Gemini) buildRequest(prompt Prompt) ([]byte, error) {
 	req := geminiRequest{
-		SystemInstruct: &geminiContent{
-			Parts: []geminiPart{{Text: prompt.SystemMessage}},
-		},
-		Contents: []geminiContent{
-			{
-				Role:  "user",
-				Parts: []geminiPart{{Text: prompt.UserMessage}},
-			},
-		},
-		GenerationConfig: geminiGenerationConfig{
-			MaxOutputTokens: g.maxTok,
-			Temperature:     g.temp,
-		},
+		SystemInstruct: &geminiContent{Parts: []geminiPart{{Text: prompt.SystemMessage}}},
+		Contents: []geminiContent{{
+			Role: "user", Parts: []geminiPart{{Text: prompt.UserMessage}},
+		}},
+		GenerationConfig: geminiGenerationConfig{MaxOutputTokens: g.maxTok, Temperature: g.temp},
 	}
 	return json.Marshal(req)
 }
@@ -150,22 +101,18 @@ func (g *Gemini) doRequest(ctx context.Context, body []byte) ([]byte, error) {
 		return nil, apperrors.Wrap(apperrors.KindInternal, "runtime.gemini", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-
 	resp, err := g.client.Do(req)
 	if err != nil {
 		return nil, classifyHTTPError("runtime.gemini", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, apperrors.Wrap(apperrors.KindInternal, "runtime.gemini", err)
 	}
-
 	if err := classifyStatusCode("runtime.gemini", resp.StatusCode, respBody); err != nil {
 		return nil, err
 	}
-
 	return respBody, nil
 }
 

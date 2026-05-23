@@ -3,7 +3,9 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 
 	"github.com/levygit837-cyber/OrchestraOS/internal/apperrors"
 )
@@ -36,6 +38,25 @@ func classifyStatusCode(op string, status int, body []byte) *apperrors.Error {
 	default:
 		return apperrors.New(apperrors.KindInternal, op, fmt.Sprintf("unexpected status %d: %s", status, truncate(body)))
 	}
+}
+
+func classifyStreamInitError(op string, err error) *apperrors.Error {
+	if err == nil {
+		return nil
+	}
+	if httpErr := classifyHTTPError(op, err); httpErr != nil {
+		return httpErr
+	}
+	return apperrors.Wrap(apperrors.KindStreamInitFailed, op, err)
+}
+
+func newStreamInterruptedError(op, msg string) *apperrors.Error {
+	return apperrors.New(apperrors.KindStreamInterrupted, op, msg)
+}
+
+func classifyStreamStatusCode(op string, resp *http.Response) *apperrors.Error {
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+	return classifyStatusCode(op, resp.StatusCode, body)
 }
 
 func truncate(b []byte) string {
