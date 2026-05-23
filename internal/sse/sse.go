@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	dataPrefix    = "data: "
-	doneSentinel  = "[DONE]"
+	dataPrefix   = "data: "
+	doneSentinel = "[DONE]"
 )
 
 // Line represents a single parsed SSE data line.

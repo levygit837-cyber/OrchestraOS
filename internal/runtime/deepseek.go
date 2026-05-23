@@ -75,8 +75,12 @@ type openAIResponse struct {
 	Usage   *openAIUsage   `json:"usage,omitempty"`
 }
 
-type openAIChoice struct{ Message openAIMessage `json:"message"` }
-type openAIUsage struct{ TotalTokens int `json:"total_tokens"` }
+type openAIChoice struct {
+	Message openAIMessage `json:"message"`
+}
+type openAIUsage struct {
+	TotalTokens int `json:"total_tokens"`
+}
 
 func (d *DeepSeek) buildRequest(prompt Prompt) ([]byte, error) {
 	req := openAIRequest{

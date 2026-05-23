@@ -68,7 +68,9 @@ type geminiContent struct {
 	Role  string       `json:"role,omitempty"`
 }
 
-type geminiPart struct{ Text string `json:"text"` }
+type geminiPart struct {
+	Text string `json:"text"`
+}
 
 type geminiGenerationConfig struct {
 	MaxOutputTokens int     `json:"maxOutputTokens"`
@@ -80,8 +82,12 @@ type geminiResponse struct {
 	UsageMeta  *geminiUsageMetada `json:"usageMetadata,omitempty"`
 }
 
-type geminiCandidate struct{ Content geminiContent `json:"content"` }
-type geminiUsageMetada struct{ TotalTokenCount int `json:"totalTokenCount"` }
+type geminiCandidate struct {
+	Content geminiContent `json:"content"`
+}
+type geminiUsageMetada struct {
+	TotalTokenCount int `json:"totalTokenCount"`
+}
 
 func (g *Gemini) buildRequest(prompt Prompt) ([]byte, error) {
 	req := geminiRequest{

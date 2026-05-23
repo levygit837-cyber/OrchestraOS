@@ -32,13 +32,18 @@ func geminiTestTask() *domain.Task {
 	return &domain.Task{ID: "t-g1", Title: "test task", Description: "desc"}
 }
 
+func writeSSE(w http.ResponseWriter, chunks ...string) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	for _, c := range chunks {
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", c)
+	}
+	_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
+}
+
 func TestGeminiExecuteStream_NormalChunks(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprintf(w, "data: %s\n\n", geminiSSEChunk("Hello", false))
-		fmt.Fprintf(w, "data: %s\n\n", geminiSSEChunk(" world", false))
-		fmt.Fprint(w, "data: [DONE]\n\n")
+		writeSSE(w, geminiSSEChunk("Hello", false), geminiSSEChunk(" world", false))
 	}))
 	defer srv.Close()
 
@@ -68,10 +73,7 @@ func TestGeminiExecuteStream_NormalChunks(t *testing.T) {
 func TestGeminiExecuteStream_ThinkingChunks(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprintf(w, "data: %s\n\n", geminiSSEChunk("reasoning...", true))
-		fmt.Fprintf(w, "data: %s\n\n", geminiSSEChunk("answer", false))
-		fmt.Fprint(w, "data: [DONE]\n\n")
+		writeSSE(w, geminiSSEChunk("reasoning...", true), geminiSSEChunk("answer", false))
 	}))
 	defer srv.Close()
 
@@ -104,7 +106,7 @@ func TestGeminiExecuteStream_HTTPError(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, "server error")
+		_, _ = fmt.Fprint(w, "server error")
 	}))
 	defer srv.Close()
 
@@ -122,7 +124,7 @@ func TestGeminiExecuteStream_InvalidJSON(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprint(w, "data: not-json\n\n")
+		_, _ = fmt.Fprint(w, "data: not-json\n\n")
 	}))
 	defer srv.Close()
 

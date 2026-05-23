@@ -35,10 +35,7 @@ func deepseekTestTask() *domain.Task {
 func TestDeepSeekExecuteStream_NormalChunks(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprintf(w, "data: %s\n\n", deepseekSSEChunk("Hello", ""))
-		fmt.Fprintf(w, "data: %s\n\n", deepseekSSEChunk(" world", ""))
-		fmt.Fprint(w, "data: [DONE]\n\n")
+		writeSSE(w, deepseekSSEChunk("Hello", ""), deepseekSSEChunk(" world", ""))
 	}))
 	defer srv.Close()
 
@@ -68,10 +65,7 @@ func TestDeepSeekExecuteStream_NormalChunks(t *testing.T) {
 func TestDeepSeekExecuteStream_ReasoningContent(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprintf(w, "data: %s\n\n", deepseekSSEChunk("", "thinking step"))
-		fmt.Fprintf(w, "data: %s\n\n", deepseekSSEChunk("answer", ""))
-		fmt.Fprint(w, "data: [DONE]\n\n")
+		writeSSE(w, deepseekSSEChunk("", "thinking step"), deepseekSSEChunk("answer", ""))
 	}))
 	defer srv.Close()
 
@@ -105,7 +99,7 @@ func TestDeepSeekExecuteStream_HTTPError(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "unauthorized")
+		_, _ = fmt.Fprint(w, "unauthorized")
 	}))
 	defer srv.Close()
 
@@ -123,7 +117,7 @@ func TestDeepSeekExecuteStream_InvalidJSON(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprint(w, "data: {broken\n\n")
+		_, _ = fmt.Fprint(w, "data: {broken\n\n")
 	}))
 	defer srv.Close()
 
@@ -141,7 +135,7 @@ func TestDeepSeekExecuteStream_RateLimitError(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		fmt.Fprint(w, "rate limited")
+		_, _ = fmt.Fprint(w, "rate limited")
 	}))
 	defer srv.Close()
 
