@@ -40,75 +40,84 @@ func (e *Executor) Execute(ctx context.Context, task *domain.Task, workUnits []d
 	result := &Result{TaskID: task.ID, Status: domain.TaskStatusCompleted}
 
 	for _, wu := range sorted {
-		if err := e.store.UpdateWorkUnitStatus(ctx, wu.ID, domain.WorkUnitStatusRunning); err != nil {
+		if err := e.executeWorkUnit(ctx, task, &wu, result); err != nil {
 			return nil, err
 		}
-
-		run := &domain.Run{
-			ID:         uuid.New().String(),
-			TaskID:     task.ID,
-			WorkUnitID: wu.ID,
-			Status:     domain.RunStatusRunning,
-			Attempt:    1,
-			StartedAt:  time.Now(),
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
-		}
-		if err := e.store.CreateRun(ctx, run); err != nil {
-			return nil, err
-		}
-		result.RunIDs = append(result.RunIDs, run.ID)
-
-		rtResult, err := e.runtime.Execute(ctx, &wu, task)
-		if err != nil {
-			run.Status = domain.RunStatusFailed
-			reason := err.Error()
-			run.FailureReason = &reason
-			runResult := domain.RunResultFailed
-			run.Result = &runResult
-			now := time.Now()
-			run.FinishedAt = &now
-			run.UpdatedAt = now
-			if updateErr := e.store.UpdateRun(ctx, run); updateErr != nil {
-				return nil, updateErr
-			}
-			if updateErr := e.store.UpdateWorkUnitStatus(ctx, wu.ID, domain.WorkUnitStatusFailed); updateErr != nil {
-				return nil, updateErr
-			}
-			result.Status = domain.TaskStatusFailed
-			result.Errors = append(result.Errors, fmt.Sprintf("wu %s: %v", wu.ID, err))
-			return result, nil
-		}
-
-		run.Result = &rtResult.Status
-		now := time.Now()
-		run.FinishedAt = &now
-		run.UpdatedAt = now
-
-		if rtResult.Status == domain.RunResultSucceeded {
-			run.Status = domain.RunStatusCompleted
-			if err := e.store.UpdateRun(ctx, run); err != nil {
-				return nil, err
-			}
-			if err := e.store.UpdateWorkUnitStatus(ctx, wu.ID, domain.WorkUnitStatusCompleted); err != nil {
-				return nil, err
-			}
-		} else {
-			run.Status = domain.RunStatusFailed
-			run.FailureReason = &rtResult.FailureReason
-			if err := e.store.UpdateRun(ctx, run); err != nil {
-				return nil, err
-			}
-			if err := e.store.UpdateWorkUnitStatus(ctx, wu.ID, domain.WorkUnitStatusFailed); err != nil {
-				return nil, err
-			}
-			result.Status = domain.TaskStatusFailed
-			result.Errors = append(result.Errors, fmt.Sprintf("wu %s: %s", wu.ID, rtResult.FailureReason))
+		if result.Status == domain.TaskStatusFailed {
 			return result, nil
 		}
 	}
 
 	return result, nil
+}
+
+func (e *Executor) executeWorkUnit(ctx context.Context, task *domain.Task, wu *domain.WorkUnit, result *Result) error {
+	if err := e.store.UpdateWorkUnitStatus(ctx, wu.ID, domain.WorkUnitStatusRunning); err != nil {
+		return err
+	}
+
+	run := newRun(task.ID, wu.ID)
+	if err := e.store.CreateRun(ctx, run); err != nil {
+		return err
+	}
+	result.RunIDs = append(result.RunIDs, run.ID)
+
+	rtResult, err := e.runtime.Execute(ctx, wu, task)
+	if err != nil {
+		return e.failRun(ctx, run, wu.ID, err.Error(), result, fmt.Sprintf("wu %s: %v", wu.ID, err))
+	}
+
+	return e.finalizeRun(ctx, run, wu.ID, rtResult, result)
+}
+
+func newRun(taskID, wuID string) *domain.Run {
+	now := time.Now()
+	return &domain.Run{
+		ID:         uuid.New().String(),
+		TaskID:     taskID,
+		WorkUnitID: wuID,
+		Status:     domain.RunStatusRunning,
+		Attempt:    1,
+		StartedAt:  now,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+}
+
+func (e *Executor) failRun(ctx context.Context, run *domain.Run, wuID, reason string, result *Result, errMsg string) error {
+	run.Status = domain.RunStatusFailed
+	run.FailureReason = &reason
+	failed := domain.RunResultFailed
+	run.Result = &failed
+	now := time.Now()
+	run.FinishedAt = &now
+	run.UpdatedAt = now
+	if err := e.store.UpdateRun(ctx, run); err != nil {
+		return err
+	}
+	if err := e.store.UpdateWorkUnitStatus(ctx, wuID, domain.WorkUnitStatusFailed); err != nil {
+		return err
+	}
+	result.Status = domain.TaskStatusFailed
+	result.Errors = append(result.Errors, errMsg)
+	return nil
+}
+
+func (e *Executor) finalizeRun(ctx context.Context, run *domain.Run, wuID string, rt *runtime.Result, result *Result) error {
+	run.Result = &rt.Status
+	now := time.Now()
+	run.FinishedAt = &now
+	run.UpdatedAt = now
+
+	if rt.Status == domain.RunResultSucceeded {
+		run.Status = domain.RunStatusCompleted
+		if err := e.store.UpdateRun(ctx, run); err != nil {
+			return err
+		}
+		return e.store.UpdateWorkUnitStatus(ctx, wuID, domain.WorkUnitStatusCompleted)
+	}
+
+	return e.failRun(ctx, run, wuID, rt.FailureReason, result, fmt.Sprintf("wu %s: %s", wuID, rt.FailureReason))
 }
 
 // topologicalSort sorts work units respecting DependsOn edges.
@@ -118,39 +127,41 @@ func topologicalSort(wus []domain.WorkUnit) ([]domain.WorkUnit, error) {
 		byID[wus[i].ID] = &wus[i]
 	}
 
-	visited := map[string]bool{}
-	visiting := map[string]bool{}
-	var sorted []domain.WorkUnit
-
-	var visit func(string) error
-	visit = func(id string) error {
-		if visited[id] {
-			return nil
-		}
-		if visiting[id] {
-			return apperrors.New(apperrors.KindValidation, "executor.sort", "cycle detected in work unit dependencies")
-		}
-		visiting[id] = true
-		wu := byID[id]
-		for _, dep := range wu.DependsOn {
-			if _, ok := byID[dep]; !ok {
-				return apperrors.New(apperrors.KindValidation, "executor.sort", "unknown dependency: "+dep)
-			}
-			if err := visit(dep); err != nil {
-				return err
-			}
-		}
-		visiting[id] = false
-		visited[id] = true
-		sorted = append(sorted, *wu)
-		return nil
-	}
-
+	state := &topoState{byID: byID, visiting: map[string]bool{}, visited: map[string]bool{}}
 	for _, wu := range wus {
-		if err := visit(wu.ID); err != nil {
+		if err := state.visit(wu.ID); err != nil {
 			return nil, err
 		}
 	}
+	return state.sorted, nil
+}
 
-	return sorted, nil
+type topoState struct {
+	byID     map[string]*domain.WorkUnit
+	visiting map[string]bool
+	visited  map[string]bool
+	sorted   []domain.WorkUnit
+}
+
+func (s *topoState) visit(id string) error {
+	if s.visited[id] {
+		return nil
+	}
+	if s.visiting[id] {
+		return apperrors.New(apperrors.KindValidation, "executor.sort", "cycle detected in work unit dependencies")
+	}
+	s.visiting[id] = true
+	wu := s.byID[id]
+	for _, dep := range wu.DependsOn {
+		if _, ok := s.byID[dep]; !ok {
+			return apperrors.New(apperrors.KindValidation, "executor.sort", "unknown dependency: "+dep)
+		}
+		if err := s.visit(dep); err != nil {
+			return err
+		}
+	}
+	s.visiting[id] = false
+	s.visited[id] = true
+	s.sorted = append(s.sorted, *wu)
+	return nil
 }

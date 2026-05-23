@@ -37,26 +37,8 @@ func (o *Orchestrator) RunTask(ctx context.Context, taskID string) (*executor.Re
 		return nil, err
 	}
 
-	graph := &domain.TaskGraph{
-		ID:              plan.GraphID,
-		TaskID:          taskID,
-		Version:         1,
-		Status:          domain.TaskGraphStatusActive,
-		PlannerStrategy: "heuristic",
-		Rationale:       plan.Rationale,
-		CreatedBy:       "orchestrator",
-		NodeCount:       len(plan.WorkUnits),
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-	}
-	if err := o.store.CreateTaskGraph(ctx, graph); err != nil {
+	if err := o.persistPlan(ctx, taskID, plan); err != nil {
 		return nil, err
-	}
-
-	for i := range plan.WorkUnits {
-		if err := o.store.CreateWorkUnit(ctx, &plan.WorkUnits[i]); err != nil {
-			return nil, err
-		}
 	}
 
 	result, err := o.exec.Execute(ctx, task, plan.WorkUnits)
@@ -70,4 +52,29 @@ func (o *Orchestrator) RunTask(ctx context.Context, taskID string) (*executor.Re
 	}
 
 	return result, nil
+}
+
+func (o *Orchestrator) persistPlan(ctx context.Context, taskID string, plan *planner.Plan) error {
+	graph := &domain.TaskGraph{
+		ID:              plan.GraphID,
+		TaskID:          taskID,
+		Version:         1,
+		Status:          domain.TaskGraphStatusActive,
+		PlannerStrategy: "heuristic",
+		Rationale:       plan.Rationale,
+		CreatedBy:       "orchestrator",
+		NodeCount:       len(plan.WorkUnits),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+	if err := o.store.CreateTaskGraph(ctx, graph); err != nil {
+		return err
+	}
+
+	for i := range plan.WorkUnits {
+		if err := o.store.CreateWorkUnit(ctx, &plan.WorkUnits[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }

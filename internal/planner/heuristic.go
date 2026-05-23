@@ -43,13 +43,21 @@ func (h *Heuristic) Plan(_ context.Context, task *domain.Task) (*Plan, error) {
 	}
 
 	graphID := uuid.New().String()
-	criterionGroup := map[int]int{}
-	for gi, g := range groups {
-		for _, c := range g.criteria {
-			criterionGroup[c.index] = gi
-		}
+	wus := buildWorkUnits(task, graphID, groups)
+	resolveGroupDeps(wus, groups)
+
+	if err := validateDAG(wus); err != nil {
+		return nil, err
 	}
 
+	return &Plan{
+		GraphID:   graphID,
+		WorkUnits: wus,
+		Rationale: "Local heuristic decomposition from task acceptance criteria.",
+	}, nil
+}
+
+func buildWorkUnits(task *domain.Task, graphID string, groups []criteriaGroup) []domain.WorkUnit {
 	wus := make([]domain.WorkUnit, len(groups))
 	for i, g := range groups {
 		wus[i] = domain.WorkUnit{
@@ -65,6 +73,16 @@ func (h *Heuristic) Plan(_ context.Context, task *domain.Task) (*Plan, error) {
 			AcceptanceCriteria:   criteriaTexts(g.criteria),
 			ValidationPlan:       []string{"Validar criterios de aceite."},
 			DependsOn:            []string{},
+		}
+	}
+	return wus
+}
+
+func resolveGroupDeps(wus []domain.WorkUnit, groups []criteriaGroup) {
+	criterionGroup := map[int]int{}
+	for gi, g := range groups {
+		for _, c := range g.criteria {
+			criterionGroup[c.index] = gi
 		}
 	}
 
@@ -87,16 +105,6 @@ func (h *Heuristic) Plan(_ context.Context, task *domain.Task) (*Plan, error) {
 			wus[gi].DependsOn = append(wus[gi].DependsOn, wus[dg].ID)
 		}
 	}
-
-	if err := validateDAG(wus); err != nil {
-		return nil, err
-	}
-
-	return &Plan{
-		GraphID:   graphID,
-		WorkUnits: wus,
-		Rationale: "Local heuristic decomposition from task acceptance criteria.",
-	}, nil
 }
 
 type criterion struct {
