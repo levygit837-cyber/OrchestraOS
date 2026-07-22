@@ -47,15 +47,17 @@ func runTask(args []string) error {
 	model := ""
 	remaining := args
 
+parseFlags:
 	for len(remaining) > 1 {
-		if remaining[0] == "--provider" {
+		switch remaining[0] {
+		case "--provider":
 			provider = remaining[1]
 			remaining = remaining[2:]
-		} else if remaining[0] == "--model" {
+		case "--model":
 			model = remaining[1]
 			remaining = remaining[2:]
-		} else {
-			break
+		default:
+			break parseFlags
 		}
 	}
 
