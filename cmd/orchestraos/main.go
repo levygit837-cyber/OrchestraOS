@@ -39,16 +39,24 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: orchestraos run [--provider fake|gemini|deepseek] \"<title>\" \"<criteria1>\" ...\n")
+	fmt.Fprintf(os.Stderr, "Usage: orchestraos run [--provider fake|gemini|deepseek] [--model <model>] \"<title>\" \"<criteria1>\" ...\n")
 }
 
 func runTask(args []string) error {
 	provider := "fake"
+	model := ""
 	remaining := args
 
-	if len(remaining) > 1 && remaining[0] == "--provider" {
-		provider = remaining[1]
-		remaining = remaining[2:]
+	for len(remaining) > 1 {
+		if remaining[0] == "--provider" {
+			provider = remaining[1]
+			remaining = remaining[2:]
+		} else if remaining[0] == "--model" {
+			model = remaining[1]
+			remaining = remaining[2:]
+		} else {
+			break
+		}
 	}
 
 	if len(remaining) < 3 {
@@ -61,7 +69,7 @@ func runTask(args []string) error {
 	ctx := context.Background()
 	s := store.NewMemory()
 	p := planner.NewHeuristic()
-	rt := buildRuntime(provider)
+	rt := buildRuntime(provider, model)
 	ex := executor.New(s, rt)
 	orch := orchestraos.NewOrchestrator(s, p, ex)
 
@@ -101,15 +109,17 @@ func runTask(args []string) error {
 	return nil
 }
 
-func buildRuntime(provider string) domain.Runtime {
+func buildRuntime(provider, model string) domain.Runtime {
 	switch provider {
 	case "gemini":
 		return gemini.New(runtime.Config{
 			APIKey: os.Getenv("GEMINI_API_KEY"),
+			Model:  model,
 		})
 	case "deepseek":
 		return deepseek.New(runtime.Config{
 			APIKey: os.Getenv("DEEPSEEK_API_KEY"),
+			Model:  model,
 		})
 	default:
 		return runtime.NewFake()
