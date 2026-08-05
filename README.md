@@ -1,72 +1,141 @@
+<div align="center">
+
 # OrchestraOS
 
-Sistema de orquestração de agentes de IA. Transforma intenção humana em planejamento, execução e validação contínua via DAG de work units.
+**Orquestrador fino em Go que transforma critérios de aceite em uma DAG de unidades de trabalho.**
 
-## Estado
+[![CI](https://github.com/levygit837-cyber/OrchestraOS/actions/workflows/ci.yml/badge.svg)](https://github.com/levygit837-cyber/OrchestraOS/actions/workflows/ci.yml)
+[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![Architecture](https://img.shields.io/badge/architecture-6%20gates-6b7280)](#gates-arquiteturais)
 
-- Fase atual: Thin Orchestrator — pipeline architecture
-- Fonte de verdade: este repositório
-- Stack: Go, PostgreSQL (planejado), GitHub
-- Autonomia aprovada: Nível 2
+</div>
 
-## Quickstart
+## Navegação rápida
+
+[Pivot](#o-pivot) · [Fluxo](#fluxo-executável) · [Arquitetura](#arquitetura) · [Execução](#rodar) · [Limites](#limites-atuais)
+
+## O pivot
+
+O OrchestraOS começou com uma arquitetura maior do que a capacidade executável justificava. O
+projeto foi reduzido a um pipeline legível, com regras que o CI consegue verificar. Essa decisão
+removeu dezenas de milhares de linhas de arquitetura prematura e consolidou uma trilha menor para
+planejar e executar uma tarefa.
+
+O projeto está em evolução e não é uma plataforma autônoma completa. Seu valor atual está na
+simplificação, nas fronteiras explícitas e na supervisão de mudanças produzidas por agentes de
+desenvolvimento.
+
+## Fluxo executável
+
+```text
+Task
+  → planner heurístico
+  → DAG de WorkUnits
+  → ordenação topológica
+  → runtime fake, Gemini ou DeepSeek
+  → RunResult
+```
+
+O CLI aceita um título e ao menos dois critérios. Marcadores `[after: 1,2]` expressam dependências
+entre critérios antes da construção da DAG.
 
 ```bash
-# Build
-go build ./cmd/orchestraos
+go build -o orchestraos ./cmd/orchestraos
 
-# Run a task with acceptance criteria
-./orchestraos run "Add login feature" \
-  "Create login form component" \
-  "Add authentication service" \
-  "[after: 1,2] Integration tests for login flow"
+./orchestraos run "Adicionar login" \
+  "Criar formulário" \
+  "Adicionar serviço de autenticação" \
+  "[after: 1,2] Validar integração"
+```
+
+O provider padrão é `fake`. Providers reais exigem `GEMINI_API_KEY` ou `DEEPSEEK_API_KEY`:
+
+```bash
+./orchestraos run --provider gemini --model gemini-2.5-flash \
+  "Analisar tarefa" "Propor solução" "[after: 1] Revisar resultado"
 ```
 
 ## Arquitetura
 
-Pipeline architecture com 3 regras:
-
-1. `domain/` é puro — zero imports internos
-2. Dependências fluem para baixo — nunca entre pacotes irmãos
-3. SQL confinado a `store/`
-
-```
-cmd/orchestraos/       CLI entrypoint
+```text
+cmd/orchestraos/       # CLI e composição
 internal/
-├── domain/            Tipos puros (Task, Run, WorkUnit, TaskGraph, EventEnvelope)
-├── planner/           Task → DAG de WorkUnits (heuristic planner)
-├── executor/          DAG → execução em ordem topológica
-├── runtime/           Interface de execução (fake runtime)
-├── store/             Persistência unificada (interface + in-memory)
-├── event/             Event emitter
-├── apperrors/         Erros padronizados
-└── orchestrator.go    Composição: planner → executor → runtime (~55 linhas)
-tests/architecture/    6 testes de arquitetura via AST
+├── domain/            # tipos puros
+├── planner/           # critérios → DAG por heurística local
+├── executor/          # execução sequencial em ordem topológica
+├── runtime/           # contrato e runtime fake
+├── provider/          # adapters Gemini e DeepSeek
+├── store/             # contrato e persistência in-memory
+├── decomposer/        # decomposição LLM ainda fora do caminho principal
+├── daggen/            # construção e validação de grafos
+├── assignment/        # atribuição experimental de agentes
+└── event/             # estruturas de eventos ainda não compostas
+
+tests/architecture/    # invariantes verificadas por AST
+docs/adr/              # decisões e pivots arquiteturais
 ```
 
-Pipeline: `Task → planner.Plan() → []WorkUnit → executor.Execute() → runtime.Execute()`
+As dependências fluem para `domain`; SQL permanece confinado a `store`; o orquestrador apenas compõe
+planner, executor, runtime e persistência.
 
-## Testes de Arquitetura
+## Gates arquiteturais
 
-6 testes automatizados que bloqueiam CI:
+Seis testes impedem regressões estruturais:
 
-| Teste | Regra |
-|-------|-------|
-| TestDependencyDirection | Grafo de imports validado por package |
-| TestDomainPurity | domain/ sem imports internos |
-| TestPackageSizeLimit | Nenhum package > 800 linhas |
-| TestMaxFunctionComplexity | Nenhuma função > 40 linhas |
-| TestSQLConfinement | SQL apenas em store/ |
-| TestNoGlobalState | Sem variáveis globais mutáveis |
+| Gate | Regra verificada |
+|---|---|
+| Direção de dependências | imports entre packages seguem a lista permitida |
+| Pureza do domínio | `domain/` não importa packages internos |
+| Tamanho de package | nenhum package ultrapassa o orçamento definido |
+| Tamanho de função | corpos de função permanecem dentro do limite |
+| Confinamento de SQL | SQL existe somente em `store/` |
+| Estado global | não há globais mutáveis |
+
+## Rodar
+
+Pré-requisito: Go 1.24.
 
 ```bash
-make arch    # roda testes de arquitetura
-make check   # vet + test + arch + lint + build
+go build ./...
+go test ./... -race -count=1
+go vet ./...
 ```
+
+Com `golangci-lint` instalado:
+
+```bash
+make check
+```
+
+No snapshot auditado, havia 61 funções de teste e 3.013 linhas Go de produção. O workflow do commit
+`586850b` passou build, race tests, vet, lint e os seis gates em 22 de julho de 2026. A verificação
+local não foi repetida nesta máquina porque o toolchain Go não está instalado.
+
+## Limites atuais
+
+- o runtime padrão é fake e sempre devolve sucesso;
+- Gemini e DeepSeek retornam texto, mas o resultado não é validado contra os critérios de aceite;
+- a DAG é executada de forma sequencial;
+- a única implementação de store usada pelo CLI é in-memory;
+- a decomposição semântica por LLM, streaming, assignment e eventos possuem módulos/testes, mas não
+  estão conectados ao caminho principal;
+- não há agentes isolados editando workspace, policy engine, sandbox ou painel web;
+- PostgreSQL permanece planejado, sem implementação de store ligada ao CLI.
 
 ## Documentação
 
-- [AGENTS.md](AGENTS.md) — regras para agentes
-- [docs/canvas/project-canvas.md](docs/canvas/project-canvas.md) — visão do produto
-- [docs/adr/](docs/adr/) — decisões arquiteturais
-- [docs/development/CODING_STANDARDS.md](docs/development/CODING_STANDARDS.md) — padrões de código
+- [Project canvas](docs/canvas/project-canvas.md)
+- [ADR do Thin Orchestrator](docs/adr/0020-thin-orchestrator-pipeline.md)
+- [ADR da geração de DAG](docs/adr/0021-agent-based-dag-generation.md)
+- [Padrões de código](docs/development/CODING_STANDARDS.md)
+- [Instruções para agentes](AGENTS.md)
+
+## Desenvolvimento
+
+O pivot e as implementações foram conduzidos com agentes de desenvolvimento, incluindo PRs do Devin.
+O trabalho humano incluiu escolha do alvo arquitetural, redução de escopo, revisão, integração e uso
+dos gates para aceitar ou rejeitar mudanças.
+
+## Licença
+
+O repositório não declara atualmente uma licença de reutilização.
