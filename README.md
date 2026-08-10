@@ -4,6 +4,8 @@
 
 **Orquestrador fino em Go que transforma critérios de aceite em uma DAG de unidades de trabalho.**
 
+*A thin Go control plane for turning acceptance criteria into validated agent work graphs.*
+
 [![CI](https://github.com/levygit837-cyber/OrchestraOS/actions/workflows/ci.yml/badge.svg)](https://github.com/levygit837-cyber/OrchestraOS/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![Architecture](https://img.shields.io/badge/architecture-6%20gates-6b7280)](#gates-arquiteturais)
@@ -12,7 +14,7 @@
 
 ## Navegação rápida
 
-[Pivot](#o-pivot) · [Fluxo](#fluxo-executável) · [Arquitetura](#arquitetura) · [Execução](#rodar) · [Limites](#limites-atuais)
+[Pivot](#o-pivot) · [Fluxo](#fluxo-executável) · [Arquitetura](#arquitetura) · [Execução](#rodar) · [Limites](#limites-atuais) · [Guia para avaliadores](docs/reviewer-guide.md)
 
 ## O pivot
 
@@ -124,6 +126,7 @@ local não foi repetida nesta máquina porque o toolchain Go não está instalad
 
 ## Documentação
 
+- [Guia para avaliadores](docs/reviewer-guide.md)
 - [Project canvas](docs/canvas/project-canvas.md)
 - [ADR do Thin Orchestrator](docs/adr/0020-thin-orchestrator-pipeline.md)
 - [ADR da geração de DAG](docs/adr/0021-agent-based-dag-generation.md)
