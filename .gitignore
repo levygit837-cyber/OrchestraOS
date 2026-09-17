@@ -58,3 +58,8 @@ design/
 plans/
 .ultraplan/
 temp/
+
+# Go binaries
+orchestraos
+/orchestraos
+*.exe
